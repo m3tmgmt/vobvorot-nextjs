@@ -1,0 +1,208 @@
+import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth/next'
+import { authOptions } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import { westernbid } from '@/lib/westernbid'
+
+interface OrderItem {
+  product: {
+    id: string
+    name: string
+    price: number
+    images: { url: string; alt?: string }[]
+  }
+  quantity: number
+  selectedSize?: string
+  selectedColor?: string
+}
+
+interface ShippingInfo {
+  firstName: string
+  lastName: string
+  email: string
+  phone: string
+  address: string
+  city: string
+  postalCode: string
+  country: string
+  state?: string
+}
+
+interface PaymentInfo {
+  method: 'westernbid'
+}
+
+interface OrderData {
+  shippingInfo: ShippingInfo
+  paymentInfo: PaymentInfo
+  items: OrderItem[]
+  subtotal: number
+  shippingCost: number
+  tax: number
+  total: number
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions)
+    
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized' },
+        { status: 401 }
+      )
+    }
+
+    const orderData: OrderData = await request.json()
+    
+    // Validate required fields
+    if (!orderData.shippingInfo || !orderData.paymentInfo || !orderData.items?.length) {
+      return NextResponse.json(
+        { error: 'Missing required order data' },
+        { status: 400 }
+      )
+    }
+
+    // Generate order number
+    const orderNumber = `EXV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+
+    // Create the order
+    const order = await prisma.order.create({
+      data: {
+        orderNumber,
+        userId: session.user.id,
+        status: 'PENDING',
+        currency: 'USD',
+        subtotal: orderData.subtotal,
+        shippingCost: orderData.shippingCost,
+        total: orderData.total,
+        
+        // Shipping information
+        shippingName: `${orderData.shippingInfo.firstName} ${orderData.shippingInfo.lastName}`,
+        shippingEmail: orderData.shippingInfo.email,
+        shippingPhone: orderData.shippingInfo.phone,
+        shippingAddress: orderData.shippingInfo.address,
+        shippingCity: orderData.shippingInfo.city,
+        shippingZip: orderData.shippingInfo.postalCode,
+        shippingCountry: orderData.shippingInfo.country,
+        
+        // Payment information
+        paymentMethod: orderData.paymentInfo.method,
+        paymentStatus: 'PENDING',
+        
+        // Order items will be created separately
+        items: {
+          create: await Promise.all(orderData.items.map(async (item) => {
+            // Find or create SKU for this product variant
+            let sku = await prisma.productSku.findFirst({
+              where: {
+                productId: item.product.id,
+                size: item.selectedSize || null,
+                color: item.selectedColor || null
+              }
+            })
+            
+            if (!sku) {
+              // Create SKU if it doesn't exist
+              sku = await prisma.productSku.create({
+                data: {
+                  productId: item.product.id,
+                  sku: `${item.product.id}-${item.selectedSize || 'NS'}-${item.selectedColor || 'NC'}`,
+                  size: item.selectedSize,
+                  color: item.selectedColor,
+                  stock: 999, // Default high stock
+                  price: item.product.price
+                }
+              })
+            }
+            
+            return {
+              skuId: sku.id,
+              quantity: item.quantity,
+              price: item.product.price
+            }
+          }))
+        }
+      },
+      include: {
+        items: {
+          include: {
+            sku: {
+              include: {
+                product: {
+                  include: {
+                    images: {
+                      where: { isPrimary: true },
+                      take: 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    })
+
+    // Send order confirmation email (placeholder)
+    // TODO: Implement email service
+    console.log(`Order created: ${orderNumber} for user ${session.user.email}`)
+
+    // Process payment with WesternBid
+    console.log('Creating WesternBid payment for order:', orderNumber)
+    
+    const paymentRequest = {
+      orderId: orderNumber,
+      amount: orderData.total,
+      currency: 'USD',
+      description: `Order ${orderNumber} - ${orderData.items.length} items`,
+      customerEmail: orderData.shippingInfo.email,
+      customerName: `${orderData.shippingInfo.firstName} ${orderData.shippingInfo.lastName}`,
+      returnUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success`,
+      cancelUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/cancel`
+    }
+
+    const paymentResult = await westernbid.createPayment(paymentRequest)
+    
+    if (paymentResult.success && paymentResult.paymentUrl) {
+      // Update order with payment information
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          paymentStatus: 'PENDING',
+          paymentId: paymentResult.paymentId
+        }
+      })
+
+      return NextResponse.json({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        paymentStatus: order.paymentStatus,
+        total: order.total,
+        paymentUrl: paymentResult.paymentUrl,
+        message: 'Order created successfully'
+      })
+    } else {
+      // Payment creation failed
+      await prisma.order.update({
+        where: { id: order.id },
+        data: {
+          paymentStatus: 'FAILED'
+        }
+      })
+
+      return NextResponse.json(
+        { error: 'Payment processing failed: ' + paymentResult.error },
+        { status: 400 }
+      )
+    }
+
+  } catch (error) {
+    console.error('Order creation error:', error)
+    return NextResponse.json(
+      { error: 'Failed to create order' },
+      { status: 500 }
+    )
+  }
+}

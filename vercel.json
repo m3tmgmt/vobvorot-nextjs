@@ -1,0 +1,14 @@
+{
+  "functions": {
+    "src/app/api/telegram/webhook/route.ts": {
+      "maxDuration": 30
+    }
+  },
+  "env": {
+    "TELEGRAM_BOT_TOKEN": "7274106590:AAFVUDX05v5FgvhzfAPJmfVOWVbfporRnMY",
+    "TELEGRAM_BOT_USERNAME": "VobvorotecomAdminBot", 
+    "OWNER_TELEGRAM_ID": "316593422",
+    "TELEGRAM_WEBHOOK_SECRET": "TG_vobvorot_webhook_secret_2024_secure_key_xyz789",
+    "ADMIN_API_KEY": "ADMIN_vobvorot_api_key_2024_ultra_secure_access_token_abc123xyz"
+  }
+}

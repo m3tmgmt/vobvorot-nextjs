@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate Album Covers</title>
+    <style>
+        canvas { margin: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>YE VOBVOROT Album Covers Generator</h1>
+    <div id="covers"></div>
+    
+    <script>
+    const albums = [
+        { title: "hentai baby", gradient: ["#FF6B9D", "#C44569"], emoji: "🌸" },
+        { title: "Hypnotic poison", gradient: ["#667EEA", "#764BA2"], emoji: "🌙" },
+        { title: "Сейлор Мун", gradient: ["#F093FB", "#F5576C"], emoji: "🌟" },
+        { title: "Real PoRNStar", gradient: ["#FA709A", "#FEE140"], emoji: "💫" },
+        { title: "Lullabies", gradient: ["#30CFD0", "#330867"], emoji: "🎀" }
+    ];
+    
+    albums.forEach((album, index) => {
+        const canvas = document.createElement('canvas');
+        canvas.width = 400;
+        canvas.height = 400;
+        const ctx = canvas.getContext('2d');
+        
+        // Create gradient background
+        const gradient = ctx.createLinearGradient(0, 0, 400, 400);
+        gradient.addColorStop(0, album.gradient[0]);
+        gradient.addColorStop(1, album.gradient[1]);
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, 400, 400);
+        
+        // Add noise texture
+        for (let i = 0; i < 5000; i++) {
+            ctx.fillStyle = `rgba(255,255,255,${Math.random() * 0.05})`;
+            ctx.fillRect(Math.random() * 400, Math.random() * 400, 1, 1);
+        }
+        
+        // Add Y2K style grid
+        ctx.strokeStyle = 'rgba(255,255,255,0.1)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < 400; i += 20) {
+            ctx.beginPath();
+            ctx.moveTo(i, 0);
+            ctx.lineTo(i, 400);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(0, i);
+            ctx.lineTo(400, i);
+            ctx.stroke();
+        }
+        
+        // Add emoji
+        ctx.font = '120px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(album.emoji, 200, 180);
+        
+        // Add artist name
+        ctx.fillStyle = '#000';
+        ctx.font = 'bold 24px monospace';
+        ctx.fillText('YE VOBVOROT', 200, 280);
+        
+        // Add album title
+        ctx.font = '18px monospace';
+        ctx.fillText(album.title, 200, 320);
+        
+        // Add Y2K elements
+        ctx.strokeStyle = '#39FF14';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(200, 200, 150, 0, Math.PI * 2);
+        ctx.stroke();
+        
+        // Create download link
+        const link = document.createElement('a');
+        link.download = `ye-vobvorot-${index + 1}.png`;
+        link.href = canvas.toDataURL();
+        link.textContent = `Download ${album.title} cover`;
+        
+        document.getElementById('covers').appendChild(canvas);
+        document.getElementById('covers').appendChild(link);
+        document.getElementById('covers').appendChild(document.createElement('br'));
+    });
+    </script>
+</body>
+</html>
