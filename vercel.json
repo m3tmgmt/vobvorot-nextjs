@@ -3,5 +3,10 @@
     "src/app/api/telegram/webhook/route.ts": {
       "maxDuration": 30
     }
+  },
+  "build": {
+    "env": {
+      "VERCEL_PROTECT_DEPLOYMENT": "false"
+    }
   }
 }
