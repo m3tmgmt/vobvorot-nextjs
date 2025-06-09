@@ -329,7 +329,7 @@ class DataIntegrityChecker {
         return sum + (Number(item.price) * item.quantity)
       }, 0)
       
-      const expectedTotal = itemsTotal + Number(order.shippingCost) + Number(order.tax) - Number(order.discount)
+      const expectedTotal = itemsTotal + Number(order.shippingCost) + Number((order as any).tax || 0) - Number(order.discount)
       return Math.abs(Number(order.total) - expectedTotal) > 0.01
     })
 
@@ -345,7 +345,7 @@ class DataIntegrityChecker {
           storedTotal: Number(order.total),
           calculatedTotal: order.items.reduce((sum, item) => 
             sum + (Number(item.price) * item.quantity), 0) + 
-            Number(order.shippingCost) + Number(order.tax) - Number(order.discount)
+            Number(order.shippingCost) + Number((order as any).tax || 0) - Number(order.discount)
         }))
       })
     }
