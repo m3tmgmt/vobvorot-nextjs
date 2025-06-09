@@ -6,8 +6,9 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
   url      = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 model User {
@@ -18,6 +19,27 @@ model User {
   password      String?
   image         String?
   role          Role      @default(USER)
+  
+  // Additional user data
+  firstName     String?
+  lastName      String?
+  phone         String?
+  dateOfBirth   DateTime?
+  gender        String?
+  
+  // Preferences
+  newsletter    Boolean @default(false)
+  language      String? @default("en")
+  timezone      String?
+  
+  // Status
+  isActive      Boolean @default(true)
+  lastLoginAt   DateTime?
+  
+  // Password reset
+  resetToken        String?
+  resetTokenExpiry  DateTime?
+  
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
@@ -26,7 +48,11 @@ model User {
   wishlist  WishlistItem[]
   accounts  Account[]
   sessions  Session[]
+  addresses UserAddress[]
 
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
   @@map("users")
 }
 
@@ -79,7 +105,19 @@ model Category {
   children    Category[] @relation("CategoryParent")
   
   products    Product[]
+  
+  // Additional fields
+  imageUrl    String?
+  isActive    Boolean @default(true)
+  sortOrder   Int? @default(0)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
+  @@index([parentId])
+  @@index([slug])
+  @@index([isActive])
+  @@index([sortOrder])
   @@map("categories")
 }
 
@@ -97,9 +135,21 @@ model Product {
   reviews     Review[]
   wishlist    WishlistItem[]
   
+  // SEO and metadata
+  metaTitle       String?
+  metaDescription String?
+  isActive        Boolean @default(true)
+  
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  @@index([categoryId])
+  @@index([slug])
+  @@index([brand])
+  @@index([isActive])
+  @@index([createdAt])
+  @@index([name])
+  @@index([description])
   @@map("products")
 }
 
@@ -110,7 +160,20 @@ model ProductImage {
   isPrimary Boolean @default(false)
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  // Cloudinary integration
+  cloudinaryId   String?
+  cloudinaryUrl  String?
+  width         Int?
+  height        Int?
+  format        String?
+  size          BigInt?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  @@index([productId])
+  @@index([isPrimary])
   @@map("product_images")
 }
 
@@ -119,13 +182,27 @@ model ProductSku {
   sku       String @unique
   size      String?
   color     String?
-  price     Float
+  price     Decimal @db.Decimal(10,2)
+  compareAtPrice Decimal? @db.Decimal(10,2)
   stock     Int    @default(0)
+  lowStockThreshold Int? @default(5)
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   
   orderItems OrderItem[]
+  
+  // Inventory tracking
+  isActive   Boolean @default(true)
+  weight     Decimal? @db.Decimal(8,3)
+  dimensions String? // JSON string for length, width, height
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
+  @@index([productId])
+  @@index([sku])
+  @@index([isActive])
+  @@index([stock])
   @@map("product_skus")
 }
 
@@ -147,9 +224,11 @@ model Order {
   shippingZip     String
   
   // Pricing
-  subtotal        Float
-  shippingCost    Float
-  total           Float
+  subtotal        Decimal @db.Decimal(10,2)
+  tax             Decimal @default(0) @db.Decimal(10,2)
+  shippingCost    Decimal @db.Decimal(10,2)
+  discount        Decimal @default(0) @db.Decimal(10,2)
+  total           Decimal @db.Decimal(10,2)
   currency        String      @default("USD")
   
   // Payment
@@ -157,11 +236,34 @@ model Order {
   paymentStatus   PaymentStatus @default(PENDING)
   paymentId       String?
   
+  // Western Bid Integration
+  transactionId   String?     // ID транзакции от Western Bid
+  paidAt          DateTime?   // Время успешной оплаты
+  failureReason   String?     // Причина неудачи платежа
+  refundedAt      DateTime?   // Время возврата
+  refundAmount    Decimal? @db.Decimal(10,2)    // Сумма возврата
+  refundId        String?     // ID возврата от Western Bid
+  refundStatus    String?     // Статус возврата
+  refundReason    String?     // Причина возврата
+  sessionId       String?     // ID сессии платежа
+  
+  // Additional tracking
+  trackingNumber  String?
+  notes           String?
+  internalNotes   String?
+  
   items           OrderItem[]
   
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
+  @@index([userId])
+  @@index([orderNumber])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([transactionId])
+  @@index([sessionId])
+  @@index([createdAt])
   @@map("orders")
 }
 
@@ -174,8 +276,14 @@ model OrderItem {
   sku       ProductSku @relation(fields: [skuId], references: [id])
   
   quantity  Int
-  price     Float      // Price at time of order
+  price     Decimal @db.Decimal(10,2)      // Price at time of order
   
+  // Snapshot data for order history
+  productName String
+  productSku  String
+  
+  @@index([orderId])
+  @@index([skuId])
   @@map("order_items")
 }
 
@@ -210,6 +318,38 @@ model WishlistItem {
   @@map("wishlist_items")
 }
 
+model UserAddress {
+  id         String  @id @default(cuid())
+  userId     String
+  user       User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type       AddressType @default(SHIPPING)
+  firstName  String
+  lastName   String
+  company    String?
+  address1   String
+  address2   String?
+  city       String
+  state      String?
+  country    String
+  zipCode    String
+  phone      String?
+  
+  isDefault  Boolean @default(false)
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([userId])
+  @@index([type])
+  @@map("user_addresses")
+}
+
+enum AddressType {
+  SHIPPING
+  BILLING
+}
+
 enum Role {
   USER
   ADMIN
@@ -222,6 +362,8 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
 }
 
 enum PaymentStatus {
@@ -229,4 +371,6 @@ enum PaymentStatus {
   COMPLETED
   FAILED
   REFUNDED
+  CANCELLED
+  PARTIALLY_REFUNDED
 }

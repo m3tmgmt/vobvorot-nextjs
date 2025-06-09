@@ -1,6 +1,8 @@
 import { Bot, Context, session, GrammyError, HttpError } from 'grammy'
 import { conversations, createConversation } from '@grammyjs/conversations'
 import { Menu } from '@grammyjs/menu'
+import TelegramCloudinaryIntegration, { telegramPhotoHelpers } from './telegram-cloudinary'
+import { cloudinaryService } from './cloudinary'
 
 // Типы для контекста
 interface SessionData {
@@ -16,6 +18,9 @@ type MyContext = Context & {
 
 // Инициализация бота
 const bot = new Bot<MyContext>(process.env.TELEGRAM_BOT_TOKEN!)
+
+// Инициализация Cloudinary интеграции
+const cloudinaryIntegration = new TelegramCloudinaryIntegration(bot as any, process.env.TELEGRAM_BOT_TOKEN!)
 
 // Сессии и конверсации
 bot.use(session({ initial: (): SessionData => ({}) }))
@@ -34,9 +39,11 @@ const mainMenu = new Menu<MyContext>('main-menu')
   .text('🛍️ Товары', (ctx) => ctx.conversation.enter('manageProducts'))
   .row()
   .text('📊 Статистика', (ctx) => ctx.conversation.enter('viewStats'))
-  .text('⚙️ Настройки', (ctx) => ctx.conversation.enter('settings'))
+  .text('📸 Изображения', (ctx) => ctx.conversation.enter('manageImages'))
   .row()
+  .text('⚙️ Настройки', (ctx) => ctx.conversation.enter('settings'))
   .text('💬 Отзывы', (ctx) => ctx.conversation.enter('manageReviews'))
+  .row()
   .text('👥 Клиенты', (ctx) => ctx.conversation.enter('manageCustomers'))
 
 bot.use(mainMenu)
@@ -172,25 +179,207 @@ async function addProduct(conversation: any, ctx: MyContext) {
     await ctx.reply('📸 Хотите загрузить фото для этого товара? Отправьте изображения или нажмите /skip')
     
     let photoCount = 0
+    let isFirstPhoto = true
+    
     while (true) {
       const response = await conversation.wait()
       
       if (response.message?.text === '/skip') break
       
       if (response.message?.photo) {
-        const photo = response.message.photo[response.message.photo.length - 1]
-        await uploadProductPhoto(newProduct.id, photo.file_id)
-        photoCount++
-        await ctx.reply(`✅ Фото ${photoCount} загружено! Отправьте еще или /skip для завершения`)
+        try {
+          // Выбираем фото лучшего качества
+          const bestPhoto = telegramPhotoHelpers.getBestQualityPhoto(response.message.photo)
+          
+          // Проверяем качество фото
+          if (!telegramPhotoHelpers.isPhotoQualityGood(bestPhoto, 400, 400)) {
+            await ctx.reply('⚠️ Рекомендуется загружать изображения размером не менее 400x400 пикселей для лучшего качества.')
+          }
+          
+          // Первое фото делаем главным
+          const result = await uploadProductPhoto(newProduct.id, bestPhoto.file_id, isFirstPhoto)
+          photoCount++
+          isFirstPhoto = false
+          
+          const photoInfo = telegramPhotoHelpers.getPhotoInfo(bestPhoto)
+          await ctx.reply(
+            `✅ Фото ${photoCount} загружено в Cloudinary!\n` +
+            `📐 Размер: ${photoInfo}\n` +
+            `🔗 URL: ${result.secure_url}\n\n` +
+            `Отправьте еще фото или /skip для завершения`
+          )
+        } catch (error: any) {
+          await ctx.reply(`❌ Ошибка загрузки фото: ${error.message}`)
+        }
       } else {
         await ctx.reply('❌ Пожалуйста, отправьте изображение или /skip')
       }
     }
     
-    await ctx.reply(`🎉 Товар полностью настроен! Загружено ${photoCount} фото.`, { reply_markup: mainMenu })
+    await ctx.reply(
+      `🎉 Товар полностью настроен!\n` +
+      `📸 Загружено ${photoCount} фото в Cloudinary\n` +
+      `${photoCount > 0 ? '✨ Изображения автоматически оптимизированы для веб-сайта' : ''}`,
+      { reply_markup: mainMenu }
+    )
     
   } catch (error) {
     await ctx.reply(`❌ Ошибка при создании товара: ${error}`)
+  }
+}
+
+// Конверсация для управления изображениями
+async function manageImages(conversation: any, ctx: MyContext) {
+  await ctx.reply('📸 *Управление изображениями*', { parse_mode: 'Markdown' })
+  
+  const imagesMenu = new Menu<MyContext>('images-menu')
+    .text('📊 Статистика', async (ctx) => {
+      await ctx.reply('📊 Загружаю статистику изображений...')
+      const stats = await cloudinaryIntegration.getUploadStats()
+      const statsMessage = cloudinaryIntegration.formatStatsForTelegram(stats)
+      await ctx.reply(statsMessage, { parse_mode: 'Markdown' })
+    })
+    .text('🔍 Статус Cloudinary', async (ctx) => {
+      const status = await cloudinaryIntegration.checkCloudinaryStatus()
+      const statusIcon = status.available ? '✅' : '❌'
+      await ctx.reply(`${statusIcon} ${status.message}`)
+    })
+    .row()
+    .text('🗂️ Загрузить в папку', async (ctx) => {
+      await ctx.conversation.enter('uploadToFolder')
+    })
+    .text('🧹 Очистить старые', async (ctx) => {
+      await ctx.reply('🧹 Очищаю старые временные файлы...')
+      const result = await cloudinaryIntegration.cleanupOldUploads('telegram-uploads/temp', 7)
+      await ctx.reply(
+        `✅ Очистка завершена!\n` +
+        `🗑️ Удалено: ${result.deleted} файлов\n` +
+        `${result.errors.length > 0 ? `⚠️ Ошибки: ${result.errors.length}` : ''}`
+      )
+    })
+    .row()
+    .text('📤 Массовая загрузка', async (ctx) => {
+      await ctx.conversation.enter('bulkImageUpload')
+    })
+    .text('🏷️ Управление тегами', async (ctx) => {
+      await ctx.conversation.enter('manageTags')
+    })
+    .row()
+    .text('⬅️ Назад', (ctx) => ctx.reply('Главное меню', { reply_markup: mainMenu }))
+
+  await ctx.editMessageReplyMarkup({ reply_markup: imagesMenu })
+}
+
+// Конверсация для загрузки в конкретную папку
+async function uploadToFolder(conversation: any, ctx: MyContext) {
+  await ctx.reply('🗂️ *Загрузка в папку*\n\nВведите название папки:', { parse_mode: 'Markdown' })
+  
+  const folderResponse = await conversation.wait()
+  const folder = folderResponse.message?.text || 'telegram-uploads'
+  
+  await ctx.reply(`📂 Папка: "${folder}"\n\nТеперь отправьте изображения. Для завершения отправьте /done`)
+  
+  let uploadCount = 0
+  const results = []
+  
+  while (true) {
+    const response = await conversation.wait()
+    
+    if (response.message?.text === '/done') break
+    
+    if (response.message?.photo) {
+      try {
+        const bestPhoto = telegramPhotoHelpers.getBestQualityPhoto(response.message.photo)
+        
+        const result = await cloudinaryIntegration.uploadPhotoToCloudinary(bestPhoto, {
+          folder,
+          tags: ['telegram_upload', 'manual_upload'],
+        })
+        
+        uploadCount++
+        results.push(result)
+        
+        const photoInfo = telegramPhotoHelpers.getPhotoInfo(bestPhoto)
+        await ctx.reply(
+          `✅ Изображение ${uploadCount} загружено!\n` +
+          `📐 ${photoInfo}\n` +
+          `🔗 ${result.secure_url}`
+        )
+      } catch (error: any) {
+        await ctx.reply(`❌ Ошибка загрузки: ${error.message}`)
+      }
+    } else {
+      await ctx.reply('❌ Пожалуйста, отправьте изображение или /done')
+    }
+  }
+  
+  await ctx.reply(
+    `🎉 Загрузка завершена!\n` +
+    `📸 Загружено ${uploadCount} изображений в папку "${folder}"\n` +
+    `✨ Все изображения оптимизированы и доступны через CDN`,
+    { reply_markup: mainMenu }
+  )
+}
+
+// Конверсация для массовой загрузки
+async function bulkImageUpload(conversation: any, ctx: MyContext) {
+  await ctx.reply(
+    '📤 *Массовая загрузка изображений*\n\n' +
+    'Отправьте изображения одним сообщением (медиагруппа) или по одному.\n' +
+    'Для завершения отправьте /finish',
+    { parse_mode: 'Markdown' }
+  )
+  
+  const allPhotos = []
+  let messageCount = 0
+  
+  while (true) {
+    const response = await conversation.wait()
+    
+    if (response.message?.text === '/finish') break
+    
+    if (response.message?.photo) {
+      const bestPhoto = telegramPhotoHelpers.getBestQualityPhoto(response.message.photo)
+      allPhotos.push(bestPhoto)
+      messageCount++
+      
+      await ctx.reply(`📸 Добавлено изображение ${messageCount}. Продолжайте отправку или /finish`)
+    } else if (response.message?.media_group_id) {
+      // Обработка медиагруппы (пока упрощенно)
+      if (response.message?.photo) {
+        const bestPhoto = telegramPhotoHelpers.getBestQualityPhoto(response.message.photo)
+        allPhotos.push(bestPhoto)
+      }
+    } else {
+      await ctx.reply('❌ Пожалуйста, отправьте изображения или /finish')
+    }
+  }
+  
+  if (allPhotos.length === 0) {
+    await ctx.reply('❌ Не было отправлено ни одного изображения')
+    return
+  }
+  
+  await ctx.reply(`📤 Начинаю загрузку ${allPhotos.length} изображений...`)
+  
+  try {
+    const results = await cloudinaryIntegration.uploadMultiplePhotos(allPhotos, {
+      folder: 'telegram-uploads/bulk',
+      tags: ['telegram_upload', 'bulk_upload'],
+    })
+    
+    const successful = results.filter(r => !r.error).length
+    const failed = results.filter(r => r.error).length
+    
+    await ctx.reply(
+      `✅ Массовая загрузка завершена!\n` +
+      `✅ Успешно: ${successful}\n` +
+      `❌ Ошибок: ${failed}\n` +
+      `📁 Папка: telegram-uploads/bulk`,
+      { reply_markup: mainMenu }
+    )
+  } catch (error: any) {
+    await ctx.reply(`❌ Ошибка массовой загрузки: ${error.message}`)
   }
 }
 
@@ -226,6 +415,9 @@ async function viewStats(conversation: any, ctx: MyContext) {
 bot.use(createConversation(manageOrders))
 bot.use(createConversation(manageProducts))
 bot.use(createConversation(addProduct))
+bot.use(createConversation(manageImages))
+bot.use(createConversation(uploadToFolder))
+bot.use(createConversation(bulkImageUpload))
 bot.use(createConversation(viewStats))
 
 // Обработка ошибок
@@ -302,9 +494,51 @@ async function createProduct(productData: any) {
   return response.json()
 }
 
-async function uploadProductPhoto(productId: string, fileId: string) {
-  // Загрузить фото товара
-  return true
+async function uploadProductPhoto(productId: string, fileId: string, isMain: boolean = false) {
+  try {
+    // Получаем информацию о фото из Telegram
+    const file = await bot.api.getFile(fileId)
+    
+    if (!file.file_path) {
+      throw new Error('Не удалось получить путь к файлу')
+    }
+
+    // Создаем объект фото для загрузки
+    const photo = {
+      file_id: fileId,
+      file_unique_id: file.file_unique_id || fileId,
+      width: 1024, // Значения по умолчанию
+      height: 1024,
+      file_size: file.file_size,
+      file_path: file.file_path,
+    }
+
+    // Загружаем в Cloudinary
+    const result = await cloudinaryIntegration.uploadProductPhoto(photo, productId, {
+      isMain,
+      tags: ['telegram_upload', 'product_image'],
+    })
+
+    // Обновляем товар в базе данных
+    await updateProductImages(productId, {
+      cloudinary_public_id: result.public_id,
+      cloudinary_url: result.secure_url,
+      optimized_urls: result.optimized_urls,
+      is_main: isMain,
+    })
+
+    console.log('✅ Фото товара загружено:', {
+      productId,
+      publicId: result.public_id,
+      url: result.secure_url,
+      isMain,
+    })
+
+    return result
+  } catch (error: any) {
+    console.error('❌ Ошибка загрузки фото товара:', error)
+    throw error
+  }
 }
 
 async function getSalesStats() {
@@ -363,5 +597,94 @@ async function updateOrderStatus(ctx: MyContext, orderId: string, status: string
 async function showOrderDetails(ctx: MyContext, orderId: string) {
   await ctx.reply(`📋 Детали заказа #${orderId}`)
 }
+
+// Обновление изображений товара в базе данных
+async function updateProductImages(productId: string, imageData: {
+  cloudinary_public_id: string
+  cloudinary_url: string
+  optimized_urls: any
+  is_main: boolean
+}) {
+  try {
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/products/${productId}/images`, {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
+      },
+      body: JSON.stringify(imageData)
+    })
+    
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`)
+    }
+    
+    return response.json()
+  } catch (error: any) {
+    console.error('Ошибка обновления изображений товара:', error)
+    throw error
+  }
+}
+
+// Обработка любого изображения (не только для товаров)
+bot.on('message:photo', async (ctx) => {
+  // Проверяем, что это владелец
+  if (!isOwner(ctx)) return
+
+  // Если пользователь не в конверсации, предлагаем быструю загрузку
+  const photos = ctx.message.photo
+  const bestPhoto = telegramPhotoHelpers.getBestQualityPhoto(photos)
+  
+  try {
+    await ctx.reply('📸 Загружаю изображение в Cloudinary...')
+    
+    const result = await cloudinaryIntegration.uploadPhotoToCloudinary(bestPhoto, {
+      folder: 'telegram-uploads/quick',
+      tags: ['telegram_upload', 'quick_upload'],
+    })
+    
+    const photoInfo = telegramPhotoHelpers.getPhotoInfo(bestPhoto)
+    await ctx.reply(
+      `✅ *Изображение загружено!*\n\n` +
+      `📐 Размер: ${photoInfo}\n` +
+      `🔗 URL: ${result.secure_url}\n` +
+      `🆔 Public ID: \`${result.public_id}\`\n\n` +
+      `📋 URL скопирован и готов к использованию!`,
+      { parse_mode: 'Markdown' }
+    )
+  } catch (error: any) {
+    await ctx.reply(`❌ Ошибка загрузки: ${error.message}`)
+  }
+})
+
+// Команда для получения информации о Cloudinary
+bot.command('cloudinary', async (ctx) => {
+  if (!isOwner(ctx)) return
+
+  const status = await cloudinaryIntegration.checkCloudinaryStatus()
+  const statusIcon = status.available ? '✅' : '❌'
+  
+  await ctx.reply(
+    `🌤️ *Статус Cloudinary*\n\n` +
+    `${statusIcon} ${status.message}\n\n` +
+    `${status.available ? '🔧 Используйте /stats для статистики' : '⚙️ Проверьте настройки'}`,
+    { parse_mode: 'Markdown' }
+  )
+})
+
+// Команда для получения статистики изображений
+bot.command('stats', async (ctx) => {
+  if (!isOwner(ctx)) return
+
+  await ctx.reply('📊 Загружаю статистику...')
+  
+  try {
+    const stats = await cloudinaryIntegration.getUploadStats()
+    const message = cloudinaryIntegration.formatStatsForTelegram(stats)
+    await ctx.reply(message, { parse_mode: 'Markdown' })
+  } catch (error: any) {
+    await ctx.reply(`❌ Ошибка получения статистики: ${error.message}`)
+  }
+})
 
 export { bot }

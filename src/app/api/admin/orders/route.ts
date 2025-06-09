@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')
 
     const result = getOrders({
-      status,
-      search,
+      status: status || undefined,
+      search: search || undefined,
       limit,
       offset: (page - 1) * limit
     })

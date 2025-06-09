@@ -188,7 +188,7 @@ export default function HomePage() {
         
         <div className="products-grid">
           {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product} />
+            <ProductCard key={product.id} product={product as any} />
           ))}
         </div>
 

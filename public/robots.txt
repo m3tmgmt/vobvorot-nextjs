@@ -1,4 +1,78 @@
+# robots.txt for VobVorot - Production Configuration
+# Optimized for search engine crawling and indexing
+
 User-agent: *
 Allow: /
 
+# Allow all pages for main search engines
+User-agent: Googlebot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Bingbot
+Allow: /
+Crawl-delay: 1
+
+User-agent: Yandexbot
+Allow: /
+Crawl-delay: 2
+
+# Block API endpoints and admin areas
+Disallow: /api/
+Disallow: /admin/
+Disallow: /_next/
+Disallow: /auth/
+Disallow: /checkout/
+Disallow: /account/
+Disallow: /payment/
+Disallow: /webhooks/
+
+# Block development and test files
+Disallow: /*.json$
+Disallow: /*.xml$
+Disallow: /test/
+Disallow: /dev/
+
+# Block sensitive or private content
+Disallow: /private/
+Disallow: /internal/
+Disallow: /logs/
+Disallow: /.env*
+Disallow: /.git/
+
+# Allow important pages for SEO
+Allow: /products/
+Allow: /categories/
+Allow: /about
+Allow: /contact
+Allow: /shipping
+Allow: /returns
+Allow: /privacy
+Allow: /terms
+
+# Image and asset crawling
+User-agent: Googlebot-Image
+Allow: /images/
+Allow: /assets/
+Allow: /uploads/
+
+# Block unnecessary crawlers
+User-agent: AhrefsBot
+Disallow: /
+
+User-agent: SemrushBot
+Disallow: /
+
+User-agent: MJ12bot
+Disallow: /
+
+User-agent: DotBot
+Disallow: /
+
+# Sitemap location
 Sitemap: https://vobvorot.com/sitemap.xml
+Sitemap: https://vobvorot.com/products-sitemap.xml
+Sitemap: https://vobvorot.com/categories-sitemap.xml
+
+# Host directive for preferred domain
+Host: https://vobvorot.com

@@ -9,6 +9,8 @@ interface TestEmailRequest {
 }
 
 export async function POST(request: NextRequest) {
+  let type: string = 'test'
+  
   try {
     const session = await getServerSession(authOptions)
     
@@ -19,7 +21,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { type, email }: TestEmailRequest = await request.json()
+    const requestData: TestEmailRequest = await request.json()
+    type = requestData.type
+    const { email } = requestData
     
     if (!type || !email) {
       return NextResponse.json(
@@ -130,7 +134,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('Test email error:', error)
     return NextResponse.json(
-      { error: `Failed to send ${type || 'test'} email: ${error instanceof Error ? error.message : 'Unknown error'}` },
+      { error: `Failed to send ${type} email: ${error instanceof Error ? error.message : 'Unknown error'}` },
       { status: 500 }
     )
   }

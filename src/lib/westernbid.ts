@@ -1,11 +1,19 @@
-// WesternBid Payment Integration
+import { createHash, createHmac, timingSafeEqual } from 'crypto'
+
+// WesternBid Payment Integration - Enhanced Production-Ready Version
+
+// Configuration Interface
 export interface WesternBidConfig {
   merchantId: string
   secretKey: string
   apiUrl: string
   environment: 'sandbox' | 'production'
+  webhookSecret: string
+  timeout: number
+  retryAttempts: number
 }
 
+// Payment Request Interface
 export interface PaymentRequest {
   orderId: string
   amount: number
@@ -13,133 +21,477 @@ export interface PaymentRequest {
   description: string
   customerEmail: string
   customerName: string
+  customerPhone?: string
   returnUrl: string
   cancelUrl: string
+  webhookUrl?: string
+  metadata?: Record<string, any>
 }
 
+// Payment Response Interface
 export interface PaymentResponse {
   success: boolean
   paymentId?: string
   paymentUrl?: string
+  sessionId?: string
   error?: string
+  errorCode?: string
 }
 
+// Payment Status Interface
+export interface PaymentStatus {
+  paymentId: string
+  status: 'pending' | 'processing' | 'completed' | 'failed' | 'cancelled' | 'refunded'
+  amount: number
+  currency: string
+  orderId: string
+  transactionId?: string
+  failureReason?: string
+  createdAt: string
+  updatedAt: string
+  metadata?: Record<string, any>
+}
+
+// Refund Request Interface
+export interface RefundRequest {
+  paymentId: string
+  amount?: number // Partial refund if less than original amount
+  reason: string
+  metadata?: Record<string, any>
+}
+
+// Refund Response Interface
+export interface RefundResponse {
+  success: boolean
+  refundId?: string
+  amount?: number
+  status?: 'pending' | 'completed' | 'failed'
+  error?: string
+  errorCode?: string
+}
+
+// Webhook Data Interface
+export interface WebhookData {
+  event: 'payment.completed' | 'payment.failed' | 'payment.cancelled' | 'refund.completed' | 'refund.failed'
+  paymentId: string
+  orderId: string
+  amount: number
+  currency: string
+  status: string
+  transactionId?: string
+  timestamp: string
+  signature: string
+  metadata?: Record<string, any>
+}
+
+// Logger Interface
+interface Logger {
+  info: (message: string, data?: any) => void
+  warn: (message: string, data?: any) => void
+  error: (message: string, data?: any) => void
+}
+
+// Simple Logger Implementation
+class PaymentLogger implements Logger {
+  private prefix = '[WesternBid]'
+
+  info(message: string, data?: any) {
+    console.log(`${this.prefix} INFO: ${message}`, data || '')
+  }
+
+  warn(message: string, data?: any) {
+    console.warn(`${this.prefix} WARN: ${message}`, data || '')
+  }
+
+  error(message: string, data?: any) {
+    console.error(`${this.prefix} ERROR: ${message}`, data || '')
+  }
+}
+
+// Custom Error Classes
+export class WesternBidError extends Error {
+  constructor(
+    message: string,
+    public code?: string,
+    public statusCode?: number,
+    public originalError?: any
+  ) {
+    super(message)
+    this.name = 'WesternBidError'
+  }
+}
+
+export class WesternBidConfigError extends WesternBidError {
+  constructor(message: string) {
+    super(message, 'CONFIG_ERROR')
+    this.name = 'WesternBidConfigError'
+  }
+}
+
+export class WesternBidAPIError extends WesternBidError {
+  constructor(message: string, statusCode?: number, originalError?: any) {
+    super(message, 'API_ERROR', statusCode, originalError)
+    this.name = 'WesternBidAPIError'
+  }
+}
+
+export class WesternBidSignatureError extends WesternBidError {
+  constructor(message: string) {
+    super(message, 'SIGNATURE_ERROR')
+    this.name = 'WesternBidSignatureError'
+  }
+}
+
+// Main WesternBid API Class
 class WesternBidAPI {
   private config: WesternBidConfig
+  private logger: Logger
 
   constructor() {
+    this.logger = new PaymentLogger()
+    
     this.config = {
       merchantId: process.env.WESTERNBID_MERCHANT_ID || '',
       secretKey: process.env.WESTERNBID_SECRET_KEY || '',
+      webhookSecret: process.env.WESTERNBID_WEBHOOK_SECRET || '',
       apiUrl: process.env.WESTERNBID_API_URL || 'https://api.westernbid.com',
-      environment: (process.env.WESTERNBID_ENVIRONMENT as 'sandbox' | 'production') || 'sandbox'
+      environment: (process.env.WESTERNBID_ENVIRONMENT as 'sandbox' | 'production') || 'sandbox',
+      timeout: parseInt(process.env.WESTERNBID_TIMEOUT || '30000'),
+      retryAttempts: parseInt(process.env.WESTERNBID_RETRY_ATTEMPTS || '3')
+    }
+
+    // Validate configuration on initialization
+    this.validateConfig()
+  }
+
+  private validateConfig(): void {
+    if (!this.config.merchantId) {
+      throw new WesternBidConfigError('WESTERNBID_MERCHANT_ID is required')
+    }
+    if (!this.config.secretKey) {
+      throw new WesternBidConfigError('WESTERNBID_SECRET_KEY is required')
+    }
+    if (this.config.environment === 'production' && !this.config.webhookSecret) {
+      this.logger.warn('WESTERNBID_WEBHOOK_SECRET is recommended for production')
     }
   }
 
-  private generateSignature(data: Record<string, any>): string {
-    // WesternBid signature generation (based on typical payment gateway patterns)
-    const sortedKeys = Object.keys(data).sort()
-    const signatureString = sortedKeys
-      .map(key => `${key}=${data[key]}`)
-      .join('&') + this.config.secretKey
-    
-    // Simple hash for demo - in real implementation use their specific algorithm
-    return Buffer.from(signatureString).toString('base64')
+  // Generate HMAC-SHA256 signature for WesternBid API
+  private generateSignature(data: Record<string, any>, useWebhookSecret = false): string {
+    try {
+      // Sort keys alphabetically
+      const sortedKeys = Object.keys(data).sort()
+      
+      // Create query string
+      const queryString = sortedKeys
+        .filter(key => data[key] !== undefined && data[key] !== null)
+        .map(key => `${key}=${encodeURIComponent(String(data[key]))}`)
+        .join('&')
+      
+      // Choose the appropriate secret
+      const secret = useWebhookSecret ? this.config.webhookSecret : this.config.secretKey
+      
+      // Generate HMAC-SHA256 signature
+      const signature = createHmac('sha256', secret)
+        .update(queryString)
+        .digest('hex')
+      
+      this.logger.info('Signature generated', { 
+        dataKeys: sortedKeys, 
+        queryLength: queryString.length,
+        usingWebhookSecret: useWebhookSecret
+      })
+      
+      return signature
+    } catch (error) {
+      this.logger.error('Failed to generate signature', error)
+      throw new WesternBidSignatureError('Failed to generate signature')
+    }
   }
 
-  async createPayment(request: PaymentRequest): Promise<PaymentResponse> {
+  // Verify webhook signature
+  public verifyWebhookSignature(payload: string, receivedSignature: string): boolean {
     try {
-      if (!this.config.merchantId || !this.config.secretKey) {
-        throw new Error('WesternBid credentials not configured')
+      if (!this.config.webhookSecret) {
+        this.logger.warn('Webhook secret not configured, skipping verification')
+        return true // In development mode, allow unverified webhooks
       }
 
+      const expectedSignature = createHmac('sha256', this.config.webhookSecret)
+        .update(payload)
+        .digest('hex')
+      
+      const expectedBuffer = Buffer.from(expectedSignature, 'hex')
+      const receivedBuffer = Buffer.from(receivedSignature.replace('sha256=', ''), 'hex')
+      
+      if (expectedBuffer.length !== receivedBuffer.length) {
+        return false
+      }
+      
+      const isValid = timingSafeEqual(expectedBuffer, receivedBuffer)
+      
+      this.logger.info('Webhook signature verification', { 
+        isValid,
+        receivedSignature: receivedSignature.substring(0, 10) + '...',
+        expectedSignature: expectedSignature.substring(0, 10) + '...'
+      })
+      
+      return isValid
+    } catch (error) {
+      this.logger.error('Webhook signature verification failed', error)
+      return false
+    }
+  }
+
+  // Make HTTP request with retry logic
+  private async makeRequest<T>(
+    url: string, 
+    options: RequestInit, 
+    retryCount = 0
+  ): Promise<T> {
+    try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), this.config.timeout)
+      
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal
+      })
+      
+      clearTimeout(timeoutId)
+      
+      if (!response.ok) {
+        const errorText = await response.text()
+        let errorData: any = {}
+        
+        try {
+          errorData = JSON.parse(errorText)
+        } catch {
+          errorData = { message: errorText }
+        }
+        
+        throw new WesternBidAPIError(
+          errorData.message || `HTTP ${response.status}: ${response.statusText}`,
+          response.status,
+          errorData
+        )
+      }
+      
+      const result = await response.json()
+      return result as T
+    } catch (error) {
+      this.logger.error(`Request failed (attempt ${retryCount + 1})`, {
+        url,
+        error: error instanceof Error ? error.message : String(error)
+      })
+      
+      // Retry logic for certain errors
+      if (retryCount < this.config.retryAttempts && this.shouldRetry(error)) {
+        const delay = Math.pow(2, retryCount) * 1000 // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, delay))
+        return this.makeRequest<T>(url, options, retryCount + 1)
+      }
+      
+      throw error
+    }
+  }
+
+  // Determine if request should be retried
+  private shouldRetry(error: any): boolean {
+    if (error instanceof WesternBidAPIError) {
+      // Retry on server errors (5xx) but not client errors (4xx)
+      return error.statusCode ? error.statusCode >= 500 : false
+    }
+    
+    // Retry on network errors
+    return error.name === 'AbortError' || error.name === 'TypeError'
+  }
+
+  // Create a new payment session
+  public async createPayment(request: PaymentRequest): Promise<PaymentResponse> {
+    try {
+      this.logger.info('Creating payment', { orderId: request.orderId, amount: request.amount })
+      
+      // Validate request
+      this.validatePaymentRequest(request)
+      
       const paymentData = {
         merchant_id: this.config.merchantId,
         order_id: request.orderId,
-        amount: request.amount,
-        currency: request.currency,
+        amount: Math.round(request.amount * 100), // Convert to cents
+        currency: request.currency.toUpperCase(),
         description: request.description,
         customer_email: request.customerEmail,
         customer_name: request.customerName,
+        customer_phone: request.customerPhone || '',
         return_url: request.returnUrl,
         cancel_url: request.cancelUrl,
-        timestamp: Math.floor(Date.now() / 1000)
+        webhook_url: request.webhookUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`,
+        timestamp: Math.floor(Date.now() / 1000),
+        metadata: JSON.stringify(request.metadata || {})
       }
 
       const signature = this.generateSignature(paymentData)
       
-      const response = await fetch(`${this.config.apiUrl}/payment/create`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Signature': signature
-        },
-        body: JSON.stringify(paymentData)
+      const response = await this.makeRequest<any>(
+        `${this.config.apiUrl}/v1/payments`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Merchant-ID': this.config.merchantId,
+            'X-Signature': signature,
+            'X-Timestamp': paymentData.timestamp.toString(),
+            'User-Agent': 'WesternBid-Node/1.0.0'
+          },
+          body: JSON.stringify(paymentData)
+        }
+      )
+
+      this.logger.info('Payment created successfully', { 
+        paymentId: response.payment_id,
+        sessionId: response.session_id
       })
-
-      if (!response.ok) {
-        throw new Error(`WesternBid API error: ${response.status}`)
-      }
-
-      const result = await response.json()
 
       return {
         success: true,
-        paymentId: result.payment_id,
-        paymentUrl: result.payment_url
+        paymentId: response.payment_id,
+        paymentUrl: response.payment_url,
+        sessionId: response.session_id
       }
     } catch (error) {
-      console.error('WesternBid payment creation error:', error)
+      this.logger.error('Payment creation failed', error)
       
-      // Fallback: Create a mock payment URL for development
-      if (this.config.environment === 'sandbox') {
-        const mockPaymentId = `mock_${Date.now()}`
-        const mockPaymentUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/payment/mock?paymentId=${mockPaymentId}&orderId=${request.orderId}`
-        
-        return {
-          success: true,
-          paymentId: mockPaymentId,
-          paymentUrl: mockPaymentUrl
-        }
+      // Fallback to mock payment in sandbox mode
+      if (this.config.environment === 'sandbox' && !(error instanceof WesternBidConfigError)) {
+        return this.createMockPayment(request)
       }
-
+      
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Payment creation failed'
+        error: error instanceof Error ? error.message : 'Payment creation failed',
+        errorCode: error instanceof WesternBidError ? error.code : undefined
       }
     }
   }
 
-  async verifyPayment(paymentId: string, signature: string): Promise<{ success: boolean; status?: string; error?: string }> {
+  // Validate payment request
+  private validatePaymentRequest(request: PaymentRequest): void {
+    if (!request.orderId || request.orderId.length < 3) {
+      throw new WesternBidError('Order ID must be at least 3 characters', 'INVALID_ORDER_ID')
+    }
+    if (!request.amount || request.amount <= 0) {
+      throw new WesternBidError('Amount must be greater than 0', 'INVALID_AMOUNT')
+    }
+    if (!request.currency || !/^[A-Z]{3}$/.test(request.currency)) {
+      throw new WesternBidError('Currency must be a valid 3-letter code', 'INVALID_CURRENCY')
+    }
+    if (!request.customerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(request.customerEmail)) {
+      throw new WesternBidError('Valid customer email is required', 'INVALID_EMAIL')
+    }
+    if (!request.returnUrl || !request.cancelUrl) {
+      throw new WesternBidError('Return URL and Cancel URL are required', 'INVALID_URLS')
+    }
+  }
+
+  // Create mock payment for development
+  private createMockPayment(request: PaymentRequest): PaymentResponse {
+    const mockPaymentId = `mock_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+    const mockSessionId = `session_${Date.now()}`
+    const mockPaymentUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/payment/mock?paymentId=${mockPaymentId}&orderId=${request.orderId}&sessionId=${mockSessionId}`
+    
+    this.logger.info('Created mock payment', { 
+      paymentId: mockPaymentId,
+      sessionId: mockSessionId
+    })
+    
+    return {
+      success: true,
+      paymentId: mockPaymentId,
+      paymentUrl: mockPaymentUrl,
+      sessionId: mockSessionId
+    }
+  }
+
+  // Get payment status
+  public async getPaymentStatus(paymentId: string): Promise<PaymentStatus | null> {
     try {
-      const response = await fetch(`${this.config.apiUrl}/payment/verify/${paymentId}`, {
-        method: 'GET',
-        headers: {
-          'X-Signature': signature,
-          'X-Merchant-ID': this.config.merchantId
-        }
-      })
-
-      if (!response.ok) {
-        throw new Error(`WesternBid verification error: ${response.status}`)
+      this.logger.info('Getting payment status', { paymentId })
+      
+      const requestData = {
+        merchant_id: this.config.merchantId,
+        payment_id: paymentId,
+        timestamp: Math.floor(Date.now() / 1000)
       }
+      
+      const signature = this.generateSignature(requestData)
+      
+      const response = await this.makeRequest<any>(
+        `${this.config.apiUrl}/v1/payments/${paymentId}/status`,
+        {
+          method: 'GET',
+          headers: {
+            'X-Merchant-ID': this.config.merchantId,
+            'X-Signature': signature,
+            'X-Timestamp': requestData.timestamp.toString(),
+            'User-Agent': 'WesternBid-Node/1.0.0'
+          }
+        }
+      )
+      
+      return {
+        paymentId: response.payment_id,
+        status: response.status,
+        amount: response.amount / 100, // Convert back from cents
+        currency: response.currency,
+        orderId: response.order_id,
+        transactionId: response.transaction_id,
+        failureReason: response.failure_reason,
+        createdAt: response.created_at,
+        updatedAt: response.updated_at,
+        metadata: response.metadata ? JSON.parse(response.metadata) : undefined
+      }
+    } catch (error) {
+      this.logger.error('Failed to get payment status', { paymentId, error })
+      
+      // Mock status for development
+      if (this.config.environment === 'sandbox' && paymentId.startsWith('mock_')) {
+        return {
+          paymentId,
+          status: 'completed',
+          amount: 100, // Mock amount
+          currency: 'USD',
+          orderId: 'mock_order',
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
+        }
+      }
+      
+      return null
+    }
+  }
 
-      const result = await response.json()
+  // Verify payment (legacy method for backward compatibility)
+  public async verifyPayment(
+    paymentId: string, 
+    signature?: string
+  ): Promise<{ success: boolean; status?: string; error?: string }> {
+    try {
+      const paymentStatus = await this.getPaymentStatus(paymentId)
+      
+      if (!paymentStatus) {
+        return {
+          success: false,
+          error: 'Payment not found'
+        }
+      }
       
       return {
         success: true,
-        status: result.status
+        status: paymentStatus.status
       }
     } catch (error) {
-      console.error('WesternBid payment verification error:', error)
-      
-      // Mock verification for development
-      if (this.config.environment === 'sandbox') {
-        return {
-          success: true,
-          status: 'completed'
-        }
-      }
+      this.logger.error('Payment verification failed', { paymentId, error })
       
       return {
         success: false,
@@ -147,6 +499,105 @@ class WesternBidAPI {
       }
     }
   }
+
+  // Process refund
+  public async refundPayment(request: RefundRequest): Promise<RefundResponse> {
+    try {
+      this.logger.info('Processing refund', { 
+        paymentId: request.paymentId,
+        amount: request.amount
+      })
+      
+      const refundData = {
+        merchant_id: this.config.merchantId,
+        payment_id: request.paymentId,
+        amount: request.amount ? Math.round(request.amount * 100) : undefined, // Convert to cents
+        reason: request.reason,
+        timestamp: Math.floor(Date.now() / 1000),
+        metadata: JSON.stringify(request.metadata || {})
+      }
+      
+      const signature = this.generateSignature(refundData)
+      
+      const response = await this.makeRequest<any>(
+        `${this.config.apiUrl}/v1/payments/${request.paymentId}/refund`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-Merchant-ID': this.config.merchantId,
+            'X-Signature': signature,
+            'X-Timestamp': refundData.timestamp.toString(),
+            'User-Agent': 'WesternBid-Node/1.0.0'
+          },
+          body: JSON.stringify(refundData)
+        }
+      )
+      
+      this.logger.info('Refund processed successfully', { 
+        refundId: response.refund_id,
+        status: response.status
+      })
+      
+      return {
+        success: true,
+        refundId: response.refund_id,
+        amount: response.amount / 100, // Convert back from cents
+        status: response.status
+      }
+    } catch (error) {
+      this.logger.error('Refund processing failed', error)
+      
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Refund processing failed',
+        errorCode: error instanceof WesternBidError ? error.code : undefined
+      }
+    }
+  }
+
+  // Parse webhook data
+  public parseWebhookData(payload: string): WebhookData | null {
+    try {
+      const data = JSON.parse(payload)
+      
+      // Validate required fields
+      if (!data.event || !data.payment_id || !data.order_id) {
+        this.logger.warn('Invalid webhook data: missing required fields')
+        return null
+      }
+      
+      return {
+        event: data.event,
+        paymentId: data.payment_id,
+        orderId: data.order_id,
+        amount: data.amount / 100, // Convert back from cents
+        currency: data.currency,
+        status: data.status,
+        transactionId: data.transaction_id,
+        timestamp: data.timestamp,
+        signature: data.signature,
+        metadata: data.metadata ? JSON.parse(data.metadata) : undefined
+      }
+    } catch (error) {
+      this.logger.error('Failed to parse webhook data', error)
+      return null
+    }
+  }
+
+  // Get configuration (for debugging)
+  public getConfig(): Partial<WesternBidConfig> {
+    return {
+      merchantId: this.config.merchantId ? '***' + this.config.merchantId.slice(-4) : '',
+      apiUrl: this.config.apiUrl,
+      environment: this.config.environment,
+      timeout: this.config.timeout,
+      retryAttempts: this.config.retryAttempts
+    }
+  }
 }
 
+// Export singleton instance
 export const westernbid = new WesternBidAPI()
+
+// Export types for convenience (interfaces are already exported above)

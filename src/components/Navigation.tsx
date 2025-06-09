@@ -337,6 +337,29 @@ export function Navigation() {
                     <li>
                       <button 
                         onClick={() => {
+                          router.push('/account/orders')
+                          setIsOpen(false)
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: 'var(--cyan-accent)',
+                          fontSize: '1.1rem',
+                          padding: '0.5rem 0',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          width: '100%',
+                          borderLeft: '2px solid transparent',
+                          paddingLeft: '1rem',
+                          transition: 'all 0.3s ease'
+                        }}
+                      >
+                        📦 My Orders
+                      </button>
+                    </li>
+                    <li>
+                      <button 
+                        onClick={() => {
                           signOut({ callbackUrl: '/' })
                           setIsOpen(false)
                         }}

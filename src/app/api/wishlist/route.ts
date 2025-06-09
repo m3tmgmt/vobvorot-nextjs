@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       id: item.product.id,
       name: item.product.name,
       slug: item.product.slug,
-      price: Math.min(...item.product.skus.map(sku => sku.price)), // Get minimum price from SKUs
+      price: Math.min(...item.product.skus.map(sku => Number(sku.price))), // Get minimum price from SKUs
       brand: item.product.brand,
       images: item.product.images,
       category: item.product.category,

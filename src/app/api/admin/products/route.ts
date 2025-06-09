@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
     const lowStock = searchParams.get('lowStock') // товары с низким остатком
 
     const result = getProducts({
-      category,
-      search,
+      category: category || undefined,
+      search: search || undefined,
       status,
       limit,
       offset: (page - 1) * limit

@@ -1,31 +1,87 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { PrismaClient } from '@prisma/client'
+import { createSecureAPIHandler, APIResponse, ValidationSchemas, InputSanitizer } from '@/lib/api-security'
+import { 
+  validateSearchParams, 
+  validateRequestBody,
+  validateAdminApiKey,
+  createValidationErrorResponse,
+  createAuthErrorResponse,
+  createServerErrorResponse,
+  schemas,
+  paginationSchema
+} from '@/lib/validation'
+import { z } from 'zod'
 
 const prisma = new PrismaClient()
 
-export async function GET(request: NextRequest) {
+// Enhanced validation schema for product search
+const productSearchSchema = z.object({
+  category: z.string().optional(),
+  search: z.string().max(255).optional(),
+  featured: z.string().transform(val => val === 'true').optional(),
+  active: z.string().transform(val => val !== 'false').optional().default('true'),
+  minPrice: z.coerce.number().positive().optional(),
+  maxPrice: z.coerce.number().positive().optional(),
+  page: z.coerce.number().int().positive().optional().default(1),
+  limit: z.coerce.number().int().positive().max(100).optional().default(20),
+  sort: z.string().optional(),
+  order: z.enum(['asc', 'desc']).optional().default('desc')
+})
+
+async function getProductsHandler(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams
-    const category = searchParams.get('category')
-    const search = searchParams.get('search')
-    const limit = parseInt(searchParams.get('limit') || '20')
-    const offset = parseInt(searchParams.get('offset') || '0')
+    
+    // Parse query parameters manually for now
+    const params = {
+      category: searchParams.get('category') || undefined,
+      search: searchParams.get('search') || undefined,
+      featured: searchParams.get('featured') === 'true',
+      active: searchParams.get('active') !== 'false',
+      minPrice: searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined,
+      maxPrice: searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined,
+      page: Math.max(1, Number(searchParams.get('page')) || 1),
+      limit: Math.min(100, Math.max(1, Number(searchParams.get('limit')) || 20)),
+      sort: searchParams.get('sort') || undefined,
+      order: (searchParams.get('order') as 'asc' | 'desc') || 'desc'
+    }
 
-    // Build where clause
-    const where: any = {}
+    // Sanitize search input
+    const sanitizedSearch = params.search ? InputSanitizer.sanitizeString(params.search) : undefined
+    const sanitizedCategory = params.category ? InputSanitizer.sanitizeString(params.category) : undefined
 
-    if (category) {
+    // Build where clause with enhanced filtering
+    const where: any = {
+      active: params.active
+    }
+
+    if (sanitizedCategory) {
       where.category = {
-        slug: category
+        slug: sanitizedCategory
       }
     }
 
-    if (search) {
+    if (sanitizedSearch) {
       where.OR = [
-        { name: { contains: search } },
-        { description: { contains: search } },
-        { brand: { contains: search } }
+        { name: { contains: sanitizedSearch, mode: 'insensitive' } },
+        { description: { contains: sanitizedSearch, mode: 'insensitive' } },
+        { brand: { contains: sanitizedSearch, mode: 'insensitive' } }
       ]
+    }
+
+    if (params.active !== undefined) {
+      where.isActive = params.active
+    }
+
+    // Price filtering
+    if (params.minPrice || params.maxPrice) {
+      where.skus = {
+        some: {
+          ...(params.minPrice && { price: { gte: params.minPrice } }),
+          ...(params.maxPrice && { price: { lte: params.maxPrice } })
+        }
+      }
     }
 
     const [products, total] = await Promise.all([
@@ -37,76 +93,110 @@ export async function GET(request: NextRequest) {
           category: true
         },
         orderBy: { createdAt: 'desc' },
-        take: limit,
-        skip: offset
+        take: params.limit,
+        skip: (params.page - 1) * params.limit
       }),
       prisma.product.count({ where })
     ])
 
-    const hasMore = offset + limit < total
+    const hasMore = params.page * params.limit < total
+    const totalPages = Math.ceil(total / params.limit)
 
-    return NextResponse.json({
+    return APIResponse.success({
       products,
-      hasMore,
       pagination: {
         total,
-        limit,
-        offset,
-        hasMore
+        limit: params.limit,
+        page: params.page,
+        totalPages,
+        hasMore,
+        hasPrevious: params.page > 1
       }
     })
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return APIResponse.validationError(error)
+    }
+    
     console.error('Error fetching products:', error)
-    return NextResponse.json(
-      { error: 'Failed to fetch products' },
-      { status: 500 }
-    )
+    return APIResponse.error('Failed to fetch products', 500)
   }
 }
 
-// Database-dependent endpoint - commented out until database is configured
-// export async function POST(request: NextRequest) {
-//   try {
-//     const body = await request.json()
-//     const { name, description, brand, categoryId, images, skus } = body
+// Apply security middleware to GET handler
+export const GET = createSecureAPIHandler(getProductsHandler, {
+  rateLimit: { requests: 100, window: 60 * 1000 } // 100 requests per minute
+})
 
-//     const product = await prisma.product.create({
-//       data: {
-//         name,
-//         slug: name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
-//         description,
-//         brand,
-//         categoryId,
-//         images: {
-//           create: images?.map((img: any, index: number) => ({
-//             url: img.url,
-//             alt: img.alt || name,
-//             isPrimary: index === 0
-//           })) || []
-//         },
-//         skus: {
-//           create: skus?.map((sku: any) => ({
-//             sku: sku.sku,
-//             size: sku.size,
-//             color: sku.color,
-//             price: sku.price,
-//             stock: sku.stock || 0
-//           })) || []
-//         }
-//       },
-//       include: {
-//         images: true,
-//         skus: true,
-//         category: true
-//       }
-//     })
+// POST - Create new product (Admin only)
+export async function POST(request: NextRequest) {
+  try {
+    // Check admin authorization
+    if (!validateAdminApiKey(request)) {
+      return createAuthErrorResponse('Admin access required')
+    }
 
-//     return NextResponse.json(product, { status: 201 })
-//   } catch (error) {
-//     console.error('Error creating product:', error)
-//     return NextResponse.json(
-//       { error: 'Failed to create product' },
-//       { status: 500 }
-//     )
-//   }
-// }
+    // Validate request body
+    const validation = await validateRequestBody(request, schemas.product)
+    
+    if (!validation.success) {
+      return createValidationErrorResponse(validation.errors)
+    }
+
+    const productData = validation.data
+
+    // Generate slug from name if not provided
+    const slug = productData.slug || 
+      productData.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '')
+
+    // Check if slug already exists
+    const existingProduct = await prisma.product.findUnique({
+      where: { slug }
+    })
+
+    if (existingProduct) {
+      return createValidationErrorResponse([{
+        field: 'slug',
+        message: 'Product with this slug already exists'
+      }])
+    }
+
+    const product = await prisma.product.create({
+      data: {
+        name: productData.name,
+        slug,
+        description: productData.description,
+        categoryId: productData.categoryId,
+        isActive: productData.active !== false,
+        images: {
+          create: productData.images?.map((imageUrl, index) => ({
+            url: imageUrl,
+            alt: productData.name,
+            isPrimary: index === 0
+          })) || []
+        },
+        skus: {
+          create: [{
+            sku: `${slug}-default`,
+            price: productData.price,
+            stock: productData.stock
+          }]
+        }
+      },
+      include: {
+        images: true,
+        skus: true,
+        category: true
+      }
+    })
+
+    return Response.json({
+      success: true,
+      data: product
+    }, { status: 201 })
+    
+  } catch (error) {
+    console.error('Error creating product:', error)
+    return createServerErrorResponse('Failed to create product')
+  }
+}

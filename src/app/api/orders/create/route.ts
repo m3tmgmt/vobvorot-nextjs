@@ -4,12 +4,14 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { westernbid } from '@/lib/westernbid'
 import { emailService, type OrderEmailData, type AdminNotificationData } from '@/lib/email'
+import { logPaymentCreation, logPaymentFailure } from '@/lib/payment-logger'
+import { getWesternBidConfig, isFeatureEnabled } from '@/lib/payment-config'
 
 interface OrderItem {
   product: {
     id: string
     name: string
-    price: number
+    price: any
     images: { url: string; alt?: string }[]
   }
   quantity: number
@@ -112,7 +114,7 @@ export async function POST(request: NextRequest) {
                   size: item.selectedSize,
                   color: item.selectedColor,
                   stock: 999, // Default high stock
-                  price: item.product.price
+                  price: Number(item.product.price)
                 }
               })
             }
@@ -120,7 +122,9 @@ export async function POST(request: NextRequest) {
             return {
               skuId: sku.id,
               quantity: item.quantity,
-              price: item.product.price
+              price: Number(item.product.price),
+              productName: item.product.name,
+              productSku: sku.sku
             }
           }))
         }
@@ -157,14 +161,14 @@ export async function POST(request: NextRequest) {
         items: order.items.map(item => ({
           name: item.sku.product.name,
           quantity: item.quantity,
-          price: item.price,
+          price: Number(item.price),
           size: item.sku.size || undefined,
           color: item.sku.color || undefined,
           imageUrl: item.sku.product.images[0]?.url
         })),
-        subtotal: order.subtotal,
-        shippingCost: order.shippingCost,
-        total: order.total,
+        subtotal: Number(order.subtotal),
+        shippingCost: Number(order.shippingCost),
+        total: Number(order.total),
         shippingAddress: {
           name: order.shippingName,
           address: order.shippingAddress,
@@ -182,7 +186,7 @@ export async function POST(request: NextRequest) {
         orderNumber: order.orderNumber,
         customerName: order.shippingName,
         customerEmail: order.shippingEmail,
-        total: order.total,
+        total: Number(order.total),
         itemCount: order.items.length,
         paymentMethod: order.paymentMethod || 'WesternBid',
         shippingAddress: `${order.shippingAddress}, ${order.shippingCity}, ${order.shippingCountry}`
@@ -196,8 +200,19 @@ export async function POST(request: NextRequest) {
       // Don't fail the order creation if email fails
     }
 
+    // Check if payment gateway is enabled
+    const westernbidConfig = getWesternBidConfig()
+    if (!westernbidConfig.enabled) {
+      return NextResponse.json(
+        { error: 'Payment gateway is currently disabled' },
+        { status: 503 }
+      )
+    }
+
     // Process payment with WesternBid
     console.log('Creating WesternBid payment for order:', orderNumber)
+    
+    const startTime = Date.now()
     
     const paymentRequest = {
       orderId: orderNumber,
@@ -206,42 +221,92 @@ export async function POST(request: NextRequest) {
       description: `Order ${orderNumber} - ${orderData.items.length} items`,
       customerEmail: orderData.shippingInfo.email,
       customerName: `${orderData.shippingInfo.firstName} ${orderData.shippingInfo.lastName}`,
+      customerPhone: orderData.shippingInfo.phone,
       returnUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success`,
-      cancelUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/cancel`
+      cancelUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/cancel`,
+      webhookUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`,
+      metadata: {
+        orderNumber: orderNumber,
+        userId: session.user.id,
+        userEmail: session.user.email,
+        itemCount: orderData.items.length,
+        shippingCountry: orderData.shippingInfo.country
+      }
     }
 
+    // Log payment creation attempt
+    logPaymentCreation({
+      orderId: orderNumber,
+      userId: session.user.id,
+      amount: orderData.total,
+      currency: 'USD',
+      gateway: 'WESTERNBID',
+      metadata: paymentRequest.metadata,
+      request: {
+        method: 'POST',
+        url: '/api/orders/create',
+        body: { ...paymentRequest, metadata: '[LOGGED_SEPARATELY]' }
+      }
+    })
+
     const paymentResult = await westernbid.createPayment(paymentRequest)
+    const duration = Date.now() - startTime
     
     if (paymentResult.success && paymentResult.paymentUrl) {
       // Update order with payment information
-      await prisma.order.update({
+      const updatedOrder = await prisma.order.update({
         where: { id: order.id },
         data: {
           paymentStatus: 'PENDING',
-          paymentId: paymentResult.paymentId
+          paymentId: paymentResult.paymentId,
+          sessionId: paymentResult.sessionId
         }
       })
 
       return NextResponse.json({
-        id: order.id,
-        orderNumber: order.orderNumber,
-        status: order.status,
-        paymentStatus: order.paymentStatus,
-        total: order.total,
+        id: updatedOrder.id,
+        orderNumber: updatedOrder.orderNumber,
+        status: updatedOrder.status,
+        paymentStatus: updatedOrder.paymentStatus,
+        total: updatedOrder.total,
         paymentUrl: paymentResult.paymentUrl,
+        paymentId: paymentResult.paymentId,
+        sessionId: paymentResult.sessionId,
         message: 'Order created successfully'
       })
     } else {
+      // Log payment failure
+      logPaymentFailure({
+        orderId: orderNumber,
+        paymentId: paymentResult.paymentId,
+        userId: session.user.id,
+        amount: orderData.total,
+        currency: 'USD',
+        gateway: 'WESTERNBID',
+        error: new Error(paymentResult.error || 'Payment creation failed'),
+        metadata: {
+          errorCode: paymentResult.errorCode,
+          duration
+        },
+        duration
+      })
+
       // Payment creation failed
       await prisma.order.update({
         where: { id: order.id },
         data: {
-          paymentStatus: 'FAILED'
+          paymentStatus: 'FAILED',
+          failureReason: paymentResult.error
         }
       })
 
       return NextResponse.json(
-        { error: 'Payment processing failed: ' + paymentResult.error },
+        { 
+          error: 'Payment processing failed',
+          details: paymentResult.error,
+          errorCode: paymentResult.errorCode,
+          orderId: orderNumber
+        },
         { status: 400 }
       )
     }

@@ -1,0 +1,32 @@
+import { NextRequest, NextResponse } from 'next/server'
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl
+  
+  // Get session token from cookies
+  const sessionToken = request.cookies.get('next-auth.session-token')?.value ||
+                      request.cookies.get('__Secure-next-auth.session-token')?.value
+
+  // Protected routes that require authentication
+  if (!sessionToken && (
+    pathname.startsWith('/account') ||
+    pathname.startsWith('/checkout')
+  )) {
+    const callbackUrl = encodeURIComponent(pathname)
+    return NextResponse.redirect(new URL(`/auth/signin?callbackUrl=${callbackUrl}`, request.url))
+  }
+
+  // Redirect authenticated users away from auth pages
+  if (sessionToken && (
+    pathname.startsWith('/auth/signin') ||
+    pathname.startsWith('/auth/signup')
+  )) {
+    return NextResponse.redirect(new URL('/account', request.url))
+  }
+
+  return NextResponse.next()
+}
+
+export const config = {
+  matcher: ['/account/:path*', '/auth/:path*', '/checkout/:path*']
+}

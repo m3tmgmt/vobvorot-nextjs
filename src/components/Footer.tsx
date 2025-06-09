@@ -196,9 +196,9 @@ export function Footer() {
             gap: '1rem',
             fontSize: '0.8rem'
           }}>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
               <a 
-                href="/privacy"
+                href="/legal/privacy"
                 style={{ 
                   color: 'rgba(255,255,255,0.5)',
                   textDecoration: 'none',
@@ -211,7 +211,7 @@ export function Footer() {
               </a>
               <span style={{ color: 'rgba(255,255,255,0.3)' }}>•</span>
               <a 
-                href="/terms"
+                href="/legal/terms"
                 style={{ 
                   color: 'rgba(255,255,255,0.5)',
                   textDecoration: 'none',
@@ -221,6 +221,32 @@ export function Footer() {
                 onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
               >
                 Terms
+              </a>
+              <span style={{ color: 'rgba(255,255,255,0.3)' }}>•</span>
+              <a 
+                href="/legal/shipping"
+                style={{ 
+                  color: 'rgba(255,255,255,0.5)',
+                  textDecoration: 'none',
+                  transition: 'color 0.3s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--pink-main)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+              >
+                Shipping
+              </a>
+              <span style={{ color: 'rgba(255,255,255,0.3)' }}>•</span>
+              <a 
+                href="/legal/returns"
+                style={{ 
+                  color: 'rgba(255,255,255,0.5)',
+                  textDecoration: 'none',
+                  transition: 'color 0.3s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'var(--pink-main)'}
+                onMouseLeave={(e) => e.currentTarget.style.color = 'rgba(255,255,255,0.5)'}
+              >
+                Returns
               </a>
               <span style={{ color: 'rgba(255,255,255,0.3)' }}>•</span>
               <span style={{ 

@@ -167,6 +167,34 @@ export default function SignInPage() {
           </button>
         </form>
 
+        {/* Forgot Password Link */}
+        <div style={{ 
+          textAlign: 'center',
+          marginBottom: '1.5rem',
+          borderTop: '1px solid rgba(255,255,255,0.1)',
+          paddingTop: '1.5rem'
+        }}>
+          <Link 
+            href="/auth/forgot-password"
+            style={{
+              color: 'var(--cyan-accent)',
+              textDecoration: 'none',
+              fontSize: '0.9rem',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.color = 'var(--pink-main)'
+              e.currentTarget.style.textShadow = '0 0 10px var(--pink-main)'
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.color = 'var(--cyan-accent)'
+              e.currentTarget.style.textShadow = 'none'
+            }}
+          >
+            Forgot your password?
+          </Link>
+        </div>
+
         {/* Only show OAuth options if providers are configured */}
         {(process.env.NEXT_PUBLIC_GOOGLE_OAUTH === 'true' || process.env.NEXT_PUBLIC_GITHUB_OAUTH === 'true') && (
           <>

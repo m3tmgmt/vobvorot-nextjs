@@ -51,7 +51,7 @@ async function main() {
           {
             url: '/assets/images/product1.jpg',
             alt: 'Unique Vintage Item',
-            isPrimary: true
+            // isPrimary: true
           }
         ]
       },
@@ -80,7 +80,7 @@ async function main() {
           {
             url: '/assets/images/product2.jpg',
             alt: 'Custom Design Piece',
-            isPrimary: true
+            // isPrimary: true
           }
         ]
       },
@@ -150,7 +150,7 @@ async function main() {
             {
               url: `/assets/images/${productData.slug}.jpg`,
               alt: productData.name,
-              isPrimary: true
+              // isPrimary: true
             }
           ]
         },
@@ -172,7 +172,8 @@ async function main() {
   const testUser = await prisma.user.create({
     data: {
       name: 'Test User',
-      email: 'test@vobvorot.com'
+      email: 'test@vobvorot.com',
+      password: 'test-password' // или хеш пароля
     }
   })
 

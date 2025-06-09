@@ -11,9 +11,10 @@ interface UpdateStatusRequest {
 
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params
     const session = await getServerSession(authOptions)
     
     if (!session?.user || session.user.role !== 'ADMIN') {
@@ -34,7 +35,7 @@ export async function PATCH(
 
     // Find the order
     const order = await prisma.order.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         items: {
           include: {
@@ -64,7 +65,7 @@ export async function PATCH(
 
     // Update the order status
     const updatedOrder = await prisma.order.update({
-      where: { id: params.id },
+      where: { id },
       data: {
         status,
         ...(trackingNumber && { paymentId: trackingNumber }) // Store tracking number in paymentId field for now
@@ -100,14 +101,14 @@ export async function PATCH(
         items: updatedOrder.items.map(item => ({
           name: item.sku.product.name,
           quantity: item.quantity,
-          price: item.price,
+          price: Number(item.price),
           size: item.sku.size || undefined,
           color: item.sku.color || undefined,
           imageUrl: item.sku.product.images[0]?.url
         })),
-        subtotal: updatedOrder.subtotal,
-        shippingCost: updatedOrder.shippingCost,
-        total: updatedOrder.total,
+        subtotal: Number(updatedOrder.subtotal),
+        shippingCost: Number(updatedOrder.shippingCost),
+        total: Number(updatedOrder.total),
         shippingAddress: {
           name: updatedOrder.shippingName,
           address: updatedOrder.shippingAddress,

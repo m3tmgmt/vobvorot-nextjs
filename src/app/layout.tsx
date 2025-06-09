@@ -7,38 +7,63 @@ import { Effects } from "@/components/Effects";
 import { SecretDetector } from "@/components/SecretDetector";
 import { PuzzleProgress } from "@/components/PuzzleProgress";
 import { MusicPlayer } from "@/components/MusicPlayer";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ToastProvider } from "@/components/Toast";
 import { CartProvider } from "@/contexts/CartContext";
 import { PuzzleProvider } from "@/contexts/PuzzleContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { generateOrganizationStructuredData, generateWebsiteStructuredData } from "@/lib/seo";
 
 
 export const metadata: Metadata = {
-  title: "vobvorot - digital playground ✨",
-  description: "Unique vintage cameras, custom adidas, fur hats, vintage heels, unique bags from Ukraine with international shipping",
-  keywords: ["vintage", "custom", "ukraine", "fashion", "unique", "handmade", "Y2K", "cameras", "adidas"],
-  authors: [{ name: "vobvorot team" }],
+  title: {
+    default: "VobVorot - Vintage & Custom Fashion Store",
+    template: "%s | VobVorot"
+  },
+  description: "Discover unique vintage pieces and custom designs from Ukraine. VobVorot offers authentic vintage cameras, handmade accessories, custom Adidas, and exclusive fashion with worldwide shipping.",
+  keywords: [
+    "vintage fashion", "custom designs", "Ukrainian fashion", "vintage cameras", 
+    "handmade accessories", "custom adidas", "authentic vintage", "luxury vintage",
+    "designer vintage", "sustainable fashion", "unique pieces", "collector items",
+    "artisan crafted", "vintage style", "retro fashion", "exclusive clothing",
+    "limited edition", "vintage bags", "designer accessories", "custom footwear"
+  ],
+  authors: [{ name: "VobVorot", url: "https://vobvorot.com" }],
+  creator: "VobVorot",
+  publisher: "VobVorot",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://vobvorot.com'),
+  alternates: {
+    canonical: '/',
+    languages: {
+      'en-US': '/en-US',
+      'uk-UA': '/uk-UA',
+    },
+  },
   openGraph: {
-    title: "vobvorot - digital playground ✨",
-    description: "Unique vintage cameras, custom adidas, fur hats, vintage heels, unique bags from Ukraine",
-    url: "https://vobvorot.com",
-    siteName: "vobvorot",
+    type: 'website',
+    locale: 'en_US',
+    url: process.env.NEXT_PUBLIC_SITE_URL || 'https://vobvorot.com',
+    siteName: 'VobVorot',
+    title: "VobVorot - Vintage & Custom Fashion Store",
+    description: "Discover unique vintage pieces and custom designs from Ukraine. Authentic vintage cameras, handmade accessories, and exclusive fashion with worldwide shipping.",
     images: [
       {
-        url: "/og-image.jpg",
+        url: "/assets/images/og-default.jpg",
         width: 1200,
         height: 630,
-        alt: "vobvorot digital playground",
+        alt: "VobVorot - Vintage & Custom Fashion Store",
       },
     ],
-    locale: "en_US",
-    type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "vobvorot - digital playground ✨",
-    description: "Unique vintage cameras, custom adidas, fur hats, vintage heels, unique bags from Ukraine",
-    images: ["/og-image.jpg"],
+    site: "@vobvorot",
+    creator: "@vobvorot",
+    title: "VobVorot - Vintage & Custom Fashion Store",
+    description: "Discover unique vintage pieces and custom designs from Ukraine. Authentic vintage cameras, handmade accessories, and exclusive fashion.",
+    images: ["/assets/images/og-default.jpg"],
   },
   robots: {
     index: true,
@@ -51,6 +76,11 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  verification: {
+    google: "your-google-verification-code",
+    yandex: "your-yandex-verification-code",
+  },
+  category: "fashion",
 };
 
 export default function RootLayout({
@@ -58,6 +88,9 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const organizationData = generateOrganizationStructuredData()
+  const websiteData = generateWebsiteStructuredData()
+
   return (
     <html lang="en">
       <head>
@@ -69,25 +102,41 @@ export default function RootLayout({
           href="/css/globals.css"
           rel="stylesheet"
         />
+        {/* Global Structured Data */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([organizationData, websiteData])
+          }}
+        />
+        <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
       </head>
       <body>
-        <AuthProvider>
-          <PuzzleProvider>
-            <CartProvider>
-              <WishlistProvider>
-                <Effects />
-                <SecretDetector />
-                <Navigation />
-                <Cart />
-                <Wishlist />
-                <FloatingCartIcons />
-                <PuzzleProgress />
-                <MusicPlayer />
-                <main>{children}</main>
-              </WishlistProvider>
-            </CartProvider>
-          </PuzzleProvider>
-        </AuthProvider>
+        <ErrorBoundary>
+          <ToastProvider>
+            <AuthProvider>
+              <PuzzleProvider>
+                <CartProvider>
+                  <WishlistProvider>
+                    <Effects />
+                    <SecretDetector />
+                    <Navigation />
+                    <Cart />
+                    <Wishlist />
+                    <FloatingCartIcons />
+                    <PuzzleProgress />
+                    <MusicPlayer />
+                    <main>
+                      <ErrorBoundary>
+                        {children}
+                      </ErrorBoundary>
+                    </main>
+                  </WishlistProvider>
+                </CartProvider>
+              </PuzzleProvider>
+            </AuthProvider>
+          </ToastProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

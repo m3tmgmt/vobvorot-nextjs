@@ -1,9 +1,29 @@
 const { Bot } = require('grammy');
 
-const BOT_TOKEN = '7274106590:AAFVUDX05v5FgvhzfAPJmfVOWVbfporRnMY';
-const ADMIN_API_KEY = 'ADMIN_vobvorot_api_key_2024_ultra_secure_access_token_abc123xyz';
-const OWNER_TELEGRAM_ID = 316593422;
-const ADDITIONAL_ADMIN_ID = 1837334996;
+require('dotenv').config();
+
+// Загрузка переменных окружения
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
+const ADMIN_API_KEY = process.env.ADMIN_API_KEY;
+const OWNER_TELEGRAM_ID = parseInt(process.env.OWNER_TELEGRAM_ID || '0');
+const ADDITIONAL_ADMIN_ID = parseInt(process.env.ADDITIONAL_ADMIN_ID || '0');
+const API_BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || 'https://localhost:3000';
+
+// Проверка наличия необходимых переменных окружения
+if (!BOT_TOKEN) {
+  console.error('❌ TELEGRAM_BOT_TOKEN не установлен в переменных окружения');
+  process.exit(1);
+}
+
+if (!ADMIN_API_KEY) {
+  console.error('❌ ADMIN_API_KEY не установлен в переменных окружения');
+  process.exit(1);
+}
+
+if (!OWNER_TELEGRAM_ID) {
+  console.error('❌ OWNER_TELEGRAM_ID не установлен в переменных окружения');
+  process.exit(1);
+}
 
 // Список разрешенных админов
 const ALLOWED_ADMINS = [OWNER_TELEGRAM_ID, ADDITIONAL_ADMIN_ID];
@@ -44,7 +64,12 @@ bot.command('products', async (ctx) => {
   }
 
   try {
-    const response = await fetch('http://localhost:3000/api/products');
+    const response = await fetch(`${API_BASE_URL}/api/products`, {
+      headers: {
+        'Authorization': `Bearer ${ADMIN_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
     const data = await response.json();
     
     if (data.products && data.products.length > 0) {
@@ -81,7 +106,12 @@ bot.command('stats', async (ctx) => {
   }
 
   try {
-    const response = await fetch('http://localhost:3000/api/products');
+    const response = await fetch(`${API_BASE_URL}/api/products`, {
+      headers: {
+        'Authorization': `Bearer ${ADMIN_API_KEY}`,
+        'Content-Type': 'application/json'
+      }
+    });
     const data = await response.json();
     
     const totalProducts = data.products ? data.products.length : 0;
@@ -91,7 +121,7 @@ bot.command('stats', async (ctx) => {
     const message = `📊 Статистика магазина:\n\n` +
       `📦 Всего товаров: ${totalProducts}\n` +
       `🏪 Общий остаток: ${totalStock} единиц\n` +
-      `🌐 Сайт: http://localhost:3000\n` +
+      `🌐 Сайт: ${API_BASE_URL}\n` +
       `✅ Статус: Работает`;
     
     await ctx.reply(message);
@@ -111,5 +141,5 @@ bot.start().then(() => {
   console.log('🤖 Telegram бот запущен!');
   console.log(`👤 Владелец ID: ${OWNER_TELEGRAM_ID}`);
   console.log(`👤 Дополнительный админ ID: ${ADDITIONAL_ADMIN_ID}`);
-  console.log('🔗 Подключен к: http://localhost:3000');
+  console.log(`🔗 Подключен к: ${API_BASE_URL}`);
 }).catch(console.error);

@@ -45,7 +45,7 @@ class TelegramNotificationService {
   async notifyNewOrder(order: OrderNotification) {
     try {
       const itemsList = order.items
-        .map(item => `• ${item.name} x${item.quantity} - $${item.price}`)
+        .map(item => `• ${item.name} x${item.quantity} - $${Number(item.price)}`)
         .join('\n')
 
       const message = `
@@ -53,7 +53,7 @@ class TelegramNotificationService {
 
 👤 *Клиент:* ${order.customerName}
 📧 *Email:* ${order.customerEmail}
-💰 *Сумма:* $${order.total}
+💰 *Сумма:* $${Number(order.total)}
 💳 *Оплата:* ${order.paymentStatus}
 
 📦 *Товары:*
@@ -234,7 +234,7 @@ ${statusEmojis[newStatus]} *Стало:* ${newStatus}
 
 🆔 *Заказ:* #${orderId}
 👤 *Клиент:* ${customerName}
-💰 *Сумма возврата:* $${amount}
+💰 *Сумма возврата:* $${Number(amount)}
 📝 *Причина:* ${reason}
 
 ⏰ ${new Date().toLocaleString('ru-RU')}
@@ -377,4 +377,8 @@ export async function sendDailySummary(stats: any) {
 
 export async function notifySystemError(error: string, context: string) {
   await telegramNotifications.notifySystemError(error, context)
+}
+
+export async function sendTelegramNotification(message: string, data?: any) {
+  await telegramNotifications.notifySystemError(message, data?.context || 'General notification')
 }

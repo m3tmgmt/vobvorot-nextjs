@@ -74,7 +74,7 @@ export default function ExvicpmourPage() {
         ) : products.length > 0 ? (
           <div className="products-grid">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product} />
+              <ProductCard key={product.id} product={product as any} />
             ))}
           </div>
         ) : (

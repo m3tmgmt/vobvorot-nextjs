@@ -5,6 +5,16 @@
   margin: 0;
 }
 
+:root {
+  --pink-main: #FF6B9D;
+  --pink-neon: #FF1493;
+  --cyan-accent: #00F5FF;
+  --purple-accent: #9D4EDD;
+  --yellow-neon: #FFFF00;
+  --green-neon: #00FF7F;
+  --white: #FFFFFF;
+}
+
 html, body {
   max-width: 100vw;
   overflow-x: hidden;
