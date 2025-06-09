@@ -13,8 +13,9 @@
 
 import { PrismaClient } from '@prisma/client'
 
-// Skip this script during build
-if (process.env.NODE_ENV === 'production') {
+// Skip this script during build or if no database URL
+if (process.env.NODE_ENV === 'production' || process.env.VERCEL_ENV === 'production' || !process.env.DATABASE_URL) {
+  console.log('Skipping data integrity check in production/build environment')
   process.exit(0)
 }
 
