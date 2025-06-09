@@ -122,12 +122,7 @@ export default function CommunityPage() {
             maxWidth: '600px',
             margin: '2rem auto 0'
           }}>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
-              gap: '1rem',
-              textAlign: 'center'
-            }}>
+            <div className="stats-grid">
               <div>
                 <div style={{ fontSize: '2rem', color: 'var(--pink-main)', fontWeight: 'bold' }}>
                   {memberCount.toLocaleString()}
@@ -149,13 +144,7 @@ export default function CommunityPage() {
             </div>
           </div>
           
-          <div style={{
-            marginTop: '2rem',
-            display: 'flex',
-            gap: '1rem',
-            justifyContent: 'center',
-            flexWrap: 'wrap'
-          }}>
+          <div className="flex-center-wrap gap-4 mt-8">
             <button className="hero-button">
               💬 Join Discord
             </button>
@@ -175,14 +164,8 @@ export default function CommunityPage() {
 
       {/* Navigation Tabs */}
       <section className="products-section">
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
-          <div style={{
-            display: 'flex',
-            justifyContent: 'center',
-            gap: '1rem',
-            marginBottom: '3rem',
-            flexWrap: 'wrap'
-          }}>
+        <div className="container">
+          <div className="flex-center-wrap gap-4 mb-8" style={{ marginBottom: '3rem' }}>
             <button
               className={`filter-btn ${activeTab === 'events' ? 'active' : ''}`}
               onClick={() => setActiveTab('events')}
@@ -213,20 +196,10 @@ export default function CommunityPage() {
           {activeTab === 'events' && (
             <>
               <h2 className="section-title">Upcoming Events</h2>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-                gap: '2rem',
-                marginBottom: '4rem'
-              }}>
+              <div className="events-grid">
                 {events.map((event, index) => (
                   <div key={index} className="product-card">
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'flex-start',
-                      marginBottom: '1rem'
-                    }}>
+                    <div className="flex-between" style={{ alignItems: 'flex-start', marginBottom: '1rem' }}>
                       <h3 style={{ color: 'var(--cyan-accent)', marginBottom: '0.5rem' }}>
                         {event.title}
                       </h3>
@@ -260,11 +233,7 @@ export default function CommunityPage() {
                       {event.description}
                     </p>
                     
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center'
-                    }}>
+                    <div className="flex-between">
                       <span style={{ 
                         color: 'var(--green-neon)', 
                         fontSize: '0.9rem' 
@@ -285,20 +254,10 @@ export default function CommunityPage() {
           {activeTab === 'members' && (
             <>
               <h2 className="section-title">Community Members</h2>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '2rem',
-                marginBottom: '4rem'
-              }}>
+              <div className="members-grid">
                 {members.map((member, index) => (
                   <div key={index} className="product-card">
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '1rem'
-                    }}>
+                    <div className="flex-between mb-4">
                       <h3 style={{ color: 'var(--cyan-accent)' }}>
                         {member.name}
                       </h3>
@@ -328,11 +287,7 @@ export default function CommunityPage() {
                       padding: '1rem',
                       marginBottom: '1rem'
                     }}>
-                      <div style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center'
-                      }}>
+                      <div className="flex-between">
                         <span style={{
                           color: member.level === 'Legend' ? 'var(--yellow-neon)' :
                                 member.level === 'Expert' ? 'var(--purple-accent)' :
@@ -348,7 +303,7 @@ export default function CommunityPage() {
                       </div>
                     </div>
                     
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <div className="flex gap-2">
                       <button className="filter-btn" style={{ flex: 1 }}>
                         View Profile
                       </button>
@@ -366,19 +321,10 @@ export default function CommunityPage() {
           {activeTab === 'projects' && (
             <>
               <h2 className="section-title">Community Projects</h2>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-                gap: '2rem',
-                marginBottom: '4rem'
-              }}>
+              <div className="projects-grid">
                 {projects.map((project, index) => (
                   <div key={index} className="product-card">
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      marginBottom: '1rem'
-                    }}>
+                    <div className="flex" style={{ alignItems: 'center', marginBottom: '1rem' }}>
                       <div style={{
                         fontSize: '3rem',
                         marginRight: '1rem',
@@ -401,12 +347,7 @@ export default function CommunityPage() {
                       </div>
                     </div>
                     
-                    <div style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      marginBottom: '1rem'
-                    }}>
+                    <div className="flex-between mb-4">
                       <span style={{
                         background: 'var(--pink-main)',
                         color: 'var(--black)',
@@ -416,13 +357,13 @@ export default function CommunityPage() {
                       }}>
                         {project.category}
                       </span>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                      <div className="flex gap-2" style={{ alignItems: 'center' }}>
                         <span style={{ color: 'var(--yellow-neon)' }}>❤️</span>
                         <span style={{ color: 'var(--white)' }}>{project.likes}</span>
                       </div>
                     </div>
                     
-                    <div style={{ display: 'flex', gap: '1rem' }}>
+                    <div className="flex gap-4">
                       <button className="filter-btn" style={{ flex: 1 }}>
                         View Project
                       </button>
@@ -476,7 +417,7 @@ export default function CommunityPage() {
                   </div>
                 </div>
                 
-                <div style={{ display: 'flex', gap: '1rem' }}>
+                <div className="flex gap-4">
                   <input
                     type="text"
                     placeholder="Type your message..."
@@ -523,12 +464,7 @@ export default function CommunityPage() {
               Why Join Our Community?
             </h3>
             
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: '2rem',
-              marginTop: '2rem'
-            }}>
+            <div className="features-grid">
               <div>
                 <h4 style={{ color: 'var(--cyan-accent)', marginBottom: '1rem' }}>
                   🎨 Share Your Art

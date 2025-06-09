@@ -109,33 +109,33 @@ export default function ExvicpmourPage() {
 
       {/* Brand Story Section */}
       <section className="products-section" style={{ background: 'rgba(0,0,0,0.3)' }}>
-        <div style={{ maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+        <div className="container" style={{ textAlign: 'center' }}>
           <h2 className="section-title glitch">
             The EXVICPMOUR Story
           </h2>
           
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'stretch', gap: '1.5rem', marginTop: '3rem', flexWrap: 'nowrap', overflowX: 'auto' }}>
-            <div className="product-card" style={{ textAlign: 'center', minWidth: '200px', maxWidth: '200px', flex: '0 0 200px' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '0.8rem' }}>🇺🇦</div>
-              <h3 style={{ color: 'var(--cyan-accent)', marginBottom: '0.8rem', fontSize: '1.1rem' }}>Ukrainian Heritage</h3>
-              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem' }}>
-                Rooted in Ukrainian culture and traditions, each piece tells a story of resilience and creativity.
+          <div className="exvicpmour-story-grid">
+            <div className="product-card" style={{ textAlign: 'center', padding: '2.5rem 2rem', position: 'relative', zIndex: 1 }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1.5rem' }}>🇺🇦</div>
+              <h3 style={{ color: 'var(--cyan-accent)', marginBottom: '1.5rem', fontSize: '1.3rem' }}>Ukrainian Heritage</h3>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1rem', lineHeight: '1.6' }}>
+                Rooted in Ukrainian culture and traditions, each piece tells a story of resilience and creativity from our homeland.
               </p>
             </div>
             
-            <div className="product-card" style={{ textAlign: 'center', minWidth: '200px', maxWidth: '200px', flex: '0 0 200px' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '0.8rem' }}>💫</div>
-              <h3 style={{ color: 'var(--purple-accent)', marginBottom: '0.8rem', fontSize: '1.1rem' }}>Y2K Aesthetic</h3>
-              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem' }}>
-                Embracing the digital future with nostalgic Y2K elements and cyberpunk influences.
+            <div className="product-card" style={{ textAlign: 'center', padding: '2.5rem 2rem', position: 'relative', zIndex: 1 }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1.5rem' }}>💫</div>
+              <h3 style={{ color: 'var(--purple-accent)', marginBottom: '1.5rem', fontSize: '1.3rem' }}>Y2K Aesthetic</h3>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1rem', lineHeight: '1.6' }}>
+                Embracing the digital future with nostalgic Y2K elements and cyberpunk influences that define our era.
               </p>
             </div>
             
-            <div className="product-card" style={{ textAlign: 'center', minWidth: '200px', maxWidth: '200px', flex: '0 0 200px' }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '0.8rem' }}>🎨</div>
-              <h3 style={{ color: 'var(--pink-main)', marginBottom: '0.8rem', fontSize: '1.1rem' }}>Artistic Vision</h3>
-              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.9rem' }}>
-                Where technology meets art, creating unique pieces that push creative boundaries.
+            <div className="product-card" style={{ textAlign: 'center', padding: '2.5rem 2rem', position: 'relative', zIndex: 1 }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1.5rem' }}>🎨</div>
+              <h3 style={{ color: 'var(--pink-main)', marginBottom: '1.5rem', fontSize: '1.3rem' }}>Artistic Vision</h3>
+              <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1rem', lineHeight: '1.6' }}>
+                Where technology meets art, creating unique pieces that push creative boundaries and inspire innovation.
               </p>
             </div>
           </div>

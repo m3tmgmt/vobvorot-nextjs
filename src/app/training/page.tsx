@@ -164,8 +164,8 @@ export default function TrainingPage() {
             level up your digital skills • Y2K aesthetics • creative coding • vintage mastery
           </p>
           
-          {/* Konami Progress Indicator */}
-          {konamiProgress > 0 && (
+          {/* Konami Progress Indicator - Hidden to prevent accidental display */}
+          {false && konamiProgress > 0 && (
             <div style={{
               marginTop: '2rem',
               padding: '1rem',
@@ -210,7 +210,7 @@ export default function TrainingPage() {
 
       {/* Navigation Tabs */}
       <section className="products-section">
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <div className="container">
           <div style={{
             display: 'flex',
             justifyContent: 'center',
@@ -242,12 +242,7 @@ export default function TrainingPage() {
           {activeTab === 'courses' && (
             <>
               <h2 className="section-title">Digital Mastery Courses</h2>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-                gap: '2rem',
-                marginBottom: '4rem'
-              }}>
+              <div className="cards-grid">
                 {courses.map((course) => (
                   <div 
                     key={course.id}
@@ -332,12 +327,7 @@ export default function TrainingPage() {
           {activeTab === 'workshops' && (
             <>
               <h2 className="section-title">Live Workshops & Events</h2>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-                gap: '2rem',
-                marginBottom: '4rem'
-              }}>
+              <div className="cards-grid">
                 {workshops.map((workshop, index) => (
                   <div key={index} className="product-card">
                     <div style={{
@@ -388,12 +378,7 @@ export default function TrainingPage() {
           {activeTab === 'community' && (
             <>
               <h2 className="section-title">Learning Community</h2>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '2rem',
-                marginBottom: '4rem'
-              }}>
+              <div className="cards-grid">
                 <div className="product-card" style={{ textAlign: 'center' }}>
                   <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>💬</div>
                   <h3 style={{ color: 'var(--pink-main)', marginBottom: '1rem' }}>
@@ -446,12 +431,7 @@ export default function TrainingPage() {
               Why Choose vobvorot Academy?
             </h3>
             
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: '2rem',
-              marginTop: '2rem'
-            }}>
+            <div className="cards-grid" style={{ marginTop: '2rem' }}>
               <div>
                 <h4 style={{ color: 'var(--cyan-accent)', marginBottom: '1rem' }}>
                   🎯 Hands-on Learning

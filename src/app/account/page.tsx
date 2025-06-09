@@ -100,7 +100,7 @@ export default function AccountPage() {
 
   return (
     <div style={{ minHeight: '100vh', padding: '2rem' }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+      <div className="container">
         {/* Header */}
         <div style={{ marginBottom: '3rem', textAlign: 'center' }}>
           <h1 style={{

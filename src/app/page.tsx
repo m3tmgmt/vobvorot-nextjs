@@ -25,19 +25,21 @@ export default function HomePage() {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [activeFilter, setActiveFilter] = useState('all')
   const [showLetterForm, setShowLetterForm] = useState(false)
+  const [availableCategories, setAvailableCategories] = useState<{id: string, name: string, icon: string}[]>([])
   const { findPiece, dispatch: puzzleDispatch } = usePuzzle()
   
   const videos = [
     '/assets/videos/hero2.mp4'
   ]
 
-  const categories = [
+  const allCategories = [
     { id: 'all', name: 'All Items', icon: '✨' },
     { id: 'cameras', name: 'Cameras', icon: '📷' },
     { id: 'fashion', name: 'Fashion', icon: '👗' },
     { id: 'accessories', name: 'Accessories', icon: '💍' },
     { id: 'vintage', name: 'Vintage', icon: '📼' },
-    { id: 'custom', name: 'Custom', icon: '🎨' }
+    { id: 'custom', name: 'Custom', icon: '🎨' },
+    { id: 'bags', name: 'Bags', icon: '👜' }
   ]
 
   useEffect(() => {
@@ -51,8 +53,19 @@ export default function HomePage() {
     fetch('/api/products?limit=12')
       .then(res => res.json())
       .then(data => {
-        setProducts(data.products || [])
-        setFilteredProducts(data.products || [])
+        const productsList = data.products || []
+        setProducts(productsList)
+        setFilteredProducts(productsList)
+        
+        // Get unique categories from actual products
+        const productCategories = new Set(productsList.map((p: Product) => p.category.slug))
+        
+        // Filter categories to show only those with products, plus "all"
+        const categoriesWithProducts = allCategories.filter(cat => 
+          cat.id === 'all' || productCategories.has(cat.id)
+        )
+        
+        setAvailableCategories(categoriesWithProducts)
       })
       .catch(err => console.error('Failed to fetch products:', err))
   }, [])
@@ -161,7 +174,7 @@ export default function HomePage() {
         
         {/* Category Filters */}
         <div className="filter-bar">
-          {categories.map((category) => (
+          {availableCategories.map((category) => (
             <button
               key={category.id}
               className={`filter-btn ${activeFilter === category.id ? 'active' : ''}`}
@@ -195,16 +208,22 @@ export default function HomePage() {
       </section>
 
       {/* Interactive Sections */}
-      <section className="products-section">
+      <section style={{
+        padding: '4rem 2rem',
+        width: '100%',
+        margin: '0 auto',
+        position: 'relative',
+        zIndex: 2,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center'
+      }}>
         <h2 className="section-title glitch">
           Interactive Features
         </h2>
         
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-          gap: '2rem'
-        }}>
+        <div className="container" style={{ maxWidth: '800px' }}>
+          <div className="cards-grid">
           {/* Puzzle Game Card */}
           <div className="product-card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
@@ -279,19 +298,8 @@ export default function HomePage() {
               Join Community
             </button>
           </div>
-        </div>
-      </section>
 
-      {/* Letters to Future Section */}
-      <section className="products-section">
-        <h2 className="section-title glitch">
-          Letters to Future
-        </h2>
-        
-        <div style={{
-          maxWidth: '400px',
-          margin: '0 auto'
-        }}>
+          {/* Letters to Future Card */}
           <div className="product-card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
             <div>
               <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>💌</div>
@@ -361,7 +369,9 @@ export default function HomePage() {
             )}
           </div>
         </div>
+        </div>
       </section>
+
       
       <Footer />
     </div>

@@ -73,7 +73,7 @@ export default function PuzzlePage() {
       </div>
 
       <section className="products-section">
-        <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+        <div className="container">
           
           {/* Progress Overview */}
           <div style={{
@@ -143,12 +143,7 @@ export default function PuzzlePage() {
 
           {/* Active Puzzles */}
           <h2 className="section-title">Active Puzzles</h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-            gap: '2rem',
-            marginBottom: '3rem'
-          }}>
+          <div className="cards-grid">
             {state.pieces.filter(piece => !piece.found).map((piece) => (
               <div 
                 key={piece.id}
@@ -234,12 +229,7 @@ export default function PuzzlePage() {
           {state.pieces.some(piece => piece.found) && (
             <>
               <h2 className="section-title">Completed Puzzles</h2>
-              <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                gap: '1.5rem',
-                marginBottom: '3rem'
-              }}>
+              <div className="cards-grid">
                 {state.pieces.filter(piece => piece.found).map((piece) => (
                   <div 
                     key={piece.id}
@@ -284,12 +274,7 @@ export default function PuzzlePage() {
 
           {/* Achievements Display */}
           <h2 className="section-title">Achievements</h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-            gap: '1.5rem',
-            marginBottom: '3rem'
-          }}>
+          <div className="cards-grid">
             {state.achievements.map((achievement) => (
               <div 
                 key={achievement.id}

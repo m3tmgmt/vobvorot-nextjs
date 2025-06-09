@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { sharedProducts, sharedOrders } from '@/lib/shared-data'
 
 // GET - получить различные статистики магазина
 export async function GET(request: NextRequest) {
@@ -58,48 +59,74 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// Общая статистика
+// Общая статистика на основе реальных данных
 async function getOverviewStats(startDate: Date, endDate: Date) {
-  // Mock данные - в реальном проекте запросы к базе
+  const totalRevenue = sharedOrders.reduce((sum, order) => sum + order.total, 0)
+  const totalOrders = sharedOrders.length
+  const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0
+  
+  // Уникальные клиенты
+  const uniqueCustomers = new Set(sharedOrders.map(o => o.customerEmail)).size
+  
+  // Статистика по статусам заказов
+  const ordersByStatus = {
+    pending: sharedOrders.filter(o => o.status === 'pending').length,
+    processing: sharedOrders.filter(o => o.status === 'processing').length,
+    shipped: sharedOrders.filter(o => o.status === 'shipped').length,
+    completed: sharedOrders.filter(o => o.status === 'completed').length,
+    cancelled: sharedOrders.filter(o => o.status === 'cancelled').length
+  }
+  
+  // Топ товары по количеству заказов
+  const productSales = new Map()
+  sharedOrders.forEach(order => {
+    order.items.forEach(item => {
+      const current = productSales.get(item.name) || { sales: 0, revenue: 0 }
+      productSales.set(item.name, {
+        sales: current.sales + item.quantity,
+        revenue: current.revenue + (item.price * item.quantity)
+      })
+    })
+  })
+  
+  const topProducts = Array.from(productSales.entries())
+    .map(([name, data]) => ({ name, ...data }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 3)
+
   return {
     period: `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`,
-    totalOrders: 156,
-    totalRevenue: 12450.75,
-    totalCustomers: 89,
-    totalProducts: 45,
+    totalOrders,
+    totalRevenue: Math.round(totalRevenue * 100) / 100,
+    totalCustomers: uniqueCustomers,
+    totalProducts: sharedProducts.length,
+    averageOrderValue: Math.round(averageOrderValue * 100) / 100,
     
-    // Изменения по сравнению с предыдущим периодом
-    ordersChange: +15.3, // в процентах
+    // Изменения по сравнению с предыдущим периодом (примерные)
+    ordersChange: +15.3,
     revenueChange: +23.7,
     customersChange: +8.2,
     productsChange: +5.0,
     
-    // Статистика по статусам заказов
-    ordersByStatus: {
-      pending: 12,
-      processing: 8,
-      shipped: 15,
-      completed: 120,
-      cancelled: 1
-    },
+    ordersByStatus,
+    topProducts,
     
-    // Топ товары
-    topProducts: [
-      { name: 'Vintage Canon AE-1', sales: 25, revenue: 2247.75 },
-      { name: 'Custom Adidas Superstar', sales: 18, revenue: 2259.00 },
-      { name: 'Vintage Fur Hat', sales: 15, revenue: 1019.85 }
+    // Активность по дням недели (примерные данные)
+    salesByDay: [
+      { day: 'Monday', orders: Math.floor(totalOrders * 0.12), revenue: Math.round(totalRevenue * 0.12) },
+      { day: 'Tuesday', orders: Math.floor(totalOrders * 0.10), revenue: Math.round(totalRevenue * 0.10) },
+      { day: 'Wednesday', orders: Math.floor(totalOrders * 0.15), revenue: Math.round(totalRevenue * 0.15) },
+      { day: 'Thursday', orders: Math.floor(totalOrders * 0.13), revenue: Math.round(totalRevenue * 0.13) },
+      { day: 'Friday', orders: Math.floor(totalOrders * 0.18), revenue: Math.round(totalRevenue * 0.18) },
+      { day: 'Saturday', orders: Math.floor(totalOrders * 0.22), revenue: Math.round(totalRevenue * 0.22) },
+      { day: 'Sunday', orders: Math.floor(totalOrders * 0.10), revenue: Math.round(totalRevenue * 0.10) }
     ],
     
-    // Активность по дням недели
-    salesByDay: [
-      { day: 'Monday', orders: 22, revenue: 1580.25 },
-      { day: 'Tuesday', orders: 18, revenue: 1245.50 },
-      { day: 'Wednesday', orders: 25, revenue: 1890.75 },
-      { day: 'Thursday', orders: 20, revenue: 1456.25 },
-      { day: 'Friday', orders: 28, revenue: 2124.50 },
-      { day: 'Saturday', orders: 35, revenue: 2589.25 },
-      { day: 'Sunday', orders: 8, revenue: 564.25 }
-    ]
+    // Статистика по товарам
+    activeProducts: sharedProducts.filter(p => p.status === 'active').length,
+    lowStockCount: sharedProducts.filter(p => p.stock <= 5).length,
+    outOfStockCount: sharedProducts.filter(p => p.stock === 0).length,
+    newCustomers: Math.floor(uniqueCustomers * 0.3) // примерно 30% новых клиентов
   }
 }
 

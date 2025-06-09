@@ -42,7 +42,7 @@ export default function ProductsPage() {
         setAllProducts(productsList)
         setProducts(productsList)
         
-        // Extract unique categories from products
+        // Extract unique categories from products - only categories that have products
         const uniqueCategories = Array.from(
           new Set(productsList.map((p: Product) => p.category.slug))
         ).map(slug => {
@@ -50,7 +50,13 @@ export default function ProductsPage() {
           return product ? { id: slug, name: product.category.name, slug } : null
         }).filter((cat): cat is Category => cat !== null)
         
-        setCategories([{ id: 'all', name: 'All Products', slug: 'all' }, ...uniqueCategories])
+        // Only show "All Products" and categories that actually have products
+        const categoriesWithProducts = [{ id: 'all', name: 'All Products', slug: 'all' }]
+        if (uniqueCategories.length > 0) {
+          categoriesWithProducts.push(...uniqueCategories)
+        }
+        
+        setCategories(categoriesWithProducts)
         setIsLoading(false)
       })
       .catch(err => {
@@ -151,11 +157,7 @@ export default function ProductsPage() {
             Browse by Category
           </h2>
           
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-            gap: '2rem' 
-          }}>
+          <div className="cards-grid">
             {categories.slice(1).map((category) => {
               const categoryProducts = allProducts.filter(p => p.category.slug === category.slug)
               return (
@@ -172,7 +174,11 @@ export default function ProductsPage() {
                     {category.slug === 'hats' && '👒'}
                     {category.slug === 'vintage' && '📼'}
                     {category.slug === 'y2k' && '💫'}
-                    {!['exvicpmour', 'shoes', 'accessories', 'hats', 'vintage', 'y2k'].includes(category.slug) && '✨'}
+                    {category.slug === 'bags' && '👜'}
+                    {category.slug === 'cameras' && '📷'}
+                    {category.slug === 'fashion' && '👗'}
+                    {category.slug === 'custom' && '🎨'}
+                    {!['exvicpmour', 'shoes', 'accessories', 'hats', 'vintage', 'y2k', 'bags', 'cameras', 'fashion', 'custom'].includes(category.slug) && '✨'}
                   </div>
                   <h3 style={{ color: 'var(--cyan-accent)', marginBottom: '1rem' }}>
                     {category.name}

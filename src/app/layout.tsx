@@ -11,7 +11,6 @@ import { CartProvider } from "@/contexts/CartContext";
 import { PuzzleProvider } from "@/contexts/PuzzleContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { AuthProvider } from "@/contexts/AuthContext";
-import "./globals.css";
 
 
 export const metadata: Metadata = {
@@ -61,6 +60,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link
+          href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap"
+          rel="stylesheet"
+        />
+        <link
+          href="/css/globals.css"
+          rel="stylesheet"
+        />
+      </head>
       <body>
         <AuthProvider>
           <PuzzleProvider>

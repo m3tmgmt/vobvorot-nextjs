@@ -17,6 +17,11 @@ interface Product {
   images: { url: string; alt?: string; isPrimary: boolean }[]
   skus: { id: string; price: number; stock: number; size?: string; color?: string }[]
   category: { name: string; slug: string }
+  video?: {
+    url: string
+    thumbnail?: string
+    title?: string
+  }
 }
 
 export default function ProductPage() {
@@ -69,7 +74,7 @@ export default function ProductPage() {
   const selectedSkuData = product.skus.find(sku => sku.id === selectedSku) || product.skus[0]
 
   const handleAddToCart = () => {
-    if (selectedSkuData) {
+    if (selectedSkuData && selectedSkuData.stock > 0) {
       dispatch({
         type: 'ADD_ITEM',
         payload: {
@@ -80,7 +85,8 @@ export default function ProductPage() {
           price: selectedSkuData.price,
           image: product.images[selectedImageIndex]?.url,
           size: selectedSkuData.size,
-          color: selectedSkuData.color
+          color: selectedSkuData.color,
+          maxStock: selectedSkuData.stock
         }
       })
     }
@@ -123,10 +129,23 @@ export default function ProductPage() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: '4rem' }}>
-      {/* Hero Section */}
-      <div className="hero-section" style={{ minHeight: '40vh', marginBottom: '2rem' }}>
+    <div style={{ minHeight: '100vh' }}>
+      {/* Hero Section with Video Background */}
+      <section className="hero-section">
+        {product.video && (
+          <video
+            className="hero-video"
+            autoPlay
+            muted
+            loop
+            playsInline
+          >
+            <source src={product.video.url} type="video/mp4" />
+          </video>
+        )}
+        
         <div className="hero-overlay"></div>
+        
         <div className="hero-content">
           <h1 className="hero-title glitch" style={{ fontSize: '3rem' }}>
             {product.name}
@@ -142,16 +161,14 @@ export default function ProductPage() {
             </p>
           )}
         </div>
-      </div>
+      </section>
 
       {/* Product Details */}
       <div className="products-section">
-        <div style={{ 
+        <div className="container" style={{ 
           display: 'grid', 
           gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
-          gap: '3rem',
-          maxWidth: '1200px',
-          margin: '0 auto'
+          gap: '3rem'
         }}>
           {/* Image Section */}
           <div>
@@ -394,6 +411,7 @@ export default function ProductPage() {
             </div>
           </div>
         </div>
+
 
         {/* Reviews Section - скрыто для уникальных товаров */}
         {/* <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem' }}>

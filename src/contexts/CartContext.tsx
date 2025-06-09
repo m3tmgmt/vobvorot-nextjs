@@ -22,7 +22,7 @@ interface CartState {
 }
 
 type CartAction =
-  | { type: 'ADD_ITEM'; payload: CartItem }
+  | { type: 'ADD_ITEM'; payload: CartItem & { maxStock: number } }
   | { type: 'REMOVE_ITEM'; payload: { productId: string; skuId: string } }
   | { type: 'UPDATE_QUANTITY'; payload: { productId: string; skuId: string; quantity: number } }
   | { type: 'CLEAR_CART' }
@@ -44,9 +44,16 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       )
 
       if (existingItem) {
+        // Check if adding would exceed stock
+        const newQuantity = existingItem.quantity + action.payload.quantity
+        if (newQuantity > action.payload.maxStock) {
+          // Don't add more than available stock
+          return state
+        }
+        
         const updatedItems = state.items.map(item =>
           item.productId === action.payload.productId && item.skuId === action.payload.skuId
-            ? { ...item, quantity: item.quantity + action.payload.quantity }
+            ? { ...item, quantity: newQuantity }
             : item
         )
         const total = updatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
@@ -54,7 +61,13 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         
         return { ...state, items: updatedItems, total, itemCount }
       } else {
-        const updatedItems = [...state.items, action.payload]
+        // Check if requested quantity exceeds stock
+        if (action.payload.quantity > action.payload.maxStock) {
+          return state
+        }
+        
+        const { maxStock, ...item } = action.payload
+        const updatedItems = [...state.items, item]
         const total = updatedItems.reduce((sum, item) => sum + item.price * item.quantity, 0)
         const itemCount = updatedItems.reduce((sum, item) => sum + item.quantity, 0)
         

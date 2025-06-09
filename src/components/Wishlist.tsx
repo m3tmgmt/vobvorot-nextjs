@@ -13,19 +13,59 @@ export function Wishlist() {
     dispatch({ type: 'CLOSE_WISHLIST' })
   }
 
-  const moveToCart = (item: any) => {
-    // Add to cart (assuming single SKU for simplicity)
-    cartDispatch({
-      type: 'ADD_ITEM',
-      payload: {
-        productId: item.productId,
-        skuId: 'default',
-        quantity: 1,
-        productName: item.productName,
-        price: item.price,
-        image: item.image
+  const moveToCart = async (item: any) => {
+    try {
+      // Fetch current product data to get stock info
+      const response = await fetch(`/api/products/${item.slug}`)
+      const product = await response.json()
+      
+      if (product && product.skus?.length > 0) {
+        const defaultSku = product.skus[0]
+        
+        if (defaultSku.stock > 0) {
+          cartDispatch({
+            type: 'ADD_ITEM',
+            payload: {
+              productId: item.id,
+              skuId: defaultSku.id,
+              quantity: 1,
+              productName: item.name,
+              price: defaultSku.price,
+              image: item.images?.[0]?.url,
+              size: defaultSku.size,
+              color: defaultSku.color,
+              maxStock: defaultSku.stock
+            }
+          })
+        } else {
+          // Show out of stock notification
+          const notification = document.createElement('div')
+          notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #ff4444, #cc0000);
+            color: white;
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            z-index: 10000;
+            box-shadow: 0 0 20px rgba(255,68,68,0.5);
+            animation: slideIn 0.3s ease;
+          `
+          notification.textContent = `${item.name} is out of stock!`
+          
+          document.body.appendChild(notification)
+          
+          setTimeout(() => {
+            notification.remove()
+          }, 3000)
+          return
+        }
       }
-    })
+    } catch (error) {
+      console.error('Error adding to cart:', error)
+      return
+    }
     
     // Show notification
     const notification = document.createElement('div')

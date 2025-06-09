@@ -106,15 +106,10 @@ export default function AboutPage() {
       </div>
 
       <section className="products-section">
-        <div style={{ maxWidth: '1000px', margin: '0 auto' }}>
+        <div className="container">
           <h2 className="section-title">Our Digital DNA</h2>
           
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))',
-            gap: '3rem',
-            marginBottom: '4rem'
-          }}>
+          <div className="cards-grid">
             <div className="product-card">
               <h3 style={{ color: 'var(--pink-main)', marginBottom: '1rem' }}>
                 🌐 Digital Playground
@@ -141,12 +136,7 @@ export default function AboutPage() {
           </div>
 
           {/* Stats Section */}
-          <div style={{ 
-            display: 'grid', 
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', 
-            gap: '2rem',
-            marginBottom: '4rem'
-          }}>
+          <div className="stats-grid">
             <div className="product-card" style={{ textAlign: 'center', border: '2px solid var(--pink-main)' }}>
               <h3 style={{ color: 'var(--pink-main)', fontSize: '3rem', marginBottom: '1rem' }}>500+</h3>
               <p style={{ color: 'var(--cyan-accent)' }}>Unique Items Curated</p>
@@ -178,11 +168,7 @@ export default function AboutPage() {
               Timeline of Digital Culture
             </h3>
             
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-              gap: '2rem'
-            }}>
+            <div className="timeline-grid">
               <div style={{ textAlign: 'center' }}>
                 <div style={{ 
                   fontSize: '2.5rem', 
@@ -257,12 +243,7 @@ export default function AboutPage() {
 
           {/* Team Section */}
           <h2 className="section-title">The Collective</h2>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-            gap: '2rem',
-            marginBottom: '4rem'
-          }}>
+          <div className="team-grid">
             <div className="product-card" style={{ textAlign: 'center' }}>
               <div style={{ 
                 fontSize: '4rem', 
@@ -315,7 +296,7 @@ export default function AboutPage() {
             textAlign: 'center'
           }}>
             <h2 className="section-title" style={{ marginBottom: '2rem' }}>Connect With Us</h2>
-            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+            <div className="flex-center-wrap gap-4">
               <a href="https://instagram.com/vobvorot" target="_blank" rel="noopener noreferrer" 
                 className="hero-button" style={{ textDecoration: 'none' }}>
                 📷 Instagram

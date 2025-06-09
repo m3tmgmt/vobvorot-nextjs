@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { westernbid } from '@/lib/westernbid'
+import { emailService, type OrderEmailData, type AdminNotificationData } from '@/lib/email'
 
 interface OrderItem {
   product: {
@@ -144,9 +145,56 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Send order confirmation email (placeholder)
-    // TODO: Implement email service
-    console.log(`Order created: ${orderNumber} for user ${session.user.email}`)
+    // Send order confirmation email
+    try {
+      console.log(`Sending order confirmation email for order: ${orderNumber}`)
+      
+      // Prepare email data
+      const emailData: OrderEmailData = {
+        orderNumber: order.orderNumber,
+        customerName: order.shippingName,
+        customerEmail: order.shippingEmail,
+        items: order.items.map(item => ({
+          name: item.sku.product.name,
+          quantity: item.quantity,
+          price: item.price,
+          size: item.sku.size || undefined,
+          color: item.sku.color || undefined,
+          imageUrl: item.sku.product.images[0]?.url
+        })),
+        subtotal: order.subtotal,
+        shippingCost: order.shippingCost,
+        total: order.total,
+        shippingAddress: {
+          name: order.shippingName,
+          address: order.shippingAddress,
+          city: order.shippingCity,
+          country: order.shippingCountry,
+          zip: order.shippingZip
+        }
+      }
+
+      // Send confirmation email to customer
+      await emailService.sendOrderConfirmation(emailData)
+
+      // Send notification email to admin
+      const adminData: AdminNotificationData = {
+        orderNumber: order.orderNumber,
+        customerName: order.shippingName,
+        customerEmail: order.shippingEmail,
+        total: order.total,
+        itemCount: order.items.length,
+        paymentMethod: order.paymentMethod || 'WesternBid',
+        shippingAddress: `${order.shippingAddress}, ${order.shippingCity}, ${order.shippingCountry}`
+      }
+
+      await emailService.sendAdminOrderNotification(adminData)
+      
+      console.log(`Order confirmation emails sent successfully for order: ${orderNumber}`)
+    } catch (emailError) {
+      console.error('Failed to send order confirmation emails:', emailError)
+      // Don't fail the order creation if email fails
+    }
 
     // Process payment with WesternBid
     console.log('Creating WesternBid payment for order:', orderNumber)

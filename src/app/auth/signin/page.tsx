@@ -167,38 +167,70 @@ export default function SignInPage() {
           </button>
         </form>
 
-        <div style={{ 
-          textAlign: 'center', 
-          marginBottom: '1.5rem',
-          color: 'rgba(255,255,255,0.5)',
-          fontSize: '0.9rem'
-        }}>
-          or continue with
-        </div>
+        {/* Only show OAuth options if providers are configured */}
+        {(process.env.NEXT_PUBLIC_GOOGLE_OAUTH === 'true' || process.env.NEXT_PUBLIC_GITHUB_OAUTH === 'true') && (
+          <>
+            <div style={{ 
+              textAlign: 'center', 
+              marginBottom: '1.5rem',
+              color: 'rgba(255,255,255,0.5)',
+              fontSize: '0.9rem'
+            }}>
+              or continue with
+            </div>
 
-        <div style={{ marginBottom: '1.5rem' }}>
-          <button
-            onClick={() => handleSocialSignIn('google')}
-            style={{
-              width: '100%',
-              padding: '0.75rem',
-              background: 'rgba(255,255,255,0.1)',
-              border: '1px solid var(--cyan-accent)',
-              borderRadius: '6px',
-              color: 'var(--white)',
-              cursor: 'pointer',
-              transition: 'all 0.3s ease'
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'rgba(0,245,255,0.2)'
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
-            }}
-          >
-            Google
-          </button>
-        </div>
+            <div style={{ marginBottom: '1.5rem' }}>
+              {process.env.NEXT_PUBLIC_GOOGLE_OAUTH === 'true' && (
+                <button
+                  onClick={() => handleSocialSignIn('google')}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    background: 'rgba(255,255,255,0.1)',
+                    border: '1px solid var(--cyan-accent)',
+                    borderRadius: '6px',
+                    color: 'var(--white)',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease',
+                    marginBottom: '0.5rem'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(0,245,255,0.2)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
+                  }}
+                >
+                  Google
+                </button>
+              )}
+              
+              {process.env.NEXT_PUBLIC_GITHUB_OAUTH === 'true' && (
+                <button
+                  onClick={() => handleSocialSignIn('github')}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem',
+                    background: 'rgba(255,255,255,0.1)',
+                    border: '1px solid var(--cyan-accent)',
+                    borderRadius: '6px',
+                    color: 'var(--white)',
+                    cursor: 'pointer',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(0,245,255,0.2)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
+                  }}
+                >
+                  GitHub
+                </button>
+              )}
+            </div>
+          </>
+        )}
 
         <div style={{ 
           textAlign: 'center',

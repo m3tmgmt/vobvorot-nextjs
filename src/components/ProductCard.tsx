@@ -4,18 +4,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { useCart } from '@/contexts/CartContext'
-
-interface Product {
-  id: string
-  name: string
-  slug: string
-  description?: string
-  brand?: string
-  images: { url: string; alt?: string; isPrimary: boolean }[]
-  skus: { id: string; price: number; stock: number; size?: string; color?: string }[]
-  category: { name: string; slug: string }
-  averageRating?: number
-}
+import { Product } from '@/types/product'
 
 interface ProductCardProps {
   product: Product
@@ -26,10 +15,11 @@ export function ProductCard({ product }: ProductCardProps) {
   const primaryImage = product.images.find(img => img.isPrimary) || product.images[0]
   const minPrice = Math.min(...product.skus.map(sku => sku.price))
   const inStock = product.skus.some(sku => sku.stock > 0)
+  const totalStock = product.skus.reduce((total, sku) => total + sku.stock, 0)
   const defaultSku = product.skus[0]
 
   const handleAddToCart = () => {
-    if (defaultSku) {
+    if (defaultSku && defaultSku.stock > 0) {
       dispatch({
         type: 'ADD_ITEM',
         payload: {
@@ -40,7 +30,8 @@ export function ProductCard({ product }: ProductCardProps) {
           price: defaultSku.price,
           image: primaryImage?.url,
           size: defaultSku.size,
-          color: defaultSku.color
+          color: defaultSku.color,
+          maxStock: defaultSku.stock
         }
       })
     }
@@ -54,9 +45,11 @@ export function ProductCard({ product }: ProductCardProps) {
             <Image
               src={primaryImage.url}
               alt={primaryImage.alt || product.name}
-              fill
+              width={280}
+              height={280}
               style={{objectFit: 'cover'}}
-              className="product-image"
+              sizes="(max-width: 480px) 200px, (max-width: 768px) 250px, 280px"
+              priority={false}
             />
           ) : (
             <div className="w-full h-full flex-center" style={{background: 'rgba(255,255,255,0.1)'}}>
@@ -78,32 +71,14 @@ export function ProductCard({ product }: ProductCardProps) {
         </div>
       </Link>
 
-      <div>
-        {product.brand && (
-          <p style={{
-            color: 'var(--cyan-accent)',
-            fontSize: '0.9rem',
-            marginBottom: '0.5rem',
-            fontFamily: "'JetBrains Mono', monospace"
-          }}>
-            {product.brand}
-          </p>
-        )}
+      <div className="product-info">
+        <p className="product-category">{product.category.name}</p>
         
         <Link href={`/products/${product.slug}`}>
-          <h3 className="product-title glitch">
+          <h3 className="product-title">
             {product.name}
           </h3>
         </Link>
-
-        {product.description && (
-          <p className="product-description">
-            {product.description.length > 100 
-              ? `${product.description.substring(0, 100)}...` 
-              : product.description
-            }
-          </p>
-        )}
 
         {/* Rating - скрыто для уникальных товаров */}
         {/* {product.averageRating && product.averageRating > 0 && (
@@ -135,18 +110,11 @@ export function ProductCard({ product }: ProductCardProps) {
           </div>
         )} */}
 
-        <div className="product-price">
-          ${minPrice}
-          {product.skus.length > 1 && (
-            <span style={{
-              fontSize: '0.8rem',
-              color: 'rgba(255,255,255,0.6)',
-              marginLeft: '0.5rem'
-            }}>
-              from
-            </span>
-          )}
-        </div>
+        <p className="product-price">${minPrice} USD</p>
+        
+        <p className="product-stock">
+          {inStock ? (totalStock === 1 ? 'last one!' : `${totalStock} left`) : 'sold out'}
+        </p>
 
         <button
           onClick={handleAddToCart}
@@ -154,7 +122,7 @@ export function ProductCard({ product }: ProductCardProps) {
           className="add-to-cart-btn"
           style={{opacity: inStock ? 1 : 0.5}}
         >
-          {inStock ? 'Add to Cart' : 'Out of Stock'}
+          {inStock ? 'add to bag' : 'sold out'}
         </button>
       </div>
     </div>
