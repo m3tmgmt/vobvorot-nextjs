@@ -3,7 +3,17 @@ import { Resend } from 'resend'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Simple check for admin access using query parameter
+  const searchParams = request.nextUrl.searchParams
+  const adminKey = searchParams.get('key')
+  
+  if (adminKey !== process.env.ADMIN_API_KEY) {
+    return NextResponse.json({
+      error: 'Unauthorized - Admin key required',
+      hint: 'Use ?key=ADMIN_API_KEY in URL'
+    }, { status: 401 })
+  }
   try {
     // Check if we can access Resend API
     if (!process.env.RESEND_API_KEY) {
@@ -66,7 +76,17 @@ To: ${process.env.ADMIN_EMAIL || 'admin@vobvorot.com'}`
   }
 }
 
-export async function POST() {
+export async function POST(request: NextRequest) {
+  // Simple check for admin access using query parameter
+  const searchParams = request.nextUrl.searchParams
+  const adminKey = searchParams.get('key')
+  
+  if (adminKey !== process.env.ADMIN_API_KEY) {
+    return NextResponse.json({
+      error: 'Unauthorized - Admin key required',
+      hint: 'Use ?key=ADMIN_API_KEY in URL'
+    }, { status: 401 })
+  }
   try {
     if (!process.env.RESEND_API_KEY) {
       return NextResponse.json({
