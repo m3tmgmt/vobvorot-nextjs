@@ -1335,7 +1335,7 @@ export async function sendEmail(options: {
   const client = getResendClient()
   
   await client.emails.send({
-    from: process.env.FROM_EMAIL || 'noreply@exvicpmour.com',
+    from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
     to: options.to,
     subject: options.subject,
     html: options.html,
