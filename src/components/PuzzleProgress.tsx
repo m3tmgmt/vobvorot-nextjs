@@ -63,21 +63,25 @@ export function PuzzleProgress() {
             onClick={() => setIsOpen(false)}
           />
           
-          <div style={{
-            position: 'fixed',
-            top: '50%',
-            left: '50%',
-            transform: 'translate(-50%, -50%)',
-            width: '90%',
-            maxWidth: '800px',
-            maxHeight: '80vh',
-            background: 'rgba(0, 0, 0, 0.95)',
-            border: '2px solid var(--pink-main)',
-            borderRadius: '20px',
-            padding: '2rem',
-            zIndex: 1002,
-            overflow: 'auto'
-          }}>
+          <div 
+            className="puzzle-progress-modal"
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              width: '90%',
+              maxWidth: '800px',
+              maxHeight: '80vh',
+              background: 'rgba(0, 0, 0, 0.95)',
+              border: '2px solid var(--pink-main)',
+              borderRadius: '20px',
+              padding: '2rem',
+              zIndex: 1002,
+              overflow: 'auto',
+              backdropFilter: 'blur(15px)',
+              boxShadow: '0 0 30px rgba(255, 107, 157, 0.3)'
+            }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
               <h2 style={{ color: 'var(--pink-main)', fontSize: '2rem', fontWeight: '700' }}>
                 Puzzle Progress

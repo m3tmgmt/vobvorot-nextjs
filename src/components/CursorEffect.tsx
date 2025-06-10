@@ -13,7 +13,7 @@ export default function CursorEffect() {
   const trailsRef = useRef<HTMLDivElement[]>([]);
   const mousePos = useRef({ x: 0, y: 0 });
   const trails = useRef<Trail[]>([]);
-  const animationFrame = useRef<number>();
+  const animationFrame = useRef<number | undefined>();
 
   useEffect(() => {
     // Инициализация трейлов

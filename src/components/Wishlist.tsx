@@ -104,12 +104,12 @@ export function Wishlist() {
         </div>
 
         {state.items.length === 0 ? (
-          <div className="text-center" style={{ padding: '2rem 0' }}>
-            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>💫</div>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '1.1rem', marginBottom: '1rem' }}>
+          <div className="text-center wishlist-empty">
+            <div className="wishlist-empty-icon">💫</div>
+            <p className="wishlist-empty-title">
               Your wishlist is empty
             </p>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+            <p className="wishlist-empty-subtitle">
               Save items you love for later!
             </p>
             <button 
@@ -125,9 +125,7 @@ export function Wishlist() {
             {/* Wishlist Items */}
             <div>
               {state.items.map((item) => (
-                <div key={item.id} className="cart-item" style={{
-                  border: '1px solid rgba(0,245,255,0.3)'
-                }}>
+                <div key={item.id} className="cart-item wishlist-item">
                   {item.images?.[0]?.url && (
                     <Link href={`/products/${item.slug}`} onClick={closeWishlist}>
                       <Image
@@ -151,72 +149,25 @@ export function Wishlist() {
                       </h3>
                     </Link>
                     
-                    <p style={{
-                      fontSize: '0.8rem',
-                      color: 'rgba(255,255,255,0.5)',
-                      marginBottom: '0.5rem',
-                      fontFamily: 'JetBrains Mono, monospace'
-                    }}>
+                    <p className="wishlist-item-date">
                       Added: {new Date(item.addedAt).toLocaleDateString()}
                     </p>
                     
-                    <p className="cart-item-price" style={{ color: 'var(--cyan-accent)' }}>
+                    <p className="cart-item-price wishlist-item-price">
                       ${item.price}
                     </p>
                     
-                    <div style={{
-                      display: 'flex',
-                      gap: '0.5rem',
-                      marginTop: '0.75rem',
-                      flexWrap: 'wrap'
-                    }}>
+                    <div className="wishlist-buttons">
                       <button
                         onClick={() => moveToCart(item)}
-                        style={{
-                          background: 'linear-gradient(45deg, var(--pink-main), var(--purple-accent))',
-                          border: 'none',
-                          color: 'white',
-                          padding: '0.4rem 0.8rem',
-                          borderRadius: '15px',
-                          fontSize: '0.8rem',
-                          cursor: 'pointer',
-                          fontWeight: '600',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.transform = 'translateY(-2px)'
-                          e.currentTarget.style.boxShadow = '0 5px 15px rgba(255,107,157,0.4)'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.transform = 'translateY(0)'
-                          e.currentTarget.style.boxShadow = 'none'
-                        }}
+                        className="wishlist-add-to-cart-btn"
                       >
                         🛒 Add to Cart
                       </button>
                       
                       <button
                         onClick={() => removeFromWishlist(item.id)}
-                        style={{
-                          background: 'rgba(255,255,255,0.1)',
-                          border: '1px solid rgba(255,255,255,0.3)',
-                          color: 'rgba(255,255,255,0.8)',
-                          padding: '0.4rem 0.8rem',
-                          borderRadius: '15px',
-                          fontSize: '0.8rem',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = 'rgba(255,0,0,0.2)'
-                          e.currentTarget.style.borderColor = 'rgba(255,0,0,0.5)'
-                          e.currentTarget.style.color = '#ff6b6b'
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = 'rgba(255,255,255,0.1)'
-                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'
-                          e.currentTarget.style.color = 'rgba(255,255,255,0.8)'
-                        }}
+                        className="wishlist-remove-btn"
                       >
                         Remove
                       </button>
@@ -227,26 +178,14 @@ export function Wishlist() {
             </div>
 
             {/* Wishlist Actions */}
-            <div className="cart-total" style={{
-              borderTop: '2px solid var(--cyan-accent)'
-            }}>
-              <div style={{
-                fontSize: '1.1rem',
-                fontWeight: '700',
-                color: 'var(--cyan-accent)',
-                marginBottom: '1rem',
-                textAlign: 'center'
-              }}>
+            <div className="cart-total wishlist-total">
+              <div className="wishlist-count">
                 {state.itemCount} item{state.itemCount !== 1 ? 's' : ''} saved
               </div>
               
               <button 
-                className="checkout-btn"
+                className="checkout-btn wishlist-continue-btn"
                 onClick={closeWishlist}
-                style={{
-                  background: 'linear-gradient(45deg, var(--cyan-accent), var(--purple-accent))',
-                  color: 'var(--black)'
-                }}
               >
                 Continue Shopping ✨
               </button>
@@ -258,15 +197,7 @@ export function Wishlist() {
       {/* Backdrop */}
       {state.isOpen && (
         <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            background: 'rgba(0,0,0,0.5)',
-            zIndex: 1001
-          }}
+          className="modal-backdrop wishlist-backdrop"
           onClick={closeWishlist}
         />
       )}

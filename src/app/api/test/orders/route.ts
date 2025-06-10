@@ -5,6 +5,8 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 export async function POST(request: NextRequest) {
+  return NextResponse.json({ message: 'Test route disabled during deployment' });
+  /*
   try {
     // Test order flow end-to-end
     console.log('🧪 Starting order flow test...');
@@ -153,6 +155,7 @@ export async function POST(request: NextRequest) {
   } finally {
     await prisma.$disconnect();
   }
+  */
 }
 
 export async function GET(request: NextRequest) {

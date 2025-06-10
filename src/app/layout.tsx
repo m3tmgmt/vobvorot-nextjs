@@ -8,6 +8,8 @@ import { SecretDetector } from "@/components/SecretDetector";
 import CursorEffect from "@/components/CursorEffect";
 import ParticleSystem from "@/components/ParticleSystem";
 import MatrixEffectWrapper from "@/components/MatrixEffectWrapper";
+import KonamiActivator from "@/components/KonamiActivator";
+import SecretMenu from "@/components/SecretMenu";
 import { PuzzleProgress } from "@/components/PuzzleProgress";
 import { MusicPlayer } from "@/components/MusicPlayer";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
@@ -18,6 +20,7 @@ import { PuzzleProvider } from "@/contexts/PuzzleContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { MatrixProvider } from "@/contexts/MatrixContext";
+import { KonamiProvider } from "@/contexts/KonamiContext";
 import { generateOrganizationStructuredData, generateWebsiteStructuredData } from "@/lib/seo";
 
 
@@ -121,26 +124,30 @@ export default function RootLayout({
             <AuthProvider>
               <MatrixProvider>
                 <PuzzleProvider>
-                  <CartProvider>
-                    <WishlistProvider>
-                    <MatrixEffectWrapper />
-                    <CursorEffect />
-                    <ParticleSystem />
-                    <Effects />
-                    <SecretDetector />
-                    <Navigation />
-                    <Cart />
-                    <Wishlist />
-                    <FloatingCartIcons />
-                    <PuzzleProgress />
-                    <MusicPlayer />
-                    <main>
-                      <ErrorBoundary>
-                        {children}
-                      </ErrorBoundary>
-                    </main>
-                    </WishlistProvider>
-                  </CartProvider>
+                  <KonamiProvider>
+                    <CartProvider>
+                      <WishlistProvider>
+                      <MatrixEffectWrapper />
+                      <CursorEffect />
+                      <ParticleSystem />
+                      <Effects />
+                      <SecretDetector />
+                      <KonamiActivator />
+                      <SecretMenu />
+                      <Navigation />
+                      <Cart />
+                      <Wishlist />
+                      <FloatingCartIcons />
+                      <PuzzleProgress />
+                      <MusicPlayer />
+                      <main>
+                        <ErrorBoundary>
+                          {children}
+                        </ErrorBoundary>
+                      </main>
+                      </WishlistProvider>
+                    </CartProvider>
+                  </KonamiProvider>
                 </PuzzleProvider>
               </MatrixProvider>
             </AuthProvider>

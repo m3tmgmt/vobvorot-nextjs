@@ -70,26 +70,8 @@ export function Navigation() {
             <li>
               <button 
                 onClick={() => {
-                  console.log('Navigating to /')
-                  try {
-                    router.push('/')
-                  } catch (error) {
-                    window.location.href = '/'
-                  }
+                  router.push('/')
                   setIsOpen(false)
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--white)',
-                  fontSize: '1.1rem',
-                  padding: '0.5rem 0',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  width: '100%',
-                  borderLeft: '2px solid transparent',
-                  paddingLeft: '1rem',
-                  transition: 'all 0.3s ease'
                 }}
               >
                 Home
@@ -98,26 +80,8 @@ export function Navigation() {
             <li>
               <button 
                 onClick={() => {
-                  console.log('Navigating to /exvicpmour')
-                  try {
-                    router.push('/exvicpmour')
-                  } catch (error) {
-                    window.location.href = '/exvicpmour'
-                  }
+                  router.push('/exvicpmour')
                   setIsOpen(false)
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--white)',
-                  fontSize: '1.1rem',
-                  padding: '0.5rem 0',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  width: '100%',
-                  borderLeft: '2px solid transparent',
-                  paddingLeft: '1rem',
-                  transition: 'all 0.3s ease'
                 }}
               >
                 EXVICPMOUR Store
@@ -126,26 +90,8 @@ export function Navigation() {
             <li>
               <button 
                 onClick={() => {
-                  console.log('Navigating to /products')
-                  try {
-                    router.push('/products')
-                  } catch (error) {
-                    window.location.href = '/products'
-                  }
+                  router.push('/products')
                   setIsOpen(false)
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--white)',
-                  fontSize: '1.1rem',
-                  padding: '0.5rem 0',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  width: '100%',
-                  borderLeft: '2px solid transparent',
-                  paddingLeft: '1rem',
-                  transition: 'all 0.3s ease'
                 }}
               >
                 All Products
@@ -154,26 +100,8 @@ export function Navigation() {
             <li>
               <button 
                 onClick={() => {
-                  console.log('Navigating to /training')
-                  try {
-                    router.push('/training')
-                  } catch (error) {
-                    window.location.href = '/training'
-                  }
+                  router.push('/training')
                   setIsOpen(false)
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--white)',
-                  fontSize: '1.1rem',
-                  padding: '0.5rem 0',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  width: '100%',
-                  borderLeft: '2px solid transparent',
-                  paddingLeft: '1rem',
-                  transition: 'all 0.3s ease'
                 }}
               >
                 Training Programs
@@ -182,26 +110,8 @@ export function Navigation() {
             <li>
               <button 
                 onClick={() => {
-                  console.log('Navigating to /puzzle')
-                  try {
-                    router.push('/puzzle')
-                  } catch (error) {
-                    window.location.href = '/puzzle'
-                  }
+                  router.push('/puzzle')
                   setIsOpen(false)
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--white)',
-                  fontSize: '1.1rem',
-                  padding: '0.5rem 0',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  width: '100%',
-                  borderLeft: '2px solid transparent',
-                  paddingLeft: '1rem',
-                  transition: 'all 0.3s ease'
                 }}
               >
                 Puzzle Game
@@ -210,26 +120,8 @@ export function Navigation() {
             <li>
               <button 
                 onClick={() => {
-                  console.log('Navigating to /community')
-                  try {
-                    router.push('/community')
-                  } catch (error) {
-                    window.location.href = '/community'
-                  }
+                  router.push('/community')
                   setIsOpen(false)
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--white)',
-                  fontSize: '1.1rem',
-                  padding: '0.5rem 0',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  width: '100%',
-                  borderLeft: '2px solid transparent',
-                  paddingLeft: '1rem',
-                  transition: 'all 0.3s ease'
                 }}
               >
                 Community
@@ -238,45 +130,15 @@ export function Navigation() {
             <li>
               <button 
                 onClick={() => {
-                  console.log('Navigating to /about')
-                  try {
-                    router.push('/about')
-                  } catch (error) {
-                    window.location.href = '/about'
-                  }
+                  router.push('/about')
                   setIsOpen(false)
-                }}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--white)',
-                  fontSize: '1.1rem',
-                  padding: '0.5rem 0',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  width: '100%',
-                  borderLeft: '2px solid transparent',
-                  paddingLeft: '1rem',
-                  transition: 'all 0.3s ease'
                 }}
               >
                 About
               </button>
             </li>
             <li>
-              <button onClick={toggleCart} style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--white)',
-                fontSize: '1.1rem',
-                padding: '0.5rem 0',
-                cursor: 'pointer',
-                textAlign: 'left',
-                width: '100%',
-                borderLeft: '2px solid transparent',
-                paddingLeft: '1rem',
-                transition: 'all 0.3s ease'
-              }}>
+              <button onClick={toggleCart}>
                 🛒 Cart
                 {mounted && state.itemCount > 0 && (
                   <span className="cart-count">{state.itemCount}</span>
@@ -284,19 +146,7 @@ export function Navigation() {
               </button>
             </li>
             <li>
-              <button onClick={toggleWishlist} style={{
-                background: 'none',
-                border: 'none',
-                color: 'var(--white)',
-                fontSize: '1.1rem',
-                padding: '0.5rem 0',
-                cursor: 'pointer',
-                textAlign: 'left',
-                width: '100%',
-                borderLeft: '2px solid transparent',
-                paddingLeft: '1rem',
-                transition: 'all 0.3s ease'
-              }}>
+              <button onClick={toggleWishlist}>
                 ✨ Wishlist
                 {mounted && wishlistState.itemCount > 0 && (
                   <span className="cart-count" style={{ background: 'var(--cyan-accent)' }}>
@@ -317,19 +167,6 @@ export function Navigation() {
                           router.push('/account')
                           setIsOpen(false)
                         }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--white)',
-                          fontSize: '1.1rem',
-                          padding: '0.5rem 0',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          width: '100%',
-                          borderLeft: '2px solid transparent',
-                          paddingLeft: '1rem',
-                          transition: 'all 0.3s ease'
-                        }}
                       >
                         👤 {session.user.name || session.user.email}
                       </button>
@@ -340,19 +177,6 @@ export function Navigation() {
                           router.push('/account/orders')
                           setIsOpen(false)
                         }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--cyan-accent)',
-                          fontSize: '1.1rem',
-                          padding: '0.5rem 0',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          width: '100%',
-                          borderLeft: '2px solid transparent',
-                          paddingLeft: '1rem',
-                          transition: 'all 0.3s ease'
-                        }}
                       >
                         📦 My Orders
                       </button>
@@ -362,19 +186,6 @@ export function Navigation() {
                         onClick={() => {
                           signOut({ callbackUrl: '/' })
                           setIsOpen(false)
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--pink-neon)',
-                          fontSize: '1.1rem',
-                          padding: '0.5rem 0',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          width: '100%',
-                          borderLeft: '2px solid transparent',
-                          paddingLeft: '1rem',
-                          transition: 'all 0.3s ease'
                         }}
                       >
                         🚪 Sign Out
@@ -389,19 +200,6 @@ export function Navigation() {
                           router.push('/auth/signin')
                           setIsOpen(false)
                         }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--cyan-accent)',
-                          fontSize: '1.1rem',
-                          padding: '0.5rem 0',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          width: '100%',
-                          borderLeft: '2px solid transparent',
-                          paddingLeft: '1rem',
-                          transition: 'all 0.3s ease'
-                        }}
                       >
                         🔐 Sign In
                       </button>
@@ -411,19 +209,6 @@ export function Navigation() {
                         onClick={() => {
                           router.push('/auth/signup')
                           setIsOpen(false)
-                        }}
-                        style={{
-                          background: 'none',
-                          border: 'none',
-                          color: 'var(--green-neon)',
-                          fontSize: '1.1rem',
-                          padding: '0.5rem 0',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          width: '100%',
-                          borderLeft: '2px solid transparent',
-                          paddingLeft: '1rem',
-                          transition: 'all 0.3s ease'
                         }}
                       >
                         ✨ Sign Up

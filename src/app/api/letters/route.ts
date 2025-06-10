@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
 
     const where = session?.user?.id 
       ? { userId: session.user.id }
-      : { senderEmail: email };
+      : { senderEmail: email || '' };
 
     const letters = await prisma.futureLetter.findMany({
       where,

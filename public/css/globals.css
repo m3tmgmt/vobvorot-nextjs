@@ -229,10 +229,24 @@ html, body {
   -webkit-text-fill-color: transparent;
   text-align: center;
   position: relative;
-  animation: gradientShift 3s ease-in-out infinite, textGlitch 4s infinite;
+  animation: gradientShift 3s ease-in-out infinite, textGlow 2s ease-in-out infinite;
   font-family: 'JetBrains Mono', monospace;
   text-shadow: 0 0 20px rgba(255, 107, 157, 0.3);
   z-index: 1;
+  transition: all 0.3s ease;
+}
+
+.nav-title:hover {
+  animation: gradientShift 3s ease-in-out infinite, textGlitch 0.2s infinite;
+  transform: scale(1.02);
+}
+
+.nav-title:hover::before {
+  animation: glitchLayer1 0.3s infinite;
+}
+
+.nav-title:hover::after {
+  animation: glitchLayer2 0.4s infinite;
 }
 
 .nav-title::before {
@@ -246,7 +260,7 @@ html, body {
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: glitchLayer1 2s infinite;
+  animation: none;
   z-index: -1;
 }
 
@@ -261,8 +275,23 @@ html, body {
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: glitchLayer2 2.5s infinite;
+  animation: none;
   z-index: -2;
+}
+
+@keyframes textGlow {
+  0% { 
+    text-shadow: 0 0 20px rgba(255, 107, 157, 0.3), 0 0 30px rgba(0, 245, 255, 0.2);
+    filter: brightness(1);
+  }
+  50% { 
+    text-shadow: 0 0 30px rgba(255, 107, 157, 0.6), 0 0 40px rgba(0, 245, 255, 0.4), 0 0 50px rgba(255, 255, 0, 0.3);
+    filter: brightness(1.1);
+  }
+  100% { 
+    text-shadow: 0 0 20px rgba(255, 107, 157, 0.3), 0 0 30px rgba(0, 245, 255, 0.2);
+    filter: brightness(1);
+  }
 }
 
 @keyframes textGlitch {
@@ -329,16 +358,19 @@ html, body {
 
 .nav-links button {
   width: 100%;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.8);
-  padding: 0.75rem 1rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(255, 107, 157, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  padding: 1rem 1.25rem;
   text-align: left;
   font-size: 1rem;
-  border-radius: 8px;
-  transition: all 0.3s ease;
+  font-weight: 500;
+  border-radius: 12px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   position: relative;
   overflow: hidden;
+  backdrop-filter: blur(10px);
+  letter-spacing: 0.02em;
 }
 
 .nav-links button::before {
@@ -348,21 +380,41 @@ html, body {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 107, 157, 0.1), transparent);
-  transition: left 0.5s ease;
+  background: linear-gradient(90deg, transparent, rgba(255, 107, 157, 0.3), rgba(0, 245, 255, 0.2), transparent);
+  transition: left 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-links button::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(255, 107, 157, 0.1) 0%, transparent 50%, rgba(0, 245, 255, 0.1) 100%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
 }
 
 .nav-links button:hover::before {
   left: 100%;
 }
 
+.nav-links button:hover::after {
+  opacity: 1;
+}
+
 .nav-links button:hover {
-  border-left: 3px solid #FF6B9D;
-  background: rgba(255, 107, 157, 0.15);
-  color: #FF6B9D;
-  transform: translateX(5px);
-  box-shadow: 0 5px 15px rgba(255, 107, 157, 0.2);
-  text-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
+  border: 1px solid rgba(255, 107, 157, 0.6);
+  background: linear-gradient(135deg, rgba(255, 107, 157, 0.2) 0%, rgba(0, 245, 255, 0.1) 100%);
+  color: #FFFFFF;
+  transform: translateX(8px) translateY(-2px);
+  box-shadow: 
+    0 8px 25px rgba(255, 107, 157, 0.3),
+    0 0 20px rgba(255, 107, 157, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  text-shadow: 0 0 15px rgba(255, 107, 157, 0.6);
+  backdrop-filter: blur(15px);
 }
 
 /* Hero Section */
@@ -423,6 +475,14 @@ html, body {
   animation: gradientShift 3s ease-in-out infinite;
   text-shadow: 0 0 30px rgba(255, 107, 157, 0.5);
   line-height: 1.1;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.hero-title:hover {
+  animation: gradientShift 2s ease-in-out infinite, textGlitch 0.2s infinite;
+  transform: scale(1.02);
+  text-shadow: 0 0 40px rgba(255, 107, 157, 0.8), 0 0 60px rgba(0, 245, 255, 0.6);
 }
 
 .hero-subtitle {
@@ -494,6 +554,14 @@ html, body {
   -webkit-text-fill-color: transparent;
   text-transform: uppercase;
   letter-spacing: 0.1em;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.section-title:hover {
+  animation: textGlitch 0.2s infinite;
+  transform: scale(1.02);
+  text-shadow: 0 0 20px rgba(0, 245, 255, 0.6), 0 0 30px rgba(255, 107, 157, 0.4);
 }
 
 /* Filter Bar */
@@ -548,6 +616,74 @@ html, body {
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
   gap: 2rem;
   margin-top: 2rem;
+}
+
+/* Stats Grid for About page */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin: 3rem 0;
+}
+
+/* Team Grid for About page */
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: 2rem;
+  margin-top: 2rem;
+}
+
+/* Timeline Grid for About page */
+.timeline-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 3rem;
+  margin-top: 2rem;
+}
+
+/* Flex utilities for About page */
+.flex-center-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+/* Custom Scrollbar for Puzzle Progress Modal */
+.puzzle-progress-modal {
+  scrollbar-width: thin;
+  scrollbar-color: var(--pink-main) rgba(255, 255, 255, 0.1);
+}
+
+.puzzle-progress-modal::-webkit-scrollbar {
+  width: 12px;
+}
+
+.puzzle-progress-modal::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 10px;
+  border: 1px solid rgba(255, 107, 157, 0.2);
+}
+
+.puzzle-progress-modal::-webkit-scrollbar-thumb {
+  background: linear-gradient(45deg, var(--pink-main), var(--purple-accent));
+  border-radius: 10px;
+  border: 2px solid rgba(0, 0, 0, 0.3);
+  box-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
+}
+
+.puzzle-progress-modal::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(45deg, var(--cyan-accent), var(--pink-main));
+  box-shadow: 0 0 15px rgba(255, 107, 157, 0.8);
+}
+
+.puzzle-progress-modal::-webkit-scrollbar-corner {
+  background: rgba(0, 0, 0, 0.3);
 }
 
 /* Product Card */
@@ -674,11 +810,6 @@ html, body {
   box-shadow: -10px 0 30px rgba(255, 107, 157, 0.3);
 }
 
-/* Cart backdrop */
-.cart-modal + div {
-  z-index: 1099 !important;
-}
-
 /* Wishlist Modal */
 .wishlist-modal {
   position: fixed;
@@ -700,9 +831,259 @@ html, body {
   box-shadow: -10px 0 30px rgba(0, 245, 255, 0.3);
 }
 
-/* Wishlist backdrop */
-.wishlist-modal + div {
-  z-index: 1199 !important;
+/* Wishlist specific styles */
+.wishlist-item {
+  border: 1px solid rgba(0, 245, 255, 0.3) !important;
+}
+
+.wishlist-item-date {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 0.5rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.wishlist-item-price {
+  color: var(--cyan-accent) !important;
+}
+
+.wishlist-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.wishlist-add-to-cart-btn {
+  background: linear-gradient(45deg, var(--pink-main), var(--purple-accent));
+  border: none;
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.wishlist-add-to-cart-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 107, 157, 0.4);
+}
+
+.wishlist-remove-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 0.4rem 0.8rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+}
+
+.wishlist-remove-btn:hover {
+  background: rgba(255, 0, 0, 0.2);
+  border-color: rgba(255, 0, 0, 0.5);
+  color: #ff6b6b;
+}
+
+.wishlist-empty {
+  padding: 2rem 0;
+}
+
+.wishlist-empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.wishlist-empty-title {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.wishlist-empty-subtitle {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.wishlist-total {
+  border-top: 2px solid var(--cyan-accent);
+}
+
+.wishlist-count {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--cyan-accent);
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.wishlist-continue-btn {
+  background: linear-gradient(45deg, var(--cyan-accent), var(--purple-accent));
+  color: var(--black);
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+}
+
+/* Specific z-index for cart backdrop */
+.cart-backdrop {
+  z-index: 1099;
+}
+
+/* Specific z-index for wishlist backdrop */
+.wishlist-backdrop {
+  z-index: 1199;
+}
+
+/* Konami Code Animations */
+@keyframes konamiShake {
+  0%, 100% { transform: translateX(0); }
+  10% { transform: translateX(-10px); }
+  20% { transform: translateX(10px); }
+  30% { transform: translateX(-10px); }
+  40% { transform: translateX(10px); }
+  50% { transform: translateX(-5px); }
+  60% { transform: translateX(5px); }
+  70% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+  90% { transform: translateX(-2px); }
+}
+
+@keyframes konamiGlow {
+  0% { 
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+    box-shadow: 0 0 30px rgba(0, 255, 65, 0.5);
+  }
+  50% { 
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+    box-shadow: 0 0 50px rgba(0, 255, 65, 0.8);
+  }
+  100% { 
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 0 30px rgba(0, 255, 65, 0.5);
+  }
+}
+
+@keyframes secretMenuSlide {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -60%) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* God Mode Effects */
+.god-mode-active {
+  filter: hue-rotate(180deg) saturate(1.5);
+  animation: godModeGlow 2s ease-in-out infinite alternate;
+}
+
+@keyframes godModeGlow {
+  0% { 
+    filter: hue-rotate(0deg) saturate(1) brightness(1);
+  }
+  100% { 
+    filter: hue-rotate(360deg) saturate(1.5) brightness(1.2);
+  }
+}
+
+/* Developer Mode Effects */
+.developer-mode {
+  position: relative;
+}
+
+.developer-mode::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    45deg,
+    transparent 48%,
+    rgba(0, 255, 65, 0.03) 49%,
+    rgba(0, 255, 65, 0.03) 51%,
+    transparent 52%
+  );
+  pointer-events: none;
+  z-index: 10000;
+  animation: developerScanlines 3s linear infinite;
+}
+
+@keyframes developerScanlines {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Enhanced Particle Effects */
+.particles-x10 .particle-system {
+  filter: brightness(1.5) saturate(2);
+}
+
+.particles-x10 .particle-system::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(255, 107, 157, 0.1) 0%, transparent 70%);
+  animation: particleBoost 2s ease-in-out infinite;
+}
+
+@keyframes particleBoost {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+/* Theme Variables for Konami Themes */
+:root {
+  --theme-primary: var(--pink-main);
+  --theme-secondary: var(--purple-accent);
+  --theme-accent: var(--cyan-accent);
+}
+
+/* Matrix Theme Override */
+.theme-matrix {
+  --theme-primary: #00FF41;
+  --theme-secondary: #008F11;
+  --theme-accent: #00FF41;
+}
+
+/* Cyber Theme Override */
+.theme-cyber {
+  --theme-primary: #FF00FF;
+  --theme-secondary: #8000FF;
+  --theme-accent: #00FFFF;
+}
+
+/* Neon Theme Override */
+.theme-neon {
+  --theme-primary: #FFFF00;
+  --theme-secondary: #FF8000;
+  --theme-accent: #FF0080;
 }
 
 .cart-header {

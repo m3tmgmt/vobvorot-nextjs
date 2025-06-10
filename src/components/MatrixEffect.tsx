@@ -20,11 +20,11 @@ export interface MatrixEffectRef {
 
 const MatrixEffect = forwardRef<MatrixEffectRef>((props, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const animationFrame = useRef<number>();
+  const animationFrame = useRef<number | undefined>();
   const isActive = useRef<boolean>(false);
   const columns = useRef<MatrixColumn[]>([]);
-  const deactivateTimer = useRef<NodeJS.Timeout>();
-  const fadeTimer = useRef<NodeJS.Timeout>();
+  const deactivateTimer = useRef<NodeJS.Timeout | undefined>();
+  const fadeTimer = useRef<NodeJS.Timeout | undefined>();
   const globalOpacity = useRef<number>(0);
   const isActivating = useRef<boolean>(false);
   const isDeactivating = useRef<boolean>(false);

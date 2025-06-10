@@ -46,8 +46,7 @@ export async function POST(request: NextRequest) {
         await sendEmail({
           to: letter.recipientEmail || letter.senderEmail,
           subject: `💌 ${letter.subject}`,
-          html: emailTemplate,
-          from: process.env.RESEND_FROM_EMAIL || 'letters@vobvorot.com'
+          html: emailTemplate
         });
 
         // Mark as delivered

@@ -33,6 +33,7 @@ interface PuzzleState {
   konami: boolean
   rainbowMode: boolean
   matrixMode: boolean
+  godMode: boolean
 }
 
 type PuzzleAction =
@@ -41,6 +42,8 @@ type PuzzleAction =
   | { type: 'TOGGLE_KONAMI' }
   | { type: 'TOGGLE_RAINBOW' }
   | { type: 'TOGGLE_MATRIX' }
+  | { type: 'ACTIVATE_GOD_MODE' }
+  | { type: 'DEACTIVATE_GOD_MODE' }
   | { type: 'LOAD_STATE'; payload: PuzzleState }
   | { type: 'RESET_PROGRESS' }
 
@@ -209,6 +212,15 @@ const initialAchievements: Achievement[] = [
     unlocked: false,
     requirement: 'Send a letter to future',
     color: 'var(--green-neon)'
+  },
+  {
+    id: 'code-breaker',
+    name: 'Code Breaker',
+    description: 'Unlocked the legendary Konami code',
+    icon: '🎮',
+    unlocked: false,
+    requirement: 'Enter the famous ↑↑↓↓←→←→BA sequence',
+    color: '#00FF41'
   }
 ]
 
@@ -289,6 +301,12 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
     case 'TOGGLE_MATRIX':
       return { ...state, matrixMode: !state.matrixMode }
 
+    case 'ACTIVATE_GOD_MODE':
+      return { ...state, godMode: true }
+
+    case 'DEACTIVATE_GOD_MODE':
+      return { ...state, godMode: false }
+
     case 'LOAD_STATE':
       return action.payload
 
@@ -300,7 +318,8 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
         secretsFound: 0,
         konami: false,
         rainbowMode: false,
-        matrixMode: false
+        matrixMode: false,
+        godMode: false
       }
 
     default:
@@ -317,7 +336,8 @@ export function PuzzleProvider({ children }: { children: React.ReactNode }) {
     secretsFound: 0,
     konami: false,
     rainbowMode: false,
-    matrixMode: false
+    matrixMode: false,
+    godMode: false
   })
 
   useEffect(() => {
