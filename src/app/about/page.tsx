@@ -219,7 +219,8 @@ export default function AboutPage() {
             padding: '3rem',
             border: '2px solid var(--pink-main)',
             textAlign: 'center',
-            marginBottom: '4rem'
+            marginBottom: '4rem',
+            marginTop: '4rem'
           }}>
             <h3 style={{ 
               color: 'var(--pink-main)', 
@@ -242,7 +243,7 @@ export default function AboutPage() {
           </div>
 
           {/* Team Section */}
-          <h2 className="section-title">The Collective</h2>
+          <h2 className="section-title" style={{ marginTop: '6rem' }}>The Collective</h2>
           <div className="team-grid">
             <div className="product-card" style={{ textAlign: 'center' }}>
               <div style={{ 
@@ -293,7 +294,8 @@ export default function AboutPage() {
             borderRadius: '20px',
             padding: '3rem',
             border: '2px solid var(--cyan-accent)',
-            textAlign: 'center'
+            textAlign: 'center',
+            marginTop: '6rem'
           }}>
             <h2 className="section-title" style={{ marginBottom: '2rem' }}>Connect With Us</h2>
             <div className="flex-center-wrap gap-4">
