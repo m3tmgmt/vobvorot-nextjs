@@ -167,7 +167,7 @@ export default function HomePage() {
       </section>
 
       {/* Products Section */}
-      <section className="products-section" style={{ marginTop: '6rem' }}>
+      <section className="products-section" style={{ marginTop: '6rem', marginBottom: '6rem' }}>
         <h2 className="section-title glitch">
           EXVICPMOUR Store
         </h2>

@@ -90,7 +90,7 @@ export default function ProductsPageClient() {
   return (
     <div style={{ minHeight: '100vh' }}>
       {/* Hero Section */}
-      <section className="hero-section" style={{ height: '40vh', position: 'relative' }}>
+      <section className="hero-section" style={{ height: '40vh', position: 'relative', marginBottom: '4rem' }}>
         <div className="hero-overlay" style={{ background: 'linear-gradient(135deg, rgba(0,255,255,0.6), rgba(255,107,157,0.6))' }}></div>
         
         <div className="hero-content" style={{ textAlign: 'center' }}>

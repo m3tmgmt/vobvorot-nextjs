@@ -194,7 +194,7 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
       </section>
 
       {/* Product Details */}
-      <div className="products-section">
+      <div className="products-section" style={{ marginTop: '4rem' }}>
         <div className="container" style={{ 
           display: 'grid', 
           gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 

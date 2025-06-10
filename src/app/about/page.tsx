@@ -105,7 +105,7 @@ export default function AboutPage() {
         </div>
       </div>
 
-      <section className="products-section">
+      <section className="products-section" style={{ marginTop: '4rem' }}>
         <div className="container">
           <h2 className="section-title">Our Digital DNA</h2>
           

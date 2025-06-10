@@ -36,7 +36,7 @@ export default function ExvicpmourPage() {
   return (
     <div style={{ minHeight: '100vh' }}>
       {/* Hero Section */}
-      <section className="hero-section" style={{ height: '60vh', position: 'relative' }}>
+      <section className="hero-section" style={{ height: '60vh', position: 'relative', marginBottom: '4rem' }}>
         <div className="hero-overlay" style={{ background: 'linear-gradient(135deg, rgba(255,107,157,0.8), rgba(0,255,255,0.6))' }}></div>
         
         <div className="hero-content" style={{ textAlign: 'center' }}>
