@@ -9,8 +9,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: process.env.NODE_ENV === 'development',
   },
   
-  // Output configuration for production
-  output: 'standalone',
+  // Output configuration for production (Vercel optimized)
+  output: process.env.VERCEL ? undefined : 'standalone',
   
   // Image optimization for VobVorot
   images: {
@@ -158,7 +158,38 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['@prisma/client'],
 
   // Webpack optimizations
-  webpack: (config, { dev, isServer }) => {
+  webpack: (config, { dev, isServer, webpack }) => {
+    // Permanent fix for lodash "self is not defined" issue
+    if (isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        path: false,
+        crypto: false,
+      }
+      
+      // Define global variables for server-side compatibility
+      config.plugins.push(
+        new webpack.DefinePlugin({
+          'global.self': 'global',
+          'self': 'global',
+          'window': 'undefined',
+        })
+      )
+      
+      // Externalize problematic packages
+      config.externals = config.externals || []
+      config.externals.push(
+        ({ request }: any, callback: any) => {
+          // Only externalize when causing issues, not globally
+          if (request === 'cloudinary' && !dev) {
+            return callback(null, 'commonjs ' + request)
+          }
+          callback()
+        }
+      )
+    }
+
     // Production optimizations
     if (!dev) {
       config.optimization = {

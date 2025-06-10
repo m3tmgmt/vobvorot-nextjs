@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import { prisma } from '@/lib/prisma'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 const registerSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -10,8 +11,10 @@ const registerSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  let body: any = null
+  
   try {
-    const body = await request.json()
+    body = await request.json()
     const { name, email, password } = registerSchema.parse(body)
 
     // Check if user already exists
@@ -57,7 +60,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.error('Registration error:', error)
+    logger.error('User registration failed', {
+      email: body?.email,
+      userAgent: request.headers.get('user-agent'),
+      ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

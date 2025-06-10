@@ -3,10 +3,15 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { westernbid } from '@/lib/westernbid'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
+  let session: any
+  let paymentId: string | undefined
+  let orderId: string | undefined
+  
   try {
-    const session = await getServerSession(authOptions)
+    session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -15,7 +20,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { paymentId, orderId } = await request.json()
+    const requestData = await request.json()
+    paymentId = requestData.paymentId
+    orderId = requestData.orderId
     
     if (!paymentId || !orderId) {
       return NextResponse.json(
@@ -72,7 +79,12 @@ export async function POST(request: NextRequest) {
       })
     }
   } catch (error) {
-    console.error('Payment verification error:', error)
+    logger.error('Payment verification failed', {
+      paymentId,
+      orderId,
+      userId: session?.user?.id
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -1,0 +1,30 @@
+{
+  "timestamp": "2025-06-09T22:54:08.926Z",
+  "domain": "vobvorot.com",
+  "dnsProvider": "unknown",
+  "currentDNS": {
+    "spf": {
+      "exists": true,
+      "hasResend": false,
+      "value": "\"v=spf1 include:secureserver.net -all\""
+    },
+    "dkim": {
+      "exists": false,
+      "hasResend": false,
+      "value": ""
+    }
+  },
+  "emailTest": {
+    "success": true,
+    "from": "onboarding@resend.dev",
+    "emailId": "6b396a1a-2c28-4640-ad46-b86aab25c04b"
+  },
+  "status": "partial",
+  "nextSteps": [
+    "Follow instructions in DNS_SETUP_INSTRUCTIONS.md",
+    "Wait 30-60 minutes for DNS propagation",
+    "Run verification: node autonomous-resend-alternative.js --verify-only",
+    "Test production email after DNS changes",
+    "Email working with fallback, configure DNS for production"
+  ]
+}

@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { emailService, type OrderEmailData } from '@/lib/email'
+import { logger } from '@/lib/logger'
 
 interface UpdateStatusRequest {
   status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED'
@@ -13,9 +14,14 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let id: string | undefined
+  let session: any
+  let status: 'PENDING' | 'CONFIRMED' | 'PROCESSING' | 'SHIPPED' | 'DELIVERED' | 'CANCELLED' | undefined
+  
   try {
-    const { id } = await params
-    const session = await getServerSession(authOptions)
+    const resolvedParams = await params
+    id = resolvedParams.id
+    session = await getServerSession(authOptions)
     
     if (!session?.user || session.user.role !== 'ADMIN') {
       return NextResponse.json(
@@ -24,7 +30,9 @@ export async function PATCH(
       )
     }
 
-    const { status, trackingNumber }: UpdateStatusRequest = await request.json()
+    const requestData: UpdateStatusRequest = await request.json()
+    status = requestData.status
+    const trackingNumber = requestData.trackingNumber
     
     if (!status) {
       return NextResponse.json(
@@ -92,7 +100,12 @@ export async function PATCH(
 
     // Send status update email to customer
     try {
-      console.log(`Sending status update email for order: ${order.orderNumber}`)
+      logger.info('Sending order status update email', {
+        orderNumber: order.orderNumber,
+        newStatus: status,
+        customerEmail: updatedOrder.shippingEmail,
+        hasTrackingNumber: !!trackingNumber
+      })
       
       const emailData: OrderEmailData = {
         orderNumber: updatedOrder.orderNumber,
@@ -122,9 +135,17 @@ export async function PATCH(
 
       await emailService.sendOrderStatusUpdate(emailData)
       
-      console.log(`Status update email sent successfully for order: ${order.orderNumber}`)
+      logger.info('Order status update email sent successfully', {
+        orderNumber: order.orderNumber,
+        newStatus: status,
+        customerEmail: updatedOrder.shippingEmail
+      })
     } catch (emailError) {
-      console.error('Failed to send status update email:', emailError)
+      logger.error('Failed to send order status update email', {
+        orderNumber: order.orderNumber,
+        newStatus: status,
+        customerEmail: updatedOrder.shippingEmail
+      }, emailError instanceof Error ? emailError : new Error(String(emailError)))
       // Don't fail the status update if email fails
     }
 
@@ -137,7 +158,12 @@ export async function PATCH(
     })
 
   } catch (error) {
-    console.error('Order status update error:', error)
+    logger.error('Failed to update order status', {
+      orderId: id,
+      newStatus: status,
+      adminUserId: session?.user?.id
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return NextResponse.json(
       { error: 'Failed to update order status' },
       { status: 500 }

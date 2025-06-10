@@ -2,14 +2,19 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logger } from '@/lib/logger'
 
 // GET - Get reviews for a product
 export async function GET(request: NextRequest) {
+  let productId: string | null = null
+  let page: number = 1
+  let limit: number = 10
+  
   try {
     const { searchParams } = new URL(request.url)
-    const productId = searchParams.get('productId')
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
+    productId = searchParams.get('productId')
+    page = parseInt(searchParams.get('page') || '1')
+    limit = parseInt(searchParams.get('limit') || '10')
     const skip = (page - 1) * limit
 
     if (!productId) {
@@ -91,7 +96,11 @@ export async function GET(request: NextRequest) {
       ratingDistribution
     })
   } catch (error) {
-    console.error('Reviews fetch error:', error)
+    logger.error('Failed to fetch reviews', {
+      productId: productId || 'all',
+      page,
+      limit
+    }, error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -101,8 +110,11 @@ export async function GET(request: NextRequest) {
 
 // POST - Create a new review
 export async function POST(request: NextRequest) {
+  let session: any
+  let body: any
+  
   try {
-    const session = await getServerSession(authOptions)
+    session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -111,7 +123,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { productId, rating, comment, title } = await request.json()
+    body = await request.json()
+    const { productId, rating, comment, title } = body
 
     // Validate input
     if (!productId || !rating) {
@@ -208,7 +221,11 @@ export async function POST(request: NextRequest) {
       review: transformedReview
     })
   } catch (error) {
-    console.error('Review creation error:', error)
+    logger.error('Failed to create review', {
+      userId: session?.user?.id,
+      productId: body?.productId,
+      rating: body?.rating
+    }, error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

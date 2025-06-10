@@ -12,6 +12,7 @@ import {
   paginationSchema
 } from '@/lib/validation'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 const prisma = new PrismaClient()
 
@@ -30,11 +31,15 @@ const productSearchSchema = z.object({
 })
 
 async function getProductsHandler(request: NextRequest) {
+  let params: any
+  let sanitizedSearch: string | undefined
+  let sanitizedCategory: string | undefined
+  
   try {
     const searchParams = request.nextUrl.searchParams
     
     // Parse query parameters manually for now
-    const params = {
+    params = {
       category: searchParams.get('category') || undefined,
       search: searchParams.get('search') || undefined,
       featured: searchParams.get('featured') === 'true',
@@ -48,8 +53,8 @@ async function getProductsHandler(request: NextRequest) {
     }
 
     // Sanitize search input
-    const sanitizedSearch = params.search ? InputSanitizer.sanitizeString(params.search) : undefined
-    const sanitizedCategory = params.category ? InputSanitizer.sanitizeString(params.category) : undefined
+    sanitizedSearch = params.search ? InputSanitizer.sanitizeString(params.search) : undefined
+    sanitizedCategory = params.category ? InputSanitizer.sanitizeString(params.category) : undefined
 
     // Build where clause with enhanced filtering
     const where: any = {
@@ -118,7 +123,13 @@ async function getProductsHandler(request: NextRequest) {
       return APIResponse.validationError(error)
     }
     
-    console.error('Error fetching products:', error)
+    logger.error('Failed to fetch products', {
+      search: sanitizedSearch,
+      category: sanitizedCategory,
+      page: params.page,
+      limit: params.limit
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return APIResponse.error('Failed to fetch products', 500)
   }
 }
@@ -130,6 +141,8 @@ export const GET = createSecureAPIHandler(getProductsHandler, {
 
 // POST - Create new product (Admin only)
 export async function POST(request: NextRequest) {
+  let productData: any
+  
   try {
     // Check admin authorization
     if (!validateAdminApiKey(request)) {
@@ -143,7 +156,7 @@ export async function POST(request: NextRequest) {
       return createValidationErrorResponse(validation.errors)
     }
 
-    const productData = validation.data
+    productData = validation.data
 
     // Generate slug from name if not provided
     const slug = productData.slug || 
@@ -169,7 +182,7 @@ export async function POST(request: NextRequest) {
         categoryId: productData.categoryId,
         isActive: productData.active !== false,
         images: {
-          create: productData.images?.map((imageUrl, index) => ({
+          create: productData.images?.map((imageUrl: any, index: any) => ({
             url: imageUrl,
             alt: productData.name,
             isPrimary: index === 0
@@ -196,7 +209,11 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
     
   } catch (error) {
-    console.error('Error creating product:', error)
+    logger.error('Failed to create product', {
+      productName: productData?.name,
+      slug: productData?.slug
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return createServerErrorResponse('Failed to create product')
   }
 }

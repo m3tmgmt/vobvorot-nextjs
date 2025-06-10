@@ -37,8 +37,19 @@ class TelegramNotificationService {
   private ownerChatId: string
 
   constructor() {
-    this.bot = new Bot(process.env.TELEGRAM_BOT_TOKEN!)
-    this.ownerChatId = process.env.OWNER_TELEGRAM_ID || '1234567890'
+    const botToken = process.env.TELEGRAM_BOT_TOKEN
+    const ownerChatId = process.env.OWNER_TELEGRAM_ID
+    
+    if (!botToken) {
+      throw new Error('TELEGRAM_BOT_TOKEN is required in environment variables')
+    }
+    
+    if (!ownerChatId) {
+      throw new Error('OWNER_TELEGRAM_ID is required in environment variables')
+    }
+    
+    this.bot = new Bot(botToken)
+    this.ownerChatId = ownerChatId
   }
 
   // Уведомление о новом заказе

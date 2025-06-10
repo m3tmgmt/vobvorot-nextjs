@@ -2,11 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logger } from '@/lib/logger'
 
 // GET - Retrieve user's wishlist
 export async function GET(request: NextRequest) {
+  let session: any
+  
   try {
-    const session = await getServerSession(authOptions)
+    session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -58,7 +61,9 @@ export async function GET(request: NextRequest) {
       isOpen: false
     })
   } catch (error) {
-    console.error('Wishlist fetch error:', error)
+    logger.error('Failed to fetch wishlist', {
+      userId: session?.user?.id
+    }, error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -68,8 +73,11 @@ export async function GET(request: NextRequest) {
 
 // POST - Add item to wishlist or sync wishlist
 export async function POST(request: NextRequest) {
+  let session: any
+  let body: any
+  
   try {
-    const session = await getServerSession(authOptions)
+    session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -78,7 +86,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
+    body = await request.json()
 
     // Sync entire wishlist
     if (body.action === 'sync' && body.items) {
@@ -143,7 +151,10 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Wishlist add error:', error)
+    logger.error('Failed to add item to wishlist', {
+      userId: session?.user?.id,
+      productId: body?.productId
+    }, error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -153,8 +164,11 @@ export async function POST(request: NextRequest) {
 
 // DELETE - Remove item from wishlist
 export async function DELETE(request: NextRequest) {
+  let session: any
+  let body: any
+  
   try {
-    const session = await getServerSession(authOptions)
+    session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -187,7 +201,10 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error('Wishlist remove error:', error)
+    logger.error('Failed to remove item from wishlist', {
+      userId: session?.user?.id,
+      productId: body?.productId
+    }, error instanceof Error ? error : new Error(String(error)))
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

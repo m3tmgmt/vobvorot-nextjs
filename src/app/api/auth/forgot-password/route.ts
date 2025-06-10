@@ -2,10 +2,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { sendEmail } from '@/lib/email'
 import crypto from 'crypto'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
+  let email: string | null = null
+  
   try {
-    const { email } = await request.json()
+    const body = await request.json()
+    email = body.email
 
     if (!email) {
       return NextResponse.json(
@@ -98,7 +102,12 @@ export async function POST(request: NextRequest) {
           html: emailContent
         })
       } catch (error) {
-        console.error('Failed to send password reset email:', error)
+        logger.error('Failed to send password reset email', {
+          email,
+          userId: user.id,
+          userAgent: request.headers.get('user-agent'),
+          ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+        }, error instanceof Error ? error : new Error(String(error)))
         // Still return success to prevent email enumeration
       }
     }
@@ -108,7 +117,12 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Password reset error:', error)
+    logger.error('Password reset request failed', {
+      email,
+      userAgent: request.headers.get('user-agent'),
+      ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

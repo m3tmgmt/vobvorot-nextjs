@@ -1,11 +1,13 @@
 'use client'
 
 import { usePuzzle } from '@/contexts/PuzzleContext'
+import { useMatrix } from '@/contexts/MatrixContext'
 import { useClientOnly } from '@/hooks/useClientOnly'
 
 export function Footer() {
   const isClient = useClientOnly()
   const { findPiece } = usePuzzle()
+  const { activateMatrix } = useMatrix()
 
   const handleNumberClick = () => {
     if (isClient) {
@@ -169,6 +171,34 @@ export function Footer() {
                 >
                   7355608
                 </span>
+              </div>
+              <div style={{ marginTop: '0.5rem' }}>
+                <button
+                  onClick={() => activateMatrix(10000)}
+                  style={{
+                    background: 'rgba(57,255,20,0.1)',
+                    border: '1px solid var(--green-neon)',
+                    color: 'var(--green-neon)',
+                    padding: '4px 8px',
+                    borderRadius: '3px',
+                    fontSize: '0.7rem',
+                    cursor: 'pointer',
+                    fontFamily: 'JetBrains Mono, monospace',
+                    transition: 'all 0.3s ease'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'rgba(57,255,20,0.2)'
+                    e.currentTarget.style.textShadow = '0 0 8px var(--green-neon)'
+                    e.currentTarget.style.boxShadow = '0 0 10px rgba(57,255,20,0.3)'
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = 'rgba(57,255,20,0.1)'
+                    e.currentTarget.style.textShadow = 'none'
+                    e.currentTarget.style.boxShadow = 'none'
+                  }}
+                >
+                  Matrix Mode
+                </button>
               </div>
             </div>
           </div>

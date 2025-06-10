@@ -13,6 +13,9 @@
   --yellow-neon: #FFFF00;
   --green-neon: #00FF7F;
   --white: #FFFFFF;
+  --black: #000000;
+  --red-error: #FF4444;
+  --orange-accent: #FF8C00;
 }
 
 html, body {
@@ -22,6 +25,112 @@ html, body {
   color: #FFFFFF;
   font-family: 'Space Grotesk', sans-serif;
   min-height: 100vh;
+  cursor: none;
+}
+
+/* Cursor Effects */
+@media (hover: hover) and (pointer: fine) {
+  body {
+    cursor: none;
+  }
+  
+  /* Hide cursor for all interactive elements */
+  *, *:hover, *:focus, *:active {
+    cursor: none !important;
+  }
+  
+  /* Ensure all clickable elements don't show default cursor */
+  button, a, input, textarea, select, 
+  .nav-toggle, .nav-close, .cart-icon, 
+  [role="button"], [onclick], [href] {
+    cursor: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    cursor: default !important;
+  }
+  
+  /* Restore normal cursors on mobile */
+  *, *:hover, *:focus, *:active {
+    cursor: default !important;
+  }
+  
+  button, a, input, textarea, select,
+  [role="button"], [onclick], [href] {
+    cursor: pointer !important;
+  }
+  
+  .cursor-main,
+  .cursor-trail {
+    display: none !important;
+  }
+}
+
+/* Particle System */
+.particle-system {
+  background: transparent;
+}
+
+.particle {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .particle-system {
+    display: none !important;
+  }
+}
+
+/* Matrix Effect */
+.matrix-effect {
+  background: transparent;
+}
+
+@media (max-width: 768px) {
+  .matrix-effect {
+    display: none !important;
+  }
+}
+
+/* Floating animation for particles */
+@keyframes particleFloat {
+  0%, 100% { 
+    transform: translateX(0) translateY(0) scale(1);
+    opacity: 0;
+  }
+  10% { 
+    opacity: 1;
+  }
+  90% { 
+    opacity: 1;
+  }
+  100% { 
+    transform: translateX(10px) translateY(-100vh) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Modal animations */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
 }
 
 /* Navigation Styles */
@@ -55,18 +164,37 @@ html, body {
   left: -400px;
   width: 350px;
   height: 100vh;
-  background: rgba(0, 0, 0, 0.95);
-  backdrop-filter: blur(20px);
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.98) 0%, rgba(26, 0, 20, 0.95) 50%, rgba(0, 0, 0, 0.98) 100%);
+  backdrop-filter: blur(25px);
   border-right: 2px solid #FF6B9D;
-  z-index: 1000;
+  z-index: 1050;
   transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 2rem;
   overflow-y: auto;
+  box-shadow: inset -1px 0 0 rgba(255, 107, 157, 0.2);
 }
 
 .navigation.active {
   left: 0;
-  box-shadow: 10px 0 30px rgba(255, 107, 157, 0.3);
+  box-shadow: 10px 0 30px rgba(255, 107, 157, 0.4), inset -1px 0 0 rgba(255, 107, 157, 0.2);
+}
+
+/* Navigation scan lines effect */
+.navigation::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 2px,
+    rgba(255, 107, 157, 0.03) 2px,
+    rgba(255, 107, 157, 0.03) 4px
+  );
+  pointer-events: none;
 }
 
 .nav-close {
@@ -94,11 +222,100 @@ html, body {
   font-size: 2.5rem;
   font-weight: 700;
   margin-bottom: 2rem;
-  background: linear-gradient(45deg, #FF6B9D, #00F5FF);
+  background: linear-gradient(45deg, #FF6B9D, #00F5FF, #FFFF00);
+  background-size: 200% 200%;
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-align: center;
+  position: relative;
+  animation: gradientShift 3s ease-in-out infinite, textGlitch 4s infinite;
+  font-family: 'JetBrains Mono', monospace;
+  text-shadow: 0 0 20px rgba(255, 107, 157, 0.3);
+  z-index: 1;
+}
+
+.nav-title::before {
+  content: 'vobvorot';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, #FF1493, #00F5FF);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: glitchLayer1 2s infinite;
+  z-index: -1;
+}
+
+.nav-title::after {
+  content: 'vobvorot';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(45deg, #00F5FF, #FFFF00);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: glitchLayer2 2.5s infinite;
+  z-index: -2;
+}
+
+@keyframes textGlitch {
+  0%, 90%, 100% { 
+    transform: translate(0);
+    opacity: 1;
+  }
+  10% { 
+    transform: translate(-1px, 1px);
+    opacity: 0.9;
+  }
+  20% { 
+    transform: translate(1px, -1px);
+    opacity: 0.8;
+  }
+  30% { 
+    transform: translate(-1px, -1px);
+    opacity: 0.9;
+  }
+  40% { 
+    transform: translate(1px, 1px);
+    opacity: 1;
+  }
+}
+
+@keyframes glitchLayer1 {
+  0%, 85%, 100% { 
+    transform: translate(0);
+    opacity: 0;
+  }
+  15% { 
+    transform: translate(-2px, 0);
+    opacity: 0.5;
+  }
+  20% { 
+    transform: translate(2px, 0);
+    opacity: 0.3;
+  }
+}
+
+@keyframes glitchLayer2 {
+  0%, 80%, 100% { 
+    transform: translate(0);
+    opacity: 0;
+  }
+  12% { 
+    transform: translate(1px, -1px);
+    opacity: 0.4;
+  }
+  18% { 
+    transform: translate(-1px, 1px);
+    opacity: 0.2;
+  }
 }
 
 .nav-links {
@@ -110,10 +327,42 @@ html, body {
   margin-bottom: 0.5rem;
 }
 
+.nav-links button {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 0.75rem 1rem;
+  text-align: left;
+  font-size: 1rem;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.nav-links button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 107, 157, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.nav-links button:hover::before {
+  left: 100%;
+}
+
 .nav-links button:hover {
-  border-left: 2px solid #FF6B9D;
-  background: rgba(255, 107, 157, 0.1);
+  border-left: 3px solid #FF6B9D;
+  background: rgba(255, 107, 157, 0.15);
   color: #FF6B9D;
+  transform: translateX(5px);
+  box-shadow: 0 5px 15px rgba(255, 107, 157, 0.2);
+  text-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
 }
 
 /* Hero Section */
@@ -414,7 +663,7 @@ html, body {
   background: rgba(0, 0, 0, 0.95);
   backdrop-filter: blur(20px);
   border-left: 2px solid #FF6B9D;
-  z-index: 1000;
+  z-index: 1100;
   transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   padding: 2rem;
   overflow-y: auto;
@@ -423,6 +672,37 @@ html, body {
 .cart-modal.active {
   right: 0;
   box-shadow: -10px 0 30px rgba(255, 107, 157, 0.3);
+}
+
+/* Cart backdrop */
+.cart-modal + div {
+  z-index: 1099 !important;
+}
+
+/* Wishlist Modal */
+.wishlist-modal {
+  position: fixed;
+  top: 0;
+  right: -450px;
+  width: 400px;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(20px);
+  border-left: 2px solid var(--cyan-accent);
+  z-index: 1200;
+  transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.wishlist-modal.active {
+  right: 0;
+  box-shadow: -10px 0 30px rgba(0, 245, 255, 0.3);
+}
+
+/* Wishlist backdrop */
+.wishlist-modal + div {
+  z-index: 1199 !important;
 }
 
 .cart-header {
@@ -452,6 +732,116 @@ html, body {
 .cart-close:hover {
   color: #00F5FF;
   transform: rotate(90deg);
+}
+
+/* Cart and Wishlist Items */
+.cart-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.cart-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 107, 157, 0.3);
+}
+
+.cart-item-image {
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.cart-item-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cart-item-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--white);
+  margin: 0;
+  transition: color 0.3s ease;
+}
+
+.cart-item-title:hover {
+  color: var(--pink-main);
+}
+
+.cart-item-price {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--yellow-neon);
+  margin: 0.25rem 0;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.quantity-btn {
+  background: var(--pink-main);
+  border: none;
+  color: var(--white);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  font-size: 1rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+}
+
+.quantity-btn:hover {
+  background: var(--cyan-accent);
+  transform: scale(1.1);
+}
+
+.cart-total {
+  border-top: 2px solid var(--pink-main);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.total-amount {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--yellow-neon);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.checkout-btn {
+  width: 100%;
+  background: linear-gradient(45deg, var(--pink-main), var(--purple-accent));
+  border: none;
+  color: var(--white);
+  font-weight: 600;
+  padding: 1rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.3s ease;
+}
+
+.checkout-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 107, 157, 0.4);
+  background: linear-gradient(45deg, var(--cyan-accent), var(--purple-accent));
 }
 
 /* Text Utilities */

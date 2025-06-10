@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logger } from '@/lib/logger'
 
 // Mock tracking data structure
 interface TrackingEvent {
@@ -96,9 +97,12 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let orderId: string | undefined
+  let session: any
+  
   try {
     const { id } = await params
-    const session = await getServerSession(authOptions)
+    session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -107,7 +111,7 @@ export async function GET(
       )
     }
 
-    const orderId = id
+    orderId = id
 
     // Find the order and verify ownership
     const order = await prisma.order.findUnique({
@@ -167,7 +171,11 @@ export async function GET(
     })
 
   } catch (error) {
-    console.error('Tracking fetch error:', error)
+    logger.error('Failed to fetch order tracking', {
+      orderId,
+      userId: session?.user?.id
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -93,9 +93,7 @@ export function Wishlist() {
   return (
     <>
       {/* Wishlist Modal */}
-      <div className={`cart-modal ${state.isOpen ? 'active' : ''}`} style={{
-        borderLeft: '2px solid var(--cyan-accent)'
-      }}>
+      <div className={`wishlist-modal ${state.isOpen ? 'active' : ''}`}>
         <div className="cart-header">
           <h2 className="cart-title" style={{ color: 'var(--cyan-accent)' }}>
             ✨ Wishlist

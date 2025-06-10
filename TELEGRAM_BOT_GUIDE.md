@@ -20,10 +20,10 @@ Telegram бот EXVICPMOUR предназначен для:
 ### Настройка переменных окружения
 ```bash
 # В .env файле
-TELEGRAM_BOT_TOKEN="7274106590:AAFVUDX05v5FgvhzfAPJmfVOWVbfporRnMY"
-TELEGRAM_BOT_USERNAME="ExvicpmourAdminBot"
-OWNER_TELEGRAM_ID="316593422"
-ADMIN_API_KEY="ADMIN_exvicpmour_api_key_2024_ultra_secure"
+TELEGRAM_BOT_TOKEN="YOUR_BOT_TOKEN_FROM_BOTFATHER"
+TELEGRAM_BOT_USERNAME="YourBotUsername"
+OWNER_TELEGRAM_ID="YOUR_TELEGRAM_USER_ID"
+ADMIN_API_KEY="YOUR_SECURE_ADMIN_API_KEY"
 ```
 
 ### Запуск бота

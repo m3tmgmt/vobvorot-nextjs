@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { cloudinaryService, cloudinaryHelpers } from '@/lib/cloudinary';
 import { imageFallbackManager } from '@/lib/image-fallback';
 
 interface CloudinaryImageProps {
@@ -66,12 +65,31 @@ export default function CloudinaryImage({
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [isIntersecting, setIsIntersecting] = useState(false);
+  const [cloudinaryLoaded, setCloudinaryLoaded] = useState(false);
+  const [cloudinaryService, setCloudinaryService] = useState<any>(null);
+  const [cloudinaryHelpers, setCloudinaryHelpers] = useState<any>(null);
   const imgRef = useRef<HTMLImageElement>(null);
   const observerRef = useRef<IntersectionObserver | null>(null);
 
+  // Dynamically load cloudinary services
+  useEffect(() => {
+    const loadCloudinary = async () => {
+      try {
+        const { cloudinaryService: cs, cloudinaryHelpers: ch } = await import('@/lib/cloudinary');
+        setCloudinaryService(cs);
+        setCloudinaryHelpers(ch);
+        setCloudinaryLoaded(true);
+      } catch (error) {
+        console.error('Failed to load cloudinary:', error);
+        setCloudinaryLoaded(true); // Mark as loaded even on error to continue
+      }
+    };
+    loadCloudinary();
+  }, []);
+
   // Проверяем, является ли src URL от Cloudinary или public_id
-  const isCloudinaryUrl = cloudinaryHelpers.isCloudinaryUrl(src);
-  const publicId = isCloudinaryUrl ? cloudinaryHelpers.extractPublicId(src) : src;
+  const isCloudinaryUrl = cloudinaryHelpers?.isCloudinaryUrl(src) || false;
+  const publicId = isCloudinaryUrl && cloudinaryHelpers ? cloudinaryHelpers.extractPublicId(src) : src;
 
   // Генерация оптимизированного URL
   const generateImageUrl = (
@@ -86,8 +104,8 @@ export default function CloudinaryImage({
       responsive?: boolean;
     } = {}
   ): string => {
-    // Если Cloudinary не настроен, возвращаем исходный URL или fallback
-    if (!cloudinaryService.isConfigured()) {
+    // Если Cloudinary не загружен или не настроен, возвращаем исходный URL или fallback
+    if (!cloudinaryService || !cloudinaryService.isConfigured()) {
       return isCloudinaryUrl ? src : (fallbackSrc || src);
     }
 
@@ -106,7 +124,7 @@ export default function CloudinaryImage({
 
   // Генерация responsive srcSet
   const generateSrcSet = (): string => {
-    if (!cloudinaryService.isConfigured() || !responsive || !publicId) {
+    if (!cloudinaryService || !cloudinaryService.isConfigured() || !responsive || !publicId) {
       return '';
     }
 
@@ -143,7 +161,7 @@ export default function CloudinaryImage({
       return placeholder;
     }
 
-    if (placeholder === 'blur' && cloudinaryService.isConfigured() && publicId) {
+    if (placeholder === 'blur' && cloudinaryService && cloudinaryService.isConfigured() && publicId) {
       // Генерируем размытую версию изображения для placeholder
       return cloudinaryService.generateOptimizedUrl(publicId, {
         width: 40,
@@ -155,7 +173,7 @@ export default function CloudinaryImage({
     }
 
     // Fallback placeholder
-    return cloudinaryHelpers.generatePlaceholder(width || 400, height || 300);
+    return cloudinaryHelpers ? cloudinaryHelpers.generatePlaceholder(width || 400, height || 300) : '';
   };
 
   // Intersection Observer для lazy loading
@@ -382,31 +400,38 @@ export function useCloudinaryImage(
       return;
     }
 
-    try {
-      setIsLoading(true);
-      setError(null);
+    const loadImage = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
 
-      const isCloudinaryUrl = cloudinaryHelpers.isCloudinaryUrl(src);
-      const publicId = isCloudinaryUrl ? cloudinaryHelpers.extractPublicId(src) : src;
+        // Wait for cloudinary to be loaded
+        const { cloudinaryService: cs, cloudinaryHelpers: ch } = await import('@/lib/cloudinary');
+      
+      const isCloudinaryUrl = ch.isCloudinaryUrl(src);
+      const publicId = isCloudinaryUrl ? ch.extractPublicId(src) : src;
 
       if (!publicId) {
         throw new Error('Не удалось извлечь public_id из URL');
       }
 
-      if (!cloudinaryService.isConfigured()) {
+      if (!cs.isConfigured()) {
         setImageUrl(src);
         setIsLoading(false);
         return;
       }
 
-      const url = cloudinaryService.generateOptimizedUrl(publicId, options);
-      setImageUrl(url);
-      setIsLoading(false);
-    } catch (err: any) {
-      setError(err);
-      setImageUrl(src); // Fallback к исходному URL
-      setIsLoading(false);
-    }
+        const url = cs.generateOptimizedUrl(publicId, options);
+        setImageUrl(url);
+        setIsLoading(false);
+      } catch (err: any) {
+        setError(err);
+        setImageUrl(src); // Fallback к исходному URL
+        setIsLoading(false);
+      }
+    };
+
+    loadImage();
   }, [src, JSON.stringify(options)]);
 
   return { imageUrl, isLoading, error };

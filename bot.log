@@ -16,3 +16,22 @@ Error fetching products: TypeError: fetch failed
     [errors]: [ [Error], [Error] ]
   }
 }
+GrammyError: Call to 'getUpdates' failed! (401: Unauthorized)
+    at toGrammyError (/Users/matty/exvicpmour-store/vobvorot-nextjs/node_modules/grammy/out/core/error.js:47:12)
+    at ApiClient.callApi (/Users/matty/exvicpmour-store/vobvorot-nextjs/node_modules/grammy/out/core/client.js:97:48)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async Bot.fetchUpdates (/Users/matty/exvicpmour-store/vobvorot-nextjs/node_modules/grammy/out/bot.js:422:27)
+    at async Bot.loop (/Users/matty/exvicpmour-store/vobvorot-nextjs/node_modules/grammy/out/bot.js:393:33)
+    at async Bot.start (/Users/matty/exvicpmour-store/vobvorot-nextjs/node_modules/grammy/out/bot.js:314:9) {
+  method: 'getUpdates',
+  payload: {
+    offset: 844155026,
+    limit: undefined,
+    timeout: 30,
+    allowed_updates: undefined
+  },
+  ok: false,
+  error_code: 401,
+  description: 'Unauthorized',
+  parameters: {}
+}

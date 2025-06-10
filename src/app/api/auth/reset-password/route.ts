@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import bcrypt from 'bcryptjs'
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
+  let token: string | undefined
+  
   try {
-    const { token, password } = await request.json()
+    const body = await request.json()
+    token = body.token
+    const password = body.password
 
     if (!token || !password) {
       return NextResponse.json(
@@ -57,7 +62,12 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Password reset error:', error)
+    logger.error('Password reset completion failed', {
+      hasToken: !!token,
+      userAgent: request.headers.get('user-agent'),
+      ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip')
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

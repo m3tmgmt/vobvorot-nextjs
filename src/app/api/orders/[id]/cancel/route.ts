@@ -2,13 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logger } from '@/lib/logger'
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let orderId: string | undefined
+  let session: any
+  let order: any
+  
   try {
-    const session = await getServerSession(authOptions)
+    session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -18,10 +23,10 @@ export async function PATCH(
     }
 
     const { id } = await params
-    const orderId = id
+    orderId = id
 
     // Find the order and verify ownership
-    const order = await prisma.order.findUnique({
+    order = await prisma.order.findUnique({
       where: {
         id: orderId
       },
@@ -107,7 +112,12 @@ export async function PATCH(
     })
 
   } catch (error) {
-    console.error('Order cancellation error:', error)
+    logger.error('Failed to cancel order', {
+      orderId,
+      userId: session?.user?.id,
+      orderStatus: order?.status
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

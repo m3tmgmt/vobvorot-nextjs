@@ -6,6 +6,7 @@ import { westernbid } from '@/lib/westernbid'
 import { emailService, type OrderEmailData, type AdminNotificationData } from '@/lib/email'
 import { logPaymentCreation, logPaymentFailure } from '@/lib/payment-logger'
 import { getWesternBidConfig, isFeatureEnabled } from '@/lib/payment-config'
+import { logger } from '@/lib/logger'
 
 interface OrderItem {
   product: {
@@ -46,8 +47,11 @@ interface OrderData {
 }
 
 export async function POST(request: NextRequest) {
+  let session: any
+  let orderData: OrderData | undefined
+  
   try {
-    const session = await getServerSession(authOptions)
+    session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -56,10 +60,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const orderData: OrderData = await request.json()
+    orderData = await request.json()
     
     // Validate required fields
-    if (!orderData.shippingInfo || !orderData.paymentInfo || !orderData.items?.length) {
+    if (!orderData || !orderData.shippingInfo || !orderData.paymentInfo || !orderData.items?.length) {
       return NextResponse.json(
         { error: 'Missing required order data' },
         { status: 400 }
@@ -151,7 +155,12 @@ export async function POST(request: NextRequest) {
 
     // Send order confirmation email
     try {
-      console.log(`Sending order confirmation email for order: ${orderNumber}`)
+      logger.info('Sending order confirmation email', {
+        orderNumber,
+        customerEmail: order.shippingEmail,
+        itemCount: order.items.length,
+        total: Number(order.total)
+      })
       
       // Prepare email data
       const emailData: OrderEmailData = {
@@ -194,9 +203,15 @@ export async function POST(request: NextRequest) {
 
       await emailService.sendAdminOrderNotification(adminData)
       
-      console.log(`Order confirmation emails sent successfully for order: ${orderNumber}`)
+      logger.info('Order confirmation emails sent successfully', {
+        orderNumber,
+        customerEmail: order.shippingEmail
+      })
     } catch (emailError) {
-      console.error('Failed to send order confirmation emails:', emailError)
+      logger.error('Failed to send order confirmation emails', {
+        orderNumber,
+        customerEmail: order.shippingEmail
+      }, emailError instanceof Error ? emailError : new Error(String(emailError)))
       // Don't fail the order creation if email fails
     }
 
@@ -210,7 +225,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Process payment with WesternBid
-    console.log('Creating WesternBid payment for order:', orderNumber)
+    logger.info('Creating WesternBid payment', {
+      orderNumber,
+      amount: orderData.total,
+      userId: session.user.id,
+      customerEmail: orderData.shippingInfo.email
+    })
     
     const startTime = Date.now()
     
@@ -312,7 +332,13 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('Order creation error:', error)
+    logger.error('Order creation failed', {
+      userId: session?.user?.id,
+      shippingEmail: orderData?.shippingInfo?.email,
+      itemCount: orderData?.items?.length,
+      total: orderData?.total
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return NextResponse.json(
       { error: 'Failed to create order' },
       { status: 500 }

@@ -5,6 +5,9 @@ import { Wishlist } from "@/components/Wishlist";
 import { FloatingCartIcons } from "@/components/FloatingCartIcons";
 import { Effects } from "@/components/Effects";
 import { SecretDetector } from "@/components/SecretDetector";
+import CursorEffect from "@/components/CursorEffect";
+import ParticleSystem from "@/components/ParticleSystem";
+import MatrixEffectWrapper from "@/components/MatrixEffectWrapper";
 import { PuzzleProgress } from "@/components/PuzzleProgress";
 import { MusicPlayer } from "@/components/MusicPlayer";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
@@ -14,6 +17,7 @@ import { CartProvider } from "@/contexts/CartContext";
 import { PuzzleProvider } from "@/contexts/PuzzleContext";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { MatrixProvider } from "@/contexts/MatrixContext";
 import { generateOrganizationStructuredData, generateWebsiteStructuredData } from "@/lib/seo";
 
 
@@ -115,9 +119,13 @@ export default function RootLayout({
         <ErrorBoundary>
           <ToastProvider>
             <AuthProvider>
-              <PuzzleProvider>
-                <CartProvider>
-                  <WishlistProvider>
+              <MatrixProvider>
+                <PuzzleProvider>
+                  <CartProvider>
+                    <WishlistProvider>
+                    <MatrixEffectWrapper />
+                    <CursorEffect />
+                    <ParticleSystem />
                     <Effects />
                     <SecretDetector />
                     <Navigation />
@@ -131,9 +139,10 @@ export default function RootLayout({
                         {children}
                       </ErrorBoundary>
                     </main>
-                  </WishlistProvider>
-                </CartProvider>
-              </PuzzleProvider>
+                    </WishlistProvider>
+                  </CartProvider>
+                </PuzzleProvider>
+              </MatrixProvider>
             </AuthProvider>
           </ToastProvider>
         </ErrorBoundary>

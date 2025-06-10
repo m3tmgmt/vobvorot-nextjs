@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getProducts, addProduct, updateProduct, deleteProduct, categories, sharedProducts } from '@/lib/shared-data'
+import { logger } from '@/lib/logger'
 
 // GET - получить товары с фильтрацией
 export async function GET(request: NextRequest) {
+  let authHeader: string | null = null
+  let searchParams: URLSearchParams | null = null
+  
   try {
     // Проверка авторизации админа
-    const authHeader = request.headers.get('authorization')
+    authHeader = request.headers.get('authorization')
     const adminApiKey = process.env.ADMIN_API_KEY
     
     if (!authHeader || !adminApiKey || authHeader !== `Bearer ${adminApiKey}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(request.url)
+    searchParams = new URL(request.url).searchParams
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const search = searchParams.get('search')
@@ -56,7 +60,12 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Products API error:', error)
+    logger.error('Admin products API error', {
+      adminApiKey: !!process.env.ADMIN_API_KEY,
+      hasAuth: !!authHeader,
+      params: searchParams ? Object.fromEntries(searchParams.entries()) : {}
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -66,16 +75,19 @@ export async function GET(request: NextRequest) {
 
 // POST - создать новый товар
 export async function POST(request: NextRequest) {
+  let authHeader: string | null = null
+  let body: any = null
+  
   try {
     // Проверка авторизации админа
-    const authHeader = request.headers.get('authorization')
+    authHeader = request.headers.get('authorization')
     const adminApiKey = process.env.ADMIN_API_KEY
     
     if (!authHeader || !adminApiKey || authHeader !== `Bearer ${adminApiKey}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
+    body = await request.json()
     const { name, description, brand, category, price, stock, sizes, colors, images, video } = body
 
     // Валидация обязательных полей
@@ -123,7 +135,12 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Product creation error:', error)
+    logger.error('Admin product creation failed', {
+      productName: body?.name,
+      category: body?.category,
+      hasAuth: !!authHeader
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -133,15 +150,18 @@ export async function POST(request: NextRequest) {
 
 // PUT - обновить товар
 export async function PUT(request: NextRequest) {
+  let authHeader: string | null = null
+  let body: any = null
+  
   try {
-    const authHeader = request.headers.get('authorization')
+    authHeader = request.headers.get('authorization')
     const adminApiKey = process.env.ADMIN_API_KEY
     
     if (!authHeader || !adminApiKey || authHeader !== `Bearer ${adminApiKey}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await request.json()
+    body = await request.json()
     const { productId, ...updates } = body
 
     // Обновить товар через общую функцию
@@ -158,7 +178,11 @@ export async function PUT(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Product update error:', error)
+    logger.error('Admin product update failed', {
+      productId: body?.productId,
+      hasAuth: !!authHeader
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -168,8 +192,11 @@ export async function PUT(request: NextRequest) {
 
 // DELETE - удалить товар
 export async function DELETE(request: NextRequest) {
+  let authHeader: string | null = null
+  let productId: string | null = null
+  
   try {
-    const authHeader = request.headers.get('authorization')
+    authHeader = request.headers.get('authorization')
     const adminApiKey = process.env.ADMIN_API_KEY
     
     if (!authHeader || !adminApiKey || authHeader !== `Bearer ${adminApiKey}`) {
@@ -177,7 +204,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    const productId = searchParams.get('productId')
+    productId = searchParams.get('productId')
 
     if (!productId) {
       return NextResponse.json({ error: 'Product ID required' }, { status: 400 })
@@ -197,7 +224,11 @@ export async function DELETE(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Product deletion error:', error)
+    logger.error('Admin product deletion failed', {
+      productId,
+      hasAuth: !!authHeader
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

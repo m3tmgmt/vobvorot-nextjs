@@ -1,11 +1,39 @@
-import { v2 as cloudinary } from 'cloudinary';
+// Conditional import to avoid server-side issues during build
+let cloudinary: any = null;
 
-// Конфигурация Cloudinary
-cloudinary.config({
-  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-  api_key: process.env.CLOUDINARY_API_KEY,
-  api_secret: process.env.CLOUDINARY_API_SECRET,
-});
+// Only import cloudinary on server side and when available
+if (typeof window === 'undefined') {
+  try {
+    const cloudinaryModule = require('cloudinary');
+    cloudinary = cloudinaryModule.v2;
+    
+    // Конфигурация Cloudinary только если модуль загружен
+    if (cloudinary) {
+      cloudinary.config({
+        cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+        api_key: process.env.CLOUDINARY_API_KEY,
+        api_secret: process.env.CLOUDINARY_API_SECRET,
+      });
+    }
+  } catch (error) {
+    console.warn('Cloudinary module not available during build:', error);
+    // Create mock cloudinary object for build compatibility
+    cloudinary = {
+      config: () => {},
+      uploader: {
+        upload_stream: () => Promise.reject(new Error('Cloudinary not available')),
+        upload: () => Promise.reject(new Error('Cloudinary not available')),
+        destroy: () => Promise.reject(new Error('Cloudinary not available')),
+      },
+      api: {
+        resource: () => Promise.reject(new Error('Cloudinary not available')),
+        resources: () => Promise.reject(new Error('Cloudinary not available')),
+        delete_resources: () => Promise.reject(new Error('Cloudinary not available')),
+      },
+      url: () => '',
+    };
+  }
+}
 
 // Типы для опций загрузки
 export interface CloudinaryUploadOptions {
@@ -93,7 +121,7 @@ export class CloudinaryService {
     return new Promise((resolve, reject) => {
       cloudinary.uploader.upload_stream(
         uploadOptions,
-        (error, result) => {
+        (error: any, result: any) => {
           if (error) {
             reject(error);
           } else if (result) {

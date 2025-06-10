@@ -16,18 +16,27 @@ type MyContext = Context & {
   conversation: any
 }
 
+// Проверка обязательных переменных окружения
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
+const OWNER_CHAT_ID = process.env.OWNER_TELEGRAM_ID
+
+if (!BOT_TOKEN) {
+  throw new Error('TELEGRAM_BOT_TOKEN is required in environment variables')
+}
+
+if (!OWNER_CHAT_ID) {
+  throw new Error('OWNER_TELEGRAM_ID is required in environment variables')
+}
+
 // Инициализация бота
-const bot = new Bot<MyContext>(process.env.TELEGRAM_BOT_TOKEN!)
+const bot = new Bot<MyContext>(BOT_TOKEN)
 
 // Инициализация Cloudinary интеграции
-const cloudinaryIntegration = new TelegramCloudinaryIntegration(bot as any, process.env.TELEGRAM_BOT_TOKEN!)
+const cloudinaryIntegration = new TelegramCloudinaryIntegration(bot as any, BOT_TOKEN)
 
 // Сессии и конверсации
 bot.use(session({ initial: (): SessionData => ({}) }))
 bot.use(conversations())
-
-// Проверка авторизации владельца
-const OWNER_CHAT_ID = process.env.OWNER_TELEGRAM_ID || '1234567890'
 
 function isOwner(ctx: MyContext): boolean {
   return ctx.from?.id.toString() === OWNER_CHAT_ID

@@ -12,6 +12,7 @@ import {
   paginationSchema
 } from '@/lib/validation'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 // Enhanced validation schema for order search
 const orderSearchSchema = z.object({
@@ -24,8 +25,10 @@ const orderSearchSchema = z.object({
 })
 
 export async function GET(request: NextRequest) {
+  let session: any
+  
   try {
-    const session = await getServerSession(authOptions)
+    session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
       return createAuthErrorResponse('Authentication required')
@@ -135,15 +138,22 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Orders fetch error:', error)
+    logger.error('Failed to fetch user orders', {
+      userId: session?.user?.id,
+      params: Object.fromEntries(request.nextUrl.searchParams.entries())
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return createServerErrorResponse('Failed to fetch orders')
   }
 }
 
 // POST - Create new order
 export async function POST(request: NextRequest) {
+  let session: any
+  let orderData: any
+  
   try {
-    const session = await getServerSession(authOptions)
+    session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
       return createAuthErrorResponse('Authentication required')
@@ -156,11 +166,11 @@ export async function POST(request: NextRequest) {
       return createValidationErrorResponse(validation.errors)
     }
 
-    const orderData = validation.data
+    orderData = validation.data
 
     // Verify all products exist and have sufficient stock
     const productChecks = await Promise.all(
-      orderData.items.map(async (item) => {
+      orderData.items.map(async (item: any) => {
         const sku = await prisma.productSku.findUnique({
           where: { id: item.skuId },
           include: { product: true }
@@ -208,7 +218,7 @@ export async function POST(request: NextRequest) {
           paymentMethod: orderData.paymentMethod,
           notes: orderData.notes,
           items: {
-            create: orderData.items.map(item => ({
+            create: orderData.items.map((item: any) => ({
               skuId: item.skuId,
               quantity: item.quantity,
               price: item.price,
@@ -251,7 +261,10 @@ export async function POST(request: NextRequest) {
     }, { status: 201 })
     
   } catch (error) {
-    console.error('Order creation error:', error)
+    logger.error('Failed to create order via POST', {
+      userId: session?.user?.id,
+      itemCount: orderData?.items?.length
+    }, error instanceof Error ? error : new Error(String(error)))
     
     if (error instanceof Error && error.message.includes('not found')) {
       return createValidationErrorResponse([{

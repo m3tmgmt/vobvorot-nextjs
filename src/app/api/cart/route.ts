@@ -10,6 +10,7 @@ import {
   schemas
 } from '@/lib/validation'
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 interface CartItem {
   productId: string
@@ -22,8 +23,10 @@ interface CartItem {
 
 // GET - Get cart details (client-side managed)
 export async function GET(request: NextRequest) {
+  let session: any = null
+  
   try {
-    const session = await getServerSession(authOptions)
+    session = await getServerSession(authOptions)
     
     // Cart is managed client-side for both guest and authenticated users
     // This endpoint can be used for cart validation or server-side operations
@@ -39,13 +42,21 @@ export async function GET(request: NextRequest) {
       message: 'Cart is managed client-side. Use this endpoint for validation or server operations.'
     })
   } catch (error) {
-    console.error('Cart fetch error:', error)
+    logger.error('Failed to fetch cart data', {
+      userId: session?.user?.id,
+      isGuest: !session?.user?.id
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return createServerErrorResponse('Failed to fetch cart')
   }
 }
 
 // POST - Validate cart item before adding (cart managed client-side)
 export async function POST(request: NextRequest) {
+  let productId: string | undefined
+  let skuId: string | undefined
+  let quantity: number | undefined
+  
   try {
     // Validate request body
     const validation = await validateRequestBody(request, schemas.addToCart)
@@ -54,7 +65,9 @@ export async function POST(request: NextRequest) {
       return createValidationErrorResponse(validation.errors)
     }
 
-    const { productId, skuId, quantity } = validation.data
+    productId = validation.data.productId
+    skuId = validation.data.skuId
+    quantity = validation.data.quantity
 
     // Verify SKU exists and is available
     const sku = await prisma.productSku.findUnique({
@@ -101,13 +114,21 @@ export async function POST(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Cart validation error:', error)
+    logger.error('Failed to validate cart item', {
+      productId,
+      skuId,
+      quantity
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return createServerErrorResponse('Failed to validate cart item')
   }
 }
 
 // PUT - Validate stock for cart update
 export async function PUT(request: NextRequest) {
+  let skuId: string | undefined
+  let quantity: number | undefined
+  
   try {
     // Validate request body
     const validation = await validateRequestBody(request, schemas.updateCartItem.extend({
@@ -118,7 +139,8 @@ export async function PUT(request: NextRequest) {
       return createValidationErrorResponse(validation.errors)
     }
 
-    const { skuId, quantity } = validation.data
+    skuId = validation.data.skuId
+    quantity = validation.data.quantity
 
     // Find SKU to validate stock
     const sku = await prisma.productSku.findUnique({
@@ -153,7 +175,11 @@ export async function PUT(request: NextRequest) {
     })
     
   } catch (error) {
-    console.error('Stock validation error:', error)
+    logger.error('Failed to validate stock for cart', {
+      skuId,
+      quantity
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return createServerErrorResponse('Failed to validate stock')
   }
 }

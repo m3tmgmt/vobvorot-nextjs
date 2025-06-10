@@ -393,7 +393,7 @@ export const emailService = {
     const client = getResendClient()
     
     await client.emails.send({
-      from: process.env.FROM_EMAIL || 'noreply@exvicpmour.com',
+      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
       to: orderData.customerEmail,
       subject: template.subject,
       html: template.html,
@@ -409,8 +409,8 @@ export const emailService = {
     const client = getResendClient()
     
     await client.emails.send({
-      from: process.env.FROM_EMAIL || 'noreply@exvicpmour.com',
-      to: process.env.ADMIN_EMAIL || 'admin@exvicpmour.com',
+      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
+      to: process.env.ADMIN_EMAIL || 'admin@vobvorot.com',
       subject: template.subject,
       html: template.html,
       text: template.text
@@ -425,7 +425,7 @@ export const emailService = {
     const client = getResendClient()
     
     await client.emails.send({
-      from: process.env.FROM_EMAIL || 'noreply@exvicpmour.com',
+      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
       to: orderData.customerEmail,
       subject: template.subject,
       html: template.html,
@@ -441,7 +441,7 @@ export const emailService = {
     const client = getResendClient()
     
     await client.emails.send({
-      from: process.env.FROM_EMAIL || 'noreply@exvicpmour.com',
+      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
       to: data.customerEmail,
       subject: template.subject,
       html: template.html,
@@ -457,7 +457,7 @@ export const emailService = {
     const client = getResendClient()
     
     await client.emails.send({
-      from: process.env.FROM_EMAIL || 'noreply@exvicpmour.com',
+      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
       to: data.customerEmail,
       subject: template.subject,
       html: template.html,
@@ -473,8 +473,8 @@ export const emailService = {
     const client = getResendClient()
     
     await client.emails.send({
-      from: process.env.FROM_EMAIL || 'noreply@exvicpmour.com',
-      to: process.env.ADMIN_EMAIL || 'admin@exvicpmour.com',
+      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
+      to: process.env.ADMIN_EMAIL || 'admin@vobvorot.com',
       subject: template.subject,
       html: template.html,
       text: template.text
@@ -488,7 +488,7 @@ export const emailService = {
     const client = getResendClient()
     
     await client.emails.send({
-      from: process.env.FROM_EMAIL || 'noreply@exvicpmour.com',
+      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
       to,
       subject: 'Test Email from EXVICPMOUR Store',
       html: `
@@ -647,7 +647,7 @@ function generateOrderConfirmationTemplate(orderData: OrderEmailData): EmailTemp
               ${t.shippingConfirmation}
             </p>
             <p style="color: #6b7280; margin: 0; font-size: 14px;">
-              ${t.questions} <a href="mailto:support@exvicpmour.com" style="color: #1a1a1a; font-weight: 600;">support@exvicpmour.com</a>
+              ${t.questions} <a href="mailto:support@vobvorot.com" style="color: #1a1a1a; font-weight: 600;">support@vobvorot.com</a>
             </p>
           </div>
         </div>
@@ -695,7 +695,7 @@ ${orderData.shippingAddress.city}, ${orderData.shippingAddress.zip}
 ${orderData.shippingAddress.country}
 
 ${t.shippingConfirmation}
-${t.questions} support@exvicpmour.com
+${t.questions} support@vobvorot.com
 
 ${t.copyright}
   `
@@ -924,7 +924,7 @@ function generateOrderStatusUpdateTemplate(orderData: OrderEmailData): EmailTemp
 
           <div style="text-align: center; padding: 24px; background: #f8f9fa; border-radius: 12px; margin: 32px 0;">
             <p style="color: #6b7280; margin: 0; font-size: 14px;">
-              ${t.questions} <a href="mailto:support@exvicpmour.com" style="color: #1a1a1a; font-weight: 600;">support@exvicpmour.com</a>
+              ${t.questions} <a href="mailto:support@vobvorot.com" style="color: #1a1a1a; font-weight: 600;">support@vobvorot.com</a>
             </p>
           </div>
         </div>
@@ -956,7 +956,7 @@ ${t.orderDetails}:
 ${orderData.trackingNumber ? `- ${t.trackingNumber}: ${orderData.trackingNumber}` : ''}
 ${orderData.estimatedDelivery ? `- ${t.estimatedDelivery}: ${orderData.estimatedDelivery}` : ''}
 
-${t.questions} support@exvicpmour.com
+${t.questions} support@vobvorot.com
 
 ${t.copyright}
   `
@@ -1046,7 +1046,7 @@ function generateWelcomeEmailTemplate(data: WelcomeEmailData): EmailTemplate {
               ${t.getStarted}
             </p>
             <p style="color: #6b7280; margin: 0; font-size: 14px;">
-              ${t.questions} <a href="mailto:support@exvicpmour.com" style="color: #1a1a1a; font-weight: 600;">support@exvicpmour.com</a>
+              ${t.questions} <a href="mailto:support@vobvorot.com" style="color: #1a1a1a; font-weight: 600;">support@vobvorot.com</a>
             </p>
           </div>
         </div>
@@ -1082,7 +1082,7 @@ ${t.getStarted}
 
 ${t.exploreCollection}: ${process.env.NEXT_PUBLIC_SITE_URL}/collections
 
-${t.questions} support@exvicpmour.com
+${t.questions} support@vobvorot.com
 
 ${t.copyright}
   `
@@ -1157,7 +1157,7 @@ function generatePasswordResetTemplate(data: PasswordResetData): EmailTemplate {
 
           <div style="text-align: center; padding: 24px; background: #f8f9fa; border-radius: 12px; margin: 32px 0;">
             <p style="color: #6b7280; margin: 0; font-size: 14px;">
-              ${t.questions} <a href="mailto:support@exvicpmour.com" style="color: #1a1a1a; font-weight: 600;">support@exvicpmour.com</a>
+              ${t.questions} <a href="mailto:support@vobvorot.com" style="color: #1a1a1a; font-weight: 600;">support@vobvorot.com</a>
             </p>
           </div>
         </div>
@@ -1190,7 +1190,7 @@ ${t.resetPassword}: ${resetUrl}
 ${t.linkExpires}
 ${t.notRequested}
 
-${t.questions} support@exvicpmour.com
+${t.questions} support@vobvorot.com
 
 ${t.copyright}
   `

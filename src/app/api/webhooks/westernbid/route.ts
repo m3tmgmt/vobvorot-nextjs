@@ -7,6 +7,7 @@ import { sendTelegramNotification } from '@/lib/telegram-notifications'
 import { logWebhook, logSecurityEvent } from '@/lib/payment-logger'
 import { performSecurityCheck, getClientIP, verifyWebhookSignature } from '@/lib/payment-security'
 import { isSecurityEnabled, getPaymentConfig } from '@/lib/payment-config'
+import { logger } from '@/lib/logger'
 
 // Webhook handler for WesternBid payment notifications
 export async function POST(request: NextRequest) {
@@ -48,7 +49,7 @@ export async function POST(request: NextRequest) {
                      headersList.get('X-Signature') ||
                      headersList.get('x-signature') || ''
 
-    console.log('[WesternBid Webhook] Received webhook:', {
+    logger.info('WesternBid webhook received', {
       payloadLength: payload.length,
       hasSignature: !!signature,
       signaturePreview: signature ? signature.substring(0, 10) + '...' : 'none',
@@ -97,7 +98,11 @@ export async function POST(request: NextRequest) {
     webhookData = westernbid.parseWebhookData(payload)
     
     if (!webhookData) {
-      console.error('[WesternBid Webhook] Failed to parse webhook data')
+      logger.error('Failed to parse WesternBid webhook data', {
+        payloadLength: payload.length,
+        clientIP,
+        userAgent
+      })
       return NextResponse.json({ error: 'Invalid webhook data' }, { status: 400 })
     }
 
@@ -120,7 +125,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    console.log('[WesternBid Webhook] Parsed webhook data:', {
+    logger.info('WesternBid webhook data parsed', {
       event: webhookData.event,
       paymentId: webhookData.paymentId,
       orderId: webhookData.orderId,
@@ -153,7 +158,11 @@ export async function POST(request: NextRequest) {
     })
 
     if (!order) {
-      console.error('[WesternBid Webhook] Order not found:', webhookData.orderId)
+      logger.error('Order not found for WesternBid webhook', {
+        orderId: webhookData.orderId,
+        event: webhookData.event,
+        paymentId: webhookData.paymentId
+      })
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
@@ -182,7 +191,11 @@ export async function POST(request: NextRequest) {
         break
         
       default:
-        console.warn('[WesternBid Webhook] Unknown event type:', webhookData.event)
+        logger.warn('Unknown WesternBid webhook event type', {
+          event: webhookData.event,
+          orderId: webhookData.orderId,
+          paymentId: webhookData.paymentId
+        })
         return NextResponse.json({ message: 'Unknown event type' }, { status: 200 })
     }
 
@@ -190,11 +203,15 @@ export async function POST(request: NextRequest) {
     try {
       await sendNotifications(updatedOrder, webhookData)
     } catch (notificationError) {
-      console.error('[WesternBid Webhook] Failed to send notifications:', notificationError)
+      logger.error('Failed to send WesternBid webhook notifications', {
+        event: webhookData.event,
+        orderId: webhookData.orderId,
+        orderNumber: updatedOrder?.orderNumber
+      }, notificationError instanceof Error ? notificationError : new Error(String(notificationError)))
       // Don't fail the webhook for notification errors
     }
 
-    console.log('[WesternBid Webhook] Successfully processed webhook:', {
+    logger.info('WesternBid webhook processed successfully', {
       event: webhookData.event,
       orderId: webhookData.orderId,
       newStatus: updatedOrder.status,
@@ -209,12 +226,12 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('[WesternBid Webhook] Error processing webhook:', {
-      error: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
+    logger.error('Failed to process WesternBid webhook', {
       webhookEvent: webhookData?.event,
-      orderId: webhookData?.orderId
-    })
+      orderId: webhookData?.orderId,
+      clientIP,
+      userAgent
+    }, error instanceof Error ? error : new Error(String(error)))
 
     // Return 500 to trigger webhook retry
     return NextResponse.json(
@@ -229,7 +246,11 @@ export async function POST(request: NextRequest) {
 
 // Handle successful payment
 async function handlePaymentCompleted(order: any, webhookData: WebhookData) {
-  console.log('[WesternBid Webhook] Processing payment completed for order:', order.orderNumber)
+  logger.info('Processing WesternBid payment completed', {
+    orderNumber: order.orderNumber,
+    orderId: order.id,
+    paymentId: webhookData.paymentId
+  })
   
   const updatedOrder = await prisma.order.update({
     where: { id: order.id },
@@ -277,7 +298,12 @@ async function handlePaymentCompleted(order: any, webhookData: WebhookData) {
 
 // Handle failed payment
 async function handlePaymentFailed(order: any, webhookData: WebhookData) {
-  console.log('[WesternBid Webhook] Processing payment failed for order:', order.orderNumber)
+  logger.info('Processing WesternBid payment failed', {
+    orderNumber: order.orderNumber,
+    orderId: order.id,
+    paymentId: webhookData.paymentId,
+    failureReason: webhookData.metadata?.failure_reason
+  })
   
   return await prisma.order.update({
     where: { id: order.id },
@@ -310,7 +336,11 @@ async function handlePaymentFailed(order: any, webhookData: WebhookData) {
 
 // Handle cancelled payment
 async function handlePaymentCancelled(order: any, webhookData: WebhookData) {
-  console.log('[WesternBid Webhook] Processing payment cancelled for order:', order.orderNumber)
+  logger.info('Processing WesternBid payment cancelled', {
+    orderNumber: order.orderNumber,
+    orderId: order.id,
+    paymentId: webhookData.paymentId
+  })
   
   return await prisma.order.update({
     where: { id: order.id },
@@ -342,7 +372,12 @@ async function handlePaymentCancelled(order: any, webhookData: WebhookData) {
 
 // Handle successful refund
 async function handleRefundCompleted(order: any, webhookData: WebhookData) {
-  console.log('[WesternBid Webhook] Processing refund completed for order:', order.orderNumber)
+  logger.info('Processing WesternBid refund completed', {
+    orderNumber: order.orderNumber,
+    orderId: order.id,
+    refundAmount: webhookData.amount,
+    refundReason: webhookData.metadata?.refund_reason
+  })
   
   const updatedOrder = await prisma.order.update({
     where: { id: order.id },
@@ -390,7 +425,11 @@ async function handleRefundCompleted(order: any, webhookData: WebhookData) {
 
 // Handle failed refund
 async function handleRefundFailed(order: any, webhookData: WebhookData) {
-  console.log('[WesternBid Webhook] Processing refund failed for order:', order.orderNumber)
+  logger.info('Processing WesternBid refund failed', {
+    orderNumber: order.orderNumber,
+    orderId: order.id,
+    failureReason: webhookData.metadata?.failure_reason
+  })
   
   return await prisma.order.update({
     where: { id: order.id },
@@ -456,7 +495,10 @@ async function sendNotifications(order: any, webhookData: WebhookData) {
     await sendTelegramNotification(statusMessage)
 
   } catch (error) {
-    console.error('[WesternBid Webhook] Failed to send notifications:', error)
+    logger.error('Failed to send WesternBid notifications', {
+      orderNumber: order.orderNumber,
+      event: webhookData.event
+    }, error instanceof Error ? error : new Error(String(error)))
     throw error
   }
 }

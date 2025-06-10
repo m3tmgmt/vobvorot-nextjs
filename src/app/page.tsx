@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ProductCard } from '@/components/ProductCard'
 import { usePuzzle } from '@/contexts/PuzzleContext'
 import { Footer } from '@/components/Footer'
+import LettersToFuture from '@/components/LettersToFuture'
 
 interface Product {
   id: string
@@ -24,7 +25,6 @@ export default function HomePage() {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([])
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [activeFilter, setActiveFilter] = useState('all')
-  const [showLetterForm, setShowLetterForm] = useState(false)
   const [availableCategories, setAvailableCategories] = useState<{id: string, name: string, icon: string}[]>([])
   const { findPiece, dispatch: puzzleDispatch } = usePuzzle()
   
@@ -300,74 +300,7 @@ export default function HomePage() {
           </div>
 
           {/* Letters to Future Card */}
-          <div className="product-card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div>
-              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>💌</div>
-              <h3 style={{ color: 'var(--pink-main)', marginBottom: '1rem' }}>
-                Letters to Future
-              </h3>
-              <p style={{ marginBottom: '1.5rem', color: 'rgba(255,255,255,0.8)' }}>
-                Write a message to your future self. We'll deliver it when the time comes.
-              </p>
-            </div>
-            
-            {!showLetterForm ? (
-              <button 
-                className="add-to-cart-btn"
-                onClick={() => setShowLetterForm(true)}
-              >
-                Write Letter
-              </button>
-            ) : (
-              <div>
-                <textarea
-                  placeholder="Dear future me..."
-                  style={{
-                    width: '100%',
-                    height: '120px',
-                    background: 'rgba(0,0,0,0.3)',
-                    border: '2px solid var(--pink-main)',
-                    borderRadius: '10px',
-                    padding: '1rem',
-                    color: 'var(--white)',
-                    fontSize: '1rem',
-                    resize: 'vertical',
-                    marginBottom: '1rem',
-                    boxSizing: 'border-box'
-                  }}
-                />
-                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                  <input
-                    type="date"
-                    style={{
-                      background: 'rgba(0,0,0,0.3)',
-                      border: '2px solid var(--cyan-accent)',
-                      borderRadius: '5px',
-                      padding: '0.5rem',
-                      color: 'var(--white)',
-                      fontSize: '0.9rem'
-                    }}
-                  />
-                  <button 
-                    className="add-to-cart-btn"
-                    onClick={() => {
-                      puzzleDispatch({ type: 'UNLOCK_ACHIEVEMENT', payload: 'time-traveler' })
-                    }}
-                    style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}
-                  >
-                    Send to Future
-                  </button>
-                  <button 
-                    className="filter-btn"
-                    onClick={() => setShowLetterForm(false)}
-                    style={{ fontSize: '0.9rem', padding: '0.5rem 1rem' }}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <LettersToFuture />
         </div>
         </div>
       </section>

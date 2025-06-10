@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getOrders, sharedOrders, updateOrder, addOrder } from '@/lib/shared-data'
+import { logger } from '@/lib/logger'
 
 // GET - получить заказы с фильтрацией
 export async function GET(request: NextRequest) {
@@ -47,7 +48,14 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Orders API error:', error)
+    const authHeader = request.headers.get('authorization')
+    const { searchParams } = new URL(request.url)
+    
+    logger.error('Admin orders API error', {
+      hasAuth: !!authHeader,
+      params: Object.fromEntries(searchParams.entries())
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -98,7 +106,20 @@ export async function PUT(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Order update error:', error)
+    const authHeader = request.headers.get('authorization')
+    let orderId, newStatus
+    try {
+      const body = await request.json()
+      orderId = body?.orderId
+      newStatus = body?.status
+    } catch {}
+    
+    logger.error('Admin order update failed', {
+      orderId,
+      newStatus,
+      hasAuth: !!authHeader
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -131,7 +152,12 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Order creation error:', error)
+    const authHeader = request.headers.get('authorization')
+    
+    logger.error('Admin order creation failed', {
+      hasAuth: !!authHeader
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

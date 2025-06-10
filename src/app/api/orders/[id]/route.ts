@@ -2,13 +2,17 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { logger } from '@/lib/logger'
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let resolvedParams: { id: string } | undefined
+  let session: any
+  
   try {
-    const session = await getServerSession(authOptions)
+    session = await getServerSession(authOptions)
     
     if (!session?.user?.id) {
       return NextResponse.json(
@@ -17,7 +21,7 @@ export async function GET(
       )
     }
 
-    const resolvedParams = await params
+    resolvedParams = await params
     const order = await prisma.order.findFirst({
       where: {
         id: resolvedParams.id,
@@ -52,7 +56,11 @@ export async function GET(
 
     return NextResponse.json(order)
   } catch (error) {
-    console.error('Order fetch error:', error)
+    logger.error('Failed to fetch order by ID', {
+      orderId: resolvedParams?.id,
+      userId: session?.user?.id
+    }, error instanceof Error ? error : new Error(String(error)))
+    
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

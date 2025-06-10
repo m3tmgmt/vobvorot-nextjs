@@ -1,0 +1,167 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
+
+// Rate limiting store (in production, use Redis)
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
+const RATE_LIMIT_MAX_REQUESTS = 100;
+
+function getRateLimitKey(request: NextRequest): string {
+  const forwarded = request.headers.get('x-forwarded-for');
+  const ip = forwarded ? forwarded.split(',')[0] : 'unknown';
+  return `rate_limit:${ip}`;
+}
+
+function isRateLimited(request: NextRequest): boolean {
+  const key = getRateLimitKey(request);
+  const now = Date.now();
+  const current = rateLimitStore.get(key);
+
+  if (!current || now > current.resetTime) {
+    rateLimitStore.set(key, { count: 1, resetTime: now + RATE_LIMIT_WINDOW });
+    return false;
+  }
+
+  if (current.count >= RATE_LIMIT_MAX_REQUESTS) {
+    return true;
+  }
+
+  current.count++;
+  return false;
+}
+
+function generateCSRFToken(): string {
+  return Math.random().toString(36).substring(2) + Date.now().toString(36);
+}
+
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Security headers for all responses
+  const response = NextResponse.next();
+  
+  // Security headers
+  response.headers.set('X-DNS-Prefetch-Control', 'on');
+  response.headers.set('X-XSS-Protection', '1; mode=block');
+  response.headers.set('X-Frame-Options', 'DENY');
+  response.headers.set('X-Content-Type-Options', 'nosniff');
+  response.headers.set('Referrer-Policy', 'origin-when-cross-origin');
+  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+  // Rate limiting for API routes
+  if (pathname.startsWith('/api/')) {
+    if (isRateLimited(request)) {
+      return new NextResponse(
+        JSON.stringify({ 
+          error: 'Too many requests', 
+          message: 'Rate limit exceeded. Try again later.' 
+        }),
+        { 
+          status: 429, 
+          headers: { 'Content-Type': 'application/json' } 
+        }
+      );
+    }
+  }
+
+  // CSRF protection for state-changing operations
+  if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(request.method)) {
+    const origin = request.headers.get('origin');
+    const host = request.headers.get('host');
+    
+    // Check origin header for CSRF protection
+    if (origin && host && !origin.includes(host)) {
+      return new NextResponse(
+        JSON.stringify({ error: 'CSRF protection: Invalid origin' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+  }
+
+  // Admin routes protection
+  if (pathname.startsWith('/api/admin/')) {
+    const authHeader = request.headers.get('authorization');
+    const adminApiKey = process.env.ADMIN_API_KEY;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ') || !adminApiKey) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Unauthorized', message: 'Admin access required' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+    
+    const token = authHeader.substring(7);
+    if (token !== adminApiKey) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Forbidden', message: 'Invalid admin token' }),
+        { status: 403, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+  }
+
+  // Authentication required routes
+  const protectedRoutes = ['/account', '/checkout'];
+  if (protectedRoutes.some(route => pathname.startsWith(route))) {
+    const token = await getToken({ req: request, secret: process.env.NEXTAUTH_SECRET });
+    
+    if (!token) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/auth/signin';
+      url.searchParams.set('callbackUrl', pathname);
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Payment webhook security
+  if (pathname === '/api/webhooks/westernbid') {
+    const signature = request.headers.get('x-westernbid-signature');
+    const webhookSecret = process.env.WESTERNBID_WEBHOOK_SECRET;
+    
+    if (!signature || !webhookSecret) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Webhook signature required' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+  }
+
+  // Telegram webhook security
+  if (pathname === '/api/telegram/webhook') {
+    const webhookSecret = process.env.TELEGRAM_WEBHOOK_SECRET;
+    const providedSecret = request.headers.get('x-telegram-bot-api-secret-token');
+    
+    if (webhookSecret && providedSecret !== webhookSecret) {
+      return new NextResponse(
+        JSON.stringify({ error: 'Invalid webhook secret' }),
+        { status: 401, headers: { 'Content-Type': 'application/json' } }
+      );
+    }
+  }
+
+  // Add CSRF token for forms
+  if (request.method === 'GET' && !pathname.startsWith('/api/')) {
+    const csrfToken = generateCSRFToken();
+    response.cookies.set('csrf-token', csrfToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 60 * 60 * 1000 // 1 hour
+    });
+  }
+
+  return response;
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public (public files)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
+  ],
+};
