@@ -421,6 +421,8 @@ html, body {
 .hero-section {
   position: relative;
   height: 100vh;
+  height: 100dvh; /* Use dynamic viewport height when supported */
+  min-height: 600px; /* Add minimum height for safety */
   width: 100%;
   overflow: hidden;
   display: flex;
@@ -537,8 +539,10 @@ html, body {
 /* Section Styles */
 .products-section {
   padding: 4rem 2rem;
+  margin-top: 2rem;
   max-width: 1400px;
-  margin: 0 auto;
+  margin-left: auto;
+  margin-right: auto;
   position: relative;
   z-index: 2;
 }

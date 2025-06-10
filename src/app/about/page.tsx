@@ -136,7 +136,7 @@ export default function AboutPage() {
           </div>
 
           {/* Stats Section */}
-          <div className="stats-grid">
+          <div className="stats-grid" style={{ margin: '4rem 0' }}>
             <div className="product-card" style={{ textAlign: 'center', border: '2px solid var(--pink-main)' }}>
               <h3 style={{ color: 'var(--pink-main)', fontSize: '3rem', marginBottom: '1rem' }}>500+</h3>
               <p style={{ color: 'var(--cyan-accent)' }}>Unique Items Curated</p>
@@ -168,7 +168,7 @@ export default function AboutPage() {
               Timeline of Digital Culture
             </h3>
             
-            <div className="timeline-grid">
+            <div className="timeline-grid" style={{ gap: '4rem' }}>
               <div style={{ textAlign: 'center' }}>
                 <div style={{ 
                   fontSize: '2.5rem', 
