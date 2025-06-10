@@ -5,6 +5,115 @@
   margin: 0;
 }
 
+/* PRIORITY: Universal Custom Scrollbar Override */
+/* Firefox-specific styles */
+html {
+  scrollbar-width: thin !important;
+  scrollbar-color: #FF6B9D transparent !important;
+  scroll-behavior: smooth;
+}
+
+body {
+  scrollbar-width: thin !important;
+  scrollbar-color: #FF6B9D transparent !important;
+  /* Firefox fallback with solid colors */
+  scrollbar-color: #FF6B9D rgba(0, 0, 0, 0.1) !important;
+}
+
+/* WebKit browsers (Chrome, Safari, Edge) */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 16px !important;
+  height: 16px !important;
+  background: transparent !important;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+  background: transparent !important;
+  border-radius: 8px !important;
+  /* Fallback for older browsers */
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #FF6B9D, #9D4EDD, #00F5FF) !important;
+  border-radius: 8px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+  box-shadow: 0 0 10px rgba(255, 107, 157, 0.6) !important;
+  /* Fallback for browsers without gradient support */
+  background: #FF6B9D !important;
+  background: -webkit-linear-gradient(135deg, #FF6B9D, #9D4EDD, #00F5FF) !important;
+  background: -moz-linear-gradient(135deg, #FF6B9D, #9D4EDD, #00F5FF) !important;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #00F5FF, #FF6B9D, #FFFF00) !important;
+  background: -webkit-linear-gradient(135deg, #00F5FF, #FF6B9D, #FFFF00) !important;
+  background: -moz-linear-gradient(135deg, #00F5FF, #FF6B9D, #FFFF00) !important;
+  box-shadow: 0 0 15px rgba(255, 107, 157, 0.9), 0 0 25px rgba(0, 245, 255, 0.5) !important;
+  transform: scale(1.05) !important;
+}
+
+html::-webkit-scrollbar-corner,
+body::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Additional support for older WebKit */
+html::-webkit-scrollbar-button,
+body::-webkit-scrollbar-button {
+  display: none !important;
+}
+
+/* Force styling on specific containers that might override */
+#__next,
+.main-content,
+main {
+  scrollbar-width: thin !important;
+  scrollbar-color: #FF6B9D transparent !important;
+}
+
+/* Browser-specific enhancements using @supports */
+@supports (scrollbar-width: thin) {
+  /* Modern Firefox */
+  * {
+    scrollbar-width: thin !important;
+    scrollbar-color: #FF6B9D transparent !important;
+  }
+}
+
+@supports selector(::-webkit-scrollbar) {
+  /* Modern WebKit browsers */
+  *::-webkit-scrollbar {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  
+  *::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+  
+  *::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #FF6B9D, #9D4EDD, #00F5FF) !important;
+    border-radius: 8px !important;
+    border: 2px solid transparent !important;
+    background-clip: padding-box !important;
+  }
+}
+
+/* Safari-specific fixes */
+@supports (-webkit-appearance: none) {
+  body::-webkit-scrollbar-thumb {
+    -webkit-appearance: none !important;
+    background: #FF6B9D !important;
+    border-radius: 8px !important;
+  }
+}
+
 :root {
   --pink-main: #FF6B9D;
   --pink-neon: #FF1493;
@@ -26,23 +135,66 @@ html, body {
   font-family: 'Space Grotesk', sans-serif;
   min-height: 100vh;
   cursor: none;
+  /* Force custom scrollbars */
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--pink-main) transparent !important;
 }
 
-/* Cursor Effects */
+/* Cursor Effects - Force hide browser cursor completely */
 @media (hover: hover) and (pointer: fine) {
-  body {
-    cursor: none;
-  }
-  
-  /* Hide cursor for all interactive elements */
-  *, *:hover, *:focus, *:active {
+  /* Primary cursor hiding */
+  html, body {
     cursor: none !important;
   }
   
-  /* Ensure all clickable elements don't show default cursor */
-  button, a, input, textarea, select, 
-  .nav-toggle, .nav-close, .cart-icon, 
-  [role="button"], [onclick], [href] {
+  /* Universal cursor suppression with highest specificity */
+  *, *::before, *::after, *:hover, *:focus, *:active, *:visited, *:link {
+    cursor: none !important;
+    -webkit-cursor: none !important;
+    -moz-cursor: none !important;
+    -ms-cursor: none !important;
+    -o-cursor: none !important;
+  }
+  
+  /* Target all possible interactive elements */
+  button, a, input, textarea, select, label, option, optgroup,
+  [role="button"], [role="link"], [role="menuitem"], [role="tab"],
+  [onclick], [onmousedown], [onmouseup], [onmouseover],
+  [href], [tabindex], [contenteditable],
+  div[onclick], span[onclick], li[onclick], p[onclick],
+  h1[onclick], h2[onclick], h3[onclick], h4[onclick], h5[onclick], h6[onclick],
+  img[onclick], svg[onclick], path[onclick] {
+    cursor: none !important;
+    -webkit-cursor: none !important;
+    -moz-cursor: none !important;
+  }
+  
+  /* Component-specific targeting */
+  .nav-toggle, .nav-close, .nav-title, .nav-links,
+  .navigation *, .nav-content *, .nav-links *,
+  .navigation button, .nav-links button, .nav-links li,
+  .cart-modal *, .wishlist-modal *, .modal *,
+  .cart-modal button, .wishlist-modal button, .modal button,
+  .product-card *, .product-title, .add-to-cart-btn,
+  .hero-title, .hero-button, .filter-btn,
+  .cursor-main, .cursor-trail {
+    cursor: none !important;
+    -webkit-cursor: none !important;
+  }
+  
+  /* Target framework-generated elements */
+  [data-nextjs-cursor], [data-react-cursor],
+  .next-cursor, .react-cursor {
+    cursor: none !important;
+  }
+  
+  /* Override any inline styles */
+  [style*="cursor"] {
+    cursor: none !important;
+  }
+  
+  /* Force override common cursor states */
+  :hover, :focus, :active, :visited {
     cursor: none !important;
   }
 }
@@ -658,34 +810,132 @@ html, body {
   gap: 1rem;
 }
 
-/* Custom Scrollbar for Puzzle Progress Modal */
-.puzzle-progress-modal {
-  scrollbar-width: thin;
-  scrollbar-color: var(--pink-main) rgba(255, 255, 255, 0.1);
+/* Global Scrollbar Styles - Y2K Cyberpunk Theme */
+/* Universal Firefox scrollbar styling */
+* {
+  scrollbar-width: thin !important;
+  scrollbar-color: #FF6B9D transparent !important;
 }
 
+/* Force override default scrollbars for all common elements */
+html, body, div, main, section, article, aside, nav, header, footer,
+ul, ol, li, p, h1, h2, h3, h4, h5, h6, 
+.container, .content, .modal, .panel, .sidebar,
+*[class*="modal"], *[class*="panel"], *[class*="scroll"],
+textarea, pre, code, iframe, object, embed {
+  scrollbar-width: thin !important;
+  scrollbar-color: #FF6B9D transparent !important;
+  /* Enhanced Firefox support */
+  scrollbar-color: #FF6B9D rgba(255, 107, 157, 0.1) !important;
+}
+
+/* WebKit scrollbar for all elements with high specificity */
+html::-webkit-scrollbar, body::-webkit-scrollbar, div::-webkit-scrollbar,
+main::-webkit-scrollbar, section::-webkit-scrollbar, article::-webkit-scrollbar,
+ul::-webkit-scrollbar, ol::-webkit-scrollbar, li::-webkit-scrollbar,
+.container::-webkit-scrollbar, .content::-webkit-scrollbar,
+*[class*="modal"]::-webkit-scrollbar, *[class*="panel"]::-webkit-scrollbar,
+*[class*="scroll"]::-webkit-scrollbar, *::-webkit-scrollbar {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+html::-webkit-scrollbar-track, body::-webkit-scrollbar-track, div::-webkit-scrollbar-track,
+main::-webkit-scrollbar-track, section::-webkit-scrollbar-track, article::-webkit-scrollbar-track,
+ul::-webkit-scrollbar-track, ol::-webkit-scrollbar-track, li::-webkit-scrollbar-track,
+.container::-webkit-scrollbar-track, .content::-webkit-scrollbar-track,
+*[class*="modal"]::-webkit-scrollbar-track, *[class*="panel"]::-webkit-scrollbar-track,
+*[class*="scroll"]::-webkit-scrollbar-track, *::-webkit-scrollbar-track {
+  background: transparent !important;
+  border-radius: 10px !important;
+}
+
+html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, div::-webkit-scrollbar-thumb,
+main::-webkit-scrollbar-thumb, section::-webkit-scrollbar-thumb, article::-webkit-scrollbar-thumb,
+ul::-webkit-scrollbar-thumb, ol::-webkit-scrollbar-thumb, li::-webkit-scrollbar-thumb,
+.container::-webkit-scrollbar-thumb, .content::-webkit-scrollbar-thumb,
+*[class*="modal"]::-webkit-scrollbar-thumb, *[class*="panel"]::-webkit-scrollbar-thumb,
+*[class*="scroll"]::-webkit-scrollbar-thumb, *::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--pink-main), var(--purple-accent), var(--cyan-accent)) !important;
+  border-radius: 10px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+  box-shadow: 
+    0 0 10px rgba(255, 107, 157, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  animation: scrollbarGlow 3s ease-in-out infinite alternate !important;
+}
+
+html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover, div::-webkit-scrollbar-thumb:hover,
+main::-webkit-scrollbar-thumb:hover, section::-webkit-scrollbar-thumb:hover, article::-webkit-scrollbar-thumb:hover,
+ul::-webkit-scrollbar-thumb:hover, ol::-webkit-scrollbar-thumb:hover, li::-webkit-scrollbar-thumb:hover,
+.container::-webkit-scrollbar-thumb:hover, .content::-webkit-scrollbar-thumb:hover,
+*[class*="modal"]::-webkit-scrollbar-thumb:hover, *[class*="panel"]::-webkit-scrollbar-thumb:hover,
+*[class*="scroll"]::-webkit-scrollbar-thumb:hover, *::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, var(--cyan-accent), var(--pink-main), var(--yellow-neon)) !important;
+  box-shadow: 
+    0 0 15px rgba(255, 107, 157, 0.8),
+    0 0 20px rgba(0, 245, 255, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  transform: scale(1.05) !important;
+}
+
+html::-webkit-scrollbar-corner, body::-webkit-scrollbar-corner, div::-webkit-scrollbar-corner,
+main::-webkit-scrollbar-corner, section::-webkit-scrollbar-corner, article::-webkit-scrollbar-corner,
+ul::-webkit-scrollbar-corner, ol::-webkit-scrollbar-corner, li::-webkit-scrollbar-corner,
+.container::-webkit-scrollbar-corner, .content::-webkit-scrollbar-corner,
+*[class*="modal"]::-webkit-scrollbar-corner, *[class*="panel"]::-webkit-scrollbar-corner,
+*[class*="scroll"]::-webkit-scrollbar-corner, *::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Enhanced styles for modal scrollbars */
+.modal-content,
+.cart-modal,
+.wishlist-modal,
+.navigation,
+.puzzle-progress-modal {
+  scrollbar-width: thin;
+  scrollbar-color: var(--pink-main) transparent;
+}
+
+.modal-content::-webkit-scrollbar,
+.cart-modal::-webkit-scrollbar,
+.wishlist-modal::-webkit-scrollbar,
+.navigation::-webkit-scrollbar,
 .puzzle-progress-modal::-webkit-scrollbar {
   width: 14px;
   height: 14px;
 }
 
+.modal-content::-webkit-scrollbar-track,
+.cart-modal::-webkit-scrollbar-track,
+.wishlist-modal::-webkit-scrollbar-track,
+.navigation::-webkit-scrollbar-track,
 .puzzle-progress-modal::-webkit-scrollbar-track {
-  background: linear-gradient(45deg, rgba(0, 0, 0, 0.4), rgba(26, 0, 20, 0.4));
+  background: transparent;
   border-radius: 12px;
-  border: 2px solid rgba(255, 107, 157, 0.3);
-  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
 }
 
+.modal-content::-webkit-scrollbar-thumb,
+.cart-modal::-webkit-scrollbar-thumb,
+.wishlist-modal::-webkit-scrollbar-thumb,
+.navigation::-webkit-scrollbar-thumb,
 .puzzle-progress-modal::-webkit-scrollbar-thumb {
   background: linear-gradient(135deg, var(--pink-main), var(--purple-accent), var(--cyan-accent));
   border-radius: 12px;
-  border: 2px solid rgba(0, 0, 0, 0.2);
+  border: 2px solid transparent;
+  background-clip: padding-box;
   box-shadow: 
     0 0 15px rgba(255, 107, 157, 0.6),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   animation: scrollbarGlow 2s ease-in-out infinite alternate;
 }
 
+.modal-content::-webkit-scrollbar-thumb:hover,
+.cart-modal::-webkit-scrollbar-thumb:hover,
+.wishlist-modal::-webkit-scrollbar-thumb:hover,
+.navigation::-webkit-scrollbar-thumb:hover,
 .puzzle-progress-modal::-webkit-scrollbar-thumb:hover {
   background: linear-gradient(135deg, var(--cyan-accent), var(--pink-main), var(--yellow-neon));
   box-shadow: 
@@ -695,22 +945,34 @@ html, body {
   transform: scale(1.1);
 }
 
+.modal-content::-webkit-scrollbar-corner,
+.cart-modal::-webkit-scrollbar-corner,
+.wishlist-modal::-webkit-scrollbar-corner,
+.navigation::-webkit-scrollbar-corner,
 .puzzle-progress-modal::-webkit-scrollbar-corner {
-  background: linear-gradient(45deg, rgba(0, 0, 0, 0.4), rgba(26, 0, 20, 0.4));
-  border-radius: 8px;
+  background: transparent;
 }
 
 @keyframes scrollbarGlow {
   0% { 
     box-shadow: 
-      0 0 15px rgba(255, 107, 157, 0.6),
+      0 0 10px rgba(255, 107, 157, 0.5),
       inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    filter: hue-rotate(0deg);
+  }
+  50% { 
+    box-shadow: 
+      0 0 15px rgba(255, 107, 157, 0.7),
+      0 0 10px rgba(0, 245, 255, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.25);
+    filter: hue-rotate(30deg);
   }
   100% { 
     box-shadow: 
       0 0 20px rgba(255, 107, 157, 0.8),
-      0 0 10px rgba(0, 245, 255, 0.4),
+      0 0 15px rgba(0, 245, 255, 0.6),
       inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    filter: hue-rotate(60deg);
   }
 }
 

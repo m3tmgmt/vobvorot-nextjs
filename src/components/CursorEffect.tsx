@@ -13,7 +13,8 @@ export default function CursorEffect() {
   const trailsRef = useRef<HTMLDivElement[]>([]);
   const mousePos = useRef({ x: 0, y: 0 });
   const trails = useRef<Trail[]>([]);
-  const animationFrame = useRef<number | undefined>();
+  const animationFrame = useRef<number | undefined>(undefined);
+  const lastHoverTime = useRef<number>(0);
 
   useEffect(() => {
     // Инициализация трейлов
@@ -37,8 +38,8 @@ export default function CursorEffect() {
       mousePos.current = { x: e.clientX, y: e.clientY };
       
       if (cursorRef.current) {
-        cursorRef.current.style.left = `${e.clientX - 10}px`;
-        cursorRef.current.style.top = `${e.clientY - 10}px`;
+        // Используем transform для лучшей производительности
+        cursorRef.current.style.transform = `translate3d(${e.clientX - 10}px, ${e.clientY - 10}px, 0)`;
         cursorRef.current.style.display = 'block';
       }
       
@@ -49,6 +50,8 @@ export default function CursorEffect() {
     };
 
     const updateTrails = () => {
+      if (!cursorRef.current) return;
+      
       trails.current.forEach((trail, index) => {
         const targetX = mousePos.current.x;
         const targetY = mousePos.current.y;
@@ -61,8 +64,8 @@ export default function CursorEffect() {
 
         const trailElement = trailsRef.current[index];
         if (trailElement) {
-          trailElement.style.left = `${trail.x - 3}px`;
-          trailElement.style.top = `${trail.y - 3}px`;
+          // Используем transform вместо left/top для лучшей производительности
+          trailElement.style.transform = `translate3d(${trail.x - 3}px, ${trail.y - 3}px, 0)`;
           trailElement.style.opacity = trail.opacity.toString();
         }
       });
@@ -89,20 +92,44 @@ export default function CursorEffect() {
     };
 
     const handleElementHover = (e: MouseEvent) => {
-      if (cursorRef.current) {
-        const target = e.target as HTMLElement;
-        const isClickable = target.tagName === 'BUTTON' || 
-                           target.tagName === 'A' || 
-                           target.closest('button') || 
-                           target.closest('a') ||
-                           target.hasAttribute('onclick') ||
-                           target.style.cursor === 'pointer';
-        
-        if (isClickable) {
-          cursorRef.current.style.transform = 'scale(1.5)';
-        } else {
-          cursorRef.current.style.transform = 'scale(1)';
-        }
+      if (!cursorRef.current) return;
+      
+      // Throttling для производительности
+      const now = Date.now();
+      if (now - lastHoverTime.current < 16) return; // ~60fps
+      lastHoverTime.current = now;
+      
+      const target = e.target as HTMLElement;
+      
+      // Проверяем, не находимся ли мы в навигационном меню
+      const isInNavigation = target.closest('.navigation') || target.closest('.nav-toggle') || target.closest('.nav-close');
+      
+      if (isInNavigation) {
+        // В навигации уменьшаем воздействие кастомного курсора
+        cursorRef.current.style.opacity = '0.3';
+        cursorRef.current.style.pointerEvents = 'none';
+        return;
+      } else {
+        cursorRef.current.style.opacity = '1';
+        cursorRef.current.style.pointerEvents = 'none';
+      }
+      
+      const isClickable = target.tagName === 'BUTTON' || 
+                         target.tagName === 'A' || 
+                         target.closest('button') || 
+                         target.closest('a') ||
+                         target.hasAttribute('onclick') ||
+                         target.style.cursor === 'pointer';
+      
+      // Получаем текущую позицию
+      const currentTransform = cursorRef.current.style.transform;
+      const translateMatch = currentTransform.match(/translate3d\([^)]+\)/);
+      const translatePart = translateMatch ? translateMatch[0] : 'translate3d(0px, 0px, 0px)';
+      
+      if (isClickable) {
+        cursorRef.current.style.transform = `${translatePart} scale(1.5)`;
+      } else {
+        cursorRef.current.style.transform = `${translatePart} scale(1)`;
       }
     };
 
@@ -117,8 +144,7 @@ export default function CursorEffect() {
         // Установить начальную позицию в центр экрана
         mousePos.current = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
         if (cursorRef.current) {
-          cursorRef.current.style.left = `${window.innerWidth / 2 - 10}px`;
-          cursorRef.current.style.top = `${window.innerHeight / 2 - 10}px`;
+          cursorRef.current.style.transform = `translate3d(${window.innerWidth / 2 - 10}px, ${window.innerHeight / 2 - 10}px, 0)`;
         }
       }, 100);
       
@@ -148,15 +174,18 @@ export default function CursorEffect() {
         className="cursor-main"
         style={{
           position: 'fixed',
+          left: 0,
+          top: 0,
           width: '20px',
           height: '20px',
           background: 'linear-gradient(45deg, var(--pink-main), var(--cyan-accent))',
           borderRadius: '50%',
           pointerEvents: 'none',
           zIndex: 9999,
-          transition: 'transform 0.2s ease',
+          transition: 'opacity 0.2s ease',
           mixBlendMode: 'difference',
-          display: 'block'
+          display: 'block',
+          willChange: 'transform'
         }}
       />
       
@@ -170,6 +199,8 @@ export default function CursorEffect() {
           className="cursor-trail"
           style={{
             position: 'fixed',
+            left: 0,
+            top: 0,
             width: '6px',
             height: '6px',
             background: 'var(--pink-neon)',
@@ -177,7 +208,8 @@ export default function CursorEffect() {
             pointerEvents: 'none',
             zIndex: 9998,
             opacity: 0.7,
-            display: 'block'
+            display: 'block',
+            willChange: 'transform'
           }}
         />
       ))}

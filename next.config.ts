@@ -190,22 +190,22 @@ const nextConfig: NextConfig = {
       )
     }
 
-    // Production optimizations
-    if (!dev) {
-      config.optimization = {
-        ...config.optimization,
-        splitChunks: {
-          chunks: 'all',
-          cacheGroups: {
-            vendor: {
-              test: /[\\/]node_modules[\\/]/,
-              name: 'vendors',
-              chunks: 'all',
-            },
-          },
-        },
-      }
-    }
+    // Production optimizations - temporarily disabled
+    // if (!dev) {
+    //   config.optimization = {
+    //     ...config.optimization,
+    //     splitChunks: {
+    //       chunks: 'all',
+    //       cacheGroups: {
+    //         vendor: {
+    //           test: /[\\/]node_modules[\\/]/,
+    //           name: 'vendors',
+    //           chunks: 'all',
+    //         },
+    //       },
+    //     },
+    //   }
+    // }
 
     // Bundle analyzer (only in development with ANALYZE=true)
     if (process.env.ANALYZE === 'true' && !isServer) {

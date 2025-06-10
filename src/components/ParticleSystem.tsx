@@ -16,7 +16,7 @@ interface Particle {
 export default function ParticleSystem() {
   const containerRef = useRef<HTMLDivElement>(null);
   const particlesRef = useRef<Particle[]>([]);
-  const animationFrame = useRef<number | undefined>();
+  const animationFrame = useRef<number | undefined>(undefined);
   const lastTime = useRef<number>(0);
   const particleCounter = useRef<number>(0);
 
