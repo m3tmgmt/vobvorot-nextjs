@@ -148,15 +148,6 @@ const initialPieces: PuzzlePiece[] = [
     category: 'easter-egg'
   },
   {
-    id: 'footer-mystery',
-    name: 'System Hacker',
-    description: 'Decoded the system status numbers',
-    location: 'Footer',
-    found: false,
-    hint: 'Check the system code in the footer...',
-    category: 'hidden'
-  },
-  {
     id: 'music-lover',
     name: 'Music Enthusiast',
     description: 'Started playing YE VOBVOROT tracks',
@@ -192,7 +183,7 @@ const initialAchievements: Achievement[] = [
     description: 'Found all puzzle pieces',
     icon: '🧩',
     unlocked: false,
-    requirement: 'Find all 13 puzzle pieces',
+    requirement: 'Find all 12 puzzle pieces',
     color: 'var(--pink-main)'
   },
   {
@@ -260,7 +251,7 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
         newAchievements[achievementIndex] = { ...newAchievements[achievementIndex], unlocked: true, unlockedAt: new Date() }
       }
       
-      if (newSecretsFound === 11 && !state.achievements.find(a => a.id === 'puzzle-master')?.unlocked) {
+      if (newSecretsFound === 12 && !state.achievements.find(a => a.id === 'puzzle-master')?.unlocked) {
         const achievementIndex = newAchievements.findIndex(a => a.id === 'puzzle-master')
         newAchievements[achievementIndex] = { ...newAchievements[achievementIndex], unlocked: true, unlockedAt: new Date() }
       }
