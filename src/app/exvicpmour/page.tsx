@@ -54,7 +54,7 @@ export default function ExvicpmourPage() {
       </section>
 
       {/* Products Section */}
-      <section className="products-section">
+      <section className="products-section" style={{ marginTop: '6rem' }}>
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <h2 className="section-title glitch">
             EXVICPMOUR Collection
@@ -108,7 +108,7 @@ export default function ExvicpmourPage() {
       </section>
 
       {/* Brand Story Section */}
-      <section className="products-section" style={{ background: 'rgba(0,0,0,0.3)' }}>
+      <section className="products-section" style={{ background: 'rgba(0,0,0,0.3)', marginTop: '6rem' }}>
         <div className="container" style={{ textAlign: 'center' }}>
           <h2 className="section-title glitch">
             The EXVICPMOUR Story

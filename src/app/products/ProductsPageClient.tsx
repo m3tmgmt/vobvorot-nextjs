@@ -104,7 +104,7 @@ export default function ProductsPageClient() {
       </section>
 
       {/* Category Filters */}
-      <section className="products-section">
+      <section className="products-section" style={{ marginTop: '6rem' }}>
         <div style={{ marginBottom: '3rem' }}>
           <div className="filter-bar" style={{ marginBottom: '2rem', textAlign: 'center' }}>
             {categories.map((category) => (
@@ -152,7 +152,7 @@ export default function ProductsPageClient() {
 
       {/* Categories Showcase */}
       {activeCategory === 'all' && (
-        <section className="products-section" style={{ background: 'rgba(0,0,0,0.3)' }}>
+        <section className="products-section" style={{ background: 'rgba(0,0,0,0.3)', marginTop: '6rem' }}>
           <h2 className="section-title glitch">
             Browse by Category
           </h2>
