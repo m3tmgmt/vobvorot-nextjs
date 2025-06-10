@@ -332,6 +332,7 @@ export default function PuzzlePage() {
             background: 'rgba(255,255,255,0.05)',
             borderRadius: '20px',
             padding: '2rem',
+            marginTop: '4rem',
             textAlign: 'center',
             border: '2px solid var(--purple-accent)'
           }}>
