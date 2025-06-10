@@ -74,7 +74,7 @@ export function Navigation() {
                   setIsOpen(false)
                 }}
               >
-                Home
+                🏠 Home Base
               </button>
             </li>
             <li>
@@ -84,7 +84,7 @@ export function Navigation() {
                   setIsOpen(false)
                 }}
               >
-                EXVICPMOUR Store
+                ✨ EXVICPMOUR Store
               </button>
             </li>
             <li>
@@ -94,7 +94,7 @@ export function Navigation() {
                   setIsOpen(false)
                 }}
               >
-                All Products
+                🛍️ Digital Catalog
               </button>
             </li>
             <li>
@@ -104,7 +104,7 @@ export function Navigation() {
                   setIsOpen(false)
                 }}
               >
-                Training Programs
+                🎓 Digital Academy
               </button>
             </li>
             <li>
@@ -114,7 +114,7 @@ export function Navigation() {
                   setIsOpen(false)
                 }}
               >
-                Puzzle Game
+                🧩 Secret Hunters
               </button>
             </li>
             <li>
@@ -124,7 +124,7 @@ export function Navigation() {
                   setIsOpen(false)
                 }}
               >
-                Community
+                🌐 Digital Collective
               </button>
             </li>
             <li>
@@ -134,12 +134,12 @@ export function Navigation() {
                   setIsOpen(false)
                 }}
               >
-                About
+                💖 Our Story
               </button>
             </li>
             <li>
               <button onClick={toggleCart}>
-                🛒 Cart
+                🛒 Digital Bag
                 {mounted && state.itemCount > 0 && (
                   <span className="cart-count">{state.itemCount}</span>
                 )}
@@ -147,7 +147,7 @@ export function Navigation() {
             </li>
             <li>
               <button onClick={toggleWishlist}>
-                ✨ Wishlist
+                ✨ Dream List
                 {mounted && wishlistState.itemCount > 0 && (
                   <span className="cart-count" style={{ background: 'var(--cyan-accent)' }}>
                     {wishlistState.itemCount}

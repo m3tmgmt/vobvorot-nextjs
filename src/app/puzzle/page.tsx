@@ -147,7 +147,7 @@ export default function PuzzlePage() {
             {state.pieces.filter(piece => !piece.found).map((piece) => (
               <div 
                 key={piece.id}
-                className="product-card"
+                className="product-card content-card"
                 style={{
                   borderColor: piece.category === 'easter-egg' ? 'var(--yellow-neon)' : 
                               piece.category === 'sequence' ? 'var(--purple-accent)' :
@@ -233,7 +233,7 @@ export default function PuzzlePage() {
                 {state.pieces.filter(piece => piece.found).map((piece) => (
                   <div 
                     key={piece.id}
-                    className="product-card"
+                    className="product-card content-card"
                     style={{
                       borderColor: 'var(--green-neon)',
                       background: 'linear-gradient(45deg, rgba(57, 255, 20, 0.1), rgba(0, 245, 255, 0.1))',
@@ -278,7 +278,7 @@ export default function PuzzlePage() {
             {state.achievements.map((achievement) => (
               <div 
                 key={achievement.id}
-                className="product-card"
+                className="product-card content-card"
                 style={{
                   borderColor: achievement.unlocked ? achievement.color : 'rgba(255,255,255,0.2)',
                   background: achievement.unlocked 

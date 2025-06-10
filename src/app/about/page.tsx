@@ -110,7 +110,7 @@ export default function AboutPage() {
           <h2 className="section-title">Our Digital DNA</h2>
           
           <div className="cards-grid">
-            <div className="product-card">
+            <div className="product-card content-card">
               <h3 style={{ color: 'var(--pink-main)', marginBottom: '1rem' }}>
                 🌐 Digital Playground
               </h3>
@@ -122,7 +122,7 @@ export default function AboutPage() {
               </p>
             </div>
 
-            <div className="product-card">
+            <div className="product-card content-card">
               <h3 style={{ color: 'var(--cyan-accent)', marginBottom: '1rem' }}>
                 ✨ Curated Experience
               </h3>
