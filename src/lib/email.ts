@@ -393,7 +393,7 @@ export const emailService = {
     const client = getResendClient()
     
     await client.emails.send({
-      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
+      from: process.env.FROM_EMAIL || 'support@vobvorot.com',
       to: orderData.customerEmail,
       subject: template.subject,
       html: template.html,
@@ -409,7 +409,7 @@ export const emailService = {
     const client = getResendClient()
     
     await client.emails.send({
-      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
+      from: process.env.FROM_EMAIL || 'support@vobvorot.com',
       to: process.env.ADMIN_EMAIL || 'admin@vobvorot.com',
       subject: template.subject,
       html: template.html,
@@ -425,7 +425,7 @@ export const emailService = {
     const client = getResendClient()
     
     await client.emails.send({
-      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
+      from: process.env.FROM_EMAIL || 'support@vobvorot.com',
       to: orderData.customerEmail,
       subject: template.subject,
       html: template.html,
@@ -441,7 +441,7 @@ export const emailService = {
     const client = getResendClient()
     
     await client.emails.send({
-      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
+      from: process.env.FROM_EMAIL || 'support@vobvorot.com',
       to: data.customerEmail,
       subject: template.subject,
       html: template.html,
@@ -457,7 +457,7 @@ export const emailService = {
     const client = getResendClient()
     
     await client.emails.send({
-      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
+      from: process.env.FROM_EMAIL || 'support@vobvorot.com',
       to: data.customerEmail,
       subject: template.subject,
       html: template.html,
@@ -473,7 +473,7 @@ export const emailService = {
     const client = getResendClient()
     
     await client.emails.send({
-      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
+      from: process.env.FROM_EMAIL || 'support@vobvorot.com',
       to: process.env.ADMIN_EMAIL || 'admin@vobvorot.com',
       subject: template.subject,
       html: template.html,
@@ -488,7 +488,7 @@ export const emailService = {
     const client = getResendClient()
     
     await client.emails.send({
-      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
+      from: process.env.FROM_EMAIL || 'support@vobvorot.com',
       to,
       subject: 'Test Email from EXVICPMOUR Store',
       html: `
@@ -1335,7 +1335,7 @@ export async function sendEmail(options: {
   const client = getResendClient()
   
   await client.emails.send({
-    from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
+    from: process.env.FROM_EMAIL || 'support@vobvorot.com',
     to: options.to,
     subject: options.subject,
     html: options.html,

@@ -54,8 +54,8 @@ export async function POST() {
 
     // Send test email to admin
     const testEmailResult = await resend.emails.send({
-      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
-      to: process.env.ADMIN_EMAIL || 'admin@vobvorot.com',
+      from: process.env.FROM_EMAIL || 'support@vobvorot.com',
+      to: process.env.ADMIN_EMAIL || 'support@vobvorot.com',
       subject: '🧪 Email Test - vobvorot.com Configuration',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9;">
@@ -72,11 +72,11 @@ export async function POST() {
               <table style="width: 100%; border-collapse: collapse;">
                 <tr>
                   <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">From Address:</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${process.env.FROM_EMAIL || 'noreply@vobvorot.com'}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${process.env.FROM_EMAIL || 'support@vobvorot.com'}</td>
                 </tr>
                 <tr>
                   <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">To Address:</td>
-                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${process.env.ADMIN_EMAIL || 'admin@vobvorot.com'}</td>
+                  <td style="padding: 8px; border-bottom: 1px solid #eee;">${process.env.ADMIN_EMAIL || 'support@vobvorot.com'}</td>
                 </tr>
                 <tr>
                   <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: bold;">Test Time:</td>
@@ -109,8 +109,8 @@ export async function POST() {
 Your vobvorot.com email configuration is functioning correctly.
 
 Configuration Details:
-- From Address: ${process.env.FROM_EMAIL || 'noreply@vobvorot.com'}
-- To Address: ${process.env.ADMIN_EMAIL || 'admin@vobvorot.com'}
+- From Address: ${process.env.FROM_EMAIL || 'support@vobvorot.com'}
+- To Address: ${process.env.ADMIN_EMAIL || 'support@vobvorot.com'}
 - Test Time: ${new Date().toLocaleString()}
 - Domain: vobvorot.com
 
@@ -124,8 +124,8 @@ This test was sent from your EXVICPMOUR store email system.`
       message: '🎉 Test email sent successfully!',
       emailId: testEmailResult.data?.id,
       details: {
-        from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
-        to: process.env.ADMIN_EMAIL || 'admin@vobvorot.com',
+        from: process.env.FROM_EMAIL || 'support@vobvorot.com',
+        to: process.env.ADMIN_EMAIL || 'support@vobvorot.com',
         subject: '🧪 Email Test - vobvorot.com Configuration'
       },
       instructions: 'Check your inbox for the test email. If you don\'t receive it, check spam folder or verify domain configuration.'

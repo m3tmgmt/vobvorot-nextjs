@@ -85,7 +85,7 @@ export default function PrivacyPage() {
               color: 'var(--pink-main)',
               fontFamily: 'JetBrains Mono, monospace'
             }}>
-              privacy@vobvorot.com
+              support@vobvorot.com
             </p>
           </section>
 

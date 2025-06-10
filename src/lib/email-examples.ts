@@ -249,7 +249,7 @@ export async function exampleBulkOperations() {
  */
 export async function exampleTestEmail() {
   try {
-    await emailService.sendTestEmail('admin@vobvorot.com')
+    await emailService.sendTestEmail('support@vobvorot.com')
     console.log('Test email sent successfully')
   } catch (error) {
     console.error('Failed to send test email:', error)
