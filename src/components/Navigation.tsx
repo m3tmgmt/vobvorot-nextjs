@@ -140,6 +140,16 @@ function NavigationComponent() {
               </button>
             </li>
             <li>
+              <button 
+                onClick={() => {
+                  router.push('/your-name-my-pic')
+                  setIsOpen(false)
+                }}
+              >
+                ✍️  Your Name, My Pic
+              </button>
+            </li>
+            <li>
               <button onClick={toggleCart}>
                 🛒  Digital Bag
                 {mounted && state.itemCount > 0 && (
@@ -212,7 +222,7 @@ function NavigationComponent() {
                 )}
               </>
             )}
-            */
+            */}
           </ul>
         </div>
       </nav>

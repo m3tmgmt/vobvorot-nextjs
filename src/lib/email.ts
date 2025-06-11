@@ -77,6 +77,17 @@ export interface LowStockNotificationData {
   productUrl?: string
 }
 
+export interface SignOrderEmailData {
+  orderNumber: string
+  customerName: string
+  customerEmail: string
+  signName: string
+  extraNotes?: string
+  amount: number
+  estimatedDelivery: string
+  language?: 'en' | 'ru'
+}
+
 // Localization texts
 const translations = {
   en: {
@@ -475,6 +486,22 @@ export const emailService = {
     await client.emails.send({
       from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
       to: process.env.ADMIN_EMAIL || 'admin@vobvorot.com',
+      subject: template.subject,
+      html: template.html,
+      text: template.text
+    })
+  },
+
+  /**
+   * Send sign order confirmation email to customer
+   */
+  async sendSignOrderConfirmation(data: SignOrderEmailData): Promise<void> {
+    const template = generateSignOrderConfirmationTemplate(data)
+    const client = getResendClient()
+    
+    await client.emails.send({
+      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
+      to: data.customerEmail,
       subject: template.subject,
       html: template.html,
       text: template.text
@@ -1318,6 +1345,148 @@ ${t.copyright}
 
   return {
     subject: `🚨 ${t.lowStockAlert} - ${data.productName}`,
+    html,
+    text
+  }
+}
+
+/**
+ * Generate sign order confirmation email template
+ */
+function generateSignOrderConfirmationTemplate(data: SignOrderEmailData): EmailTemplate {
+  const lang = data.language || 'en'
+  const t = translations[lang]
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Your Name, My Pic - Order Confirmation</title>
+      ${getBaseEmailStyles()}
+    </head>
+    <body>
+      <div class="email-container">
+        <div class="header" style="background: linear-gradient(135deg, #FF6B9D 0%, #9D4EDD 100%);">
+          <h1>EXVICPMOUR</h1>
+          <p style="color: #ffffff; font-size: 18px; margin: 8px 0 0 0; opacity: 0.9;">Your Name, My Pic</p>
+        </div>
+        
+        <div class="content">
+          <div style="text-align: center; margin-bottom: 32px;">
+            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #FF6B9D, #9D4EDD); border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+              <span style="color: #ffffff; font-size: 32px;">✍️</span>
+            </div>
+            <h2 style="color: #1a1a1a; font-size: 28px; margin: 0 0 16px 0;">Thanks, babe. It's cooking.</h2>
+            <p style="color: #6b7280; font-size: 16px; margin: 0; line-height: 1.6;">
+              Hey ${data.customerName}! Your custom sign photo is on its way.
+            </p>
+          </div>
+
+          <div class="card" style="border-left: 4px solid #FF6B9D;">
+            <h3 style="color: #1a1a1a; margin: 0 0 20px 0; font-size: 20px;">Order Details</h3>
+            <div style="display: grid; gap: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #6b7280; font-weight: 500;">Order Number:</span>
+                <span style="font-weight: 600; color: #1a1a1a; font-family: monospace;">${data.orderNumber}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #6b7280; font-weight: 500;">Sign Text:</span>
+                <span style="font-weight: 600; color: #FF6B9D; font-size: 18px;">"${data.signName}"</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #6b7280; font-weight: 500;">Amount Paid:</span>
+                <span style="font-weight: 600; color: #1a1a1a; font-size: 18px;">$${data.amount.toFixed(2)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #6b7280; font-weight: 500;">Estimated Delivery:</span>
+                <span style="font-weight: 600; color: #9D4EDD;">${data.estimatedDelivery}</span>
+              </div>
+            </div>
+            ${data.extraNotes ? `
+              <div style="margin-top: 20px; padding: 16px; background: #f8f9fa; border-radius: 8px;">
+                <h4 style="color: #1a1a1a; margin: 0 0 8px 0; font-size: 16px;">Your Notes:</h4>
+                <p style="color: #6b7280; margin: 0; font-style: italic;">"${data.extraNotes}"</p>
+              </div>
+            ` : ''}
+          </div>
+
+          <div style="background: linear-gradient(135deg, rgba(255, 107, 157, 0.1), rgba(157, 78, 221, 0.1)); border: 1px solid #FF6B9D; border-radius: 12px; padding: 20px; margin: 32px 0;">
+            <div style="text-align: center;">
+              <h4 style="color: #FF6B9D; margin: 0 0 12px 0; font-size: 18px;">What Happens Next?</h4>
+              <div style="display: grid; gap: 12px; text-align: left;">
+                <div style="display: flex; align-items: center;">
+                  <span style="color: #FF6B9D; font-size: 20px; margin-right: 12px;">✨</span>
+                  <span style="color: #1a1a1a; font-size: 14px;">I'll handwrite your sign with love and style</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                  <span style="color: #9D4EDD; font-size: 20px; margin-right: 12px;">📸</span>
+                  <span style="color: #1a1a1a; font-size: 14px;">Take a gorgeous photo just for you</span>
+                </div>
+                <div style="display: flex; align-items: center;">
+                  <span style="color: #FF6B9D; font-size: 20px; margin-right: 12px;">💌</span>
+                  <span style="color: #1a1a1a; font-size: 14px;">Send it directly to your email in 2-7 days</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div style="text-align: center; padding: 24px; background: #f8f9fa; border-radius: 12px; margin: 32px 0;">
+            <p style="color: #6b7280; margin: 0 0 8px 0; font-size: 16px; font-weight: 600;">
+              Stay golden, stay chill. ✨
+            </p>
+            <p style="color: #6b7280; margin: 0; font-size: 14px;">
+              Questions? Reply to this email or contact us at <a href="mailto:noreply@vobvorot.com" style="color: #FF6B9D; font-weight: 600;">noreply@vobvorot.com</a>
+            </p>
+          </div>
+        </div>
+        
+        <div class="footer">
+          <div class="social-links">
+            <a href="#" style="text-decoration: none;">📧</a>
+            <a href="#" style="text-decoration: none;">📱</a>
+            <a href="#" style="text-decoration: none;">🌐</a>
+          </div>
+          <p style="margin: 0; font-size: 14px;">${t.copyright}</p>
+          <p style="margin: 8px 0 0 0; font-size: 12px;">
+            EXVICPMOUR - Your Name, My Pic
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+
+  const text = `
+Your Name, My Pic - Order Confirmation
+
+Thanks, babe. It's cooking.
+
+Hey ${data.customerName}! Your custom sign photo is on its way.
+
+Order Details:
+- Order Number: ${data.orderNumber}
+- Sign Text: "${data.signName}"
+- Amount Paid: $${data.amount.toFixed(2)}
+- Estimated Delivery: ${data.estimatedDelivery}
+${data.extraNotes ? `- Your Notes: "${data.extraNotes}"` : ''}
+
+What Happens Next?
+✨ I'll handwrite your sign with love and style
+📸 Take a gorgeous photo just for you
+💌 Send it directly to your email in 2-7 days
+
+Stay golden, stay chill. ✨
+
+Questions? Reply to this email or contact us at noreply@vobvorot.com
+
+${t.copyright}
+EXVICPMOUR - Your Name, My Pic
+  `
+
+  return {
+    subject: `✍️ Your custom sign "${data.signName}" is being created!`,
     html,
     text
   }
