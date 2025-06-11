@@ -158,7 +158,8 @@ function NavigationComponent() {
               </button>
             </li>
             
-            {/* Auth Section */}
+            {/* Auth Section - Temporarily hidden */}
+            {/* 
             {status !== 'loading' && (
               <>
                 {session ? (
@@ -211,6 +212,7 @@ function NavigationComponent() {
                 )}
               </>
             )}
+            */
           </ul>
         </div>
       </nav>
