@@ -101,7 +101,7 @@ export default function ExvicpmourPage() {
                 <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>Restored relics, ready to romanticize your reality</p>
               </div>
               <div className="product-card" style={{ minHeight: 'auto', padding: '2rem', textAlign: 'center' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>💋</div>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👛</div>
                 <h4 style={{ color: 'var(--yellow-neon)', marginBottom: '0.5rem' }}>Handle With Drama</h4>
                 <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>Exclusive pieces stitched for girls who don't do ordinary.</p>
               </div>
