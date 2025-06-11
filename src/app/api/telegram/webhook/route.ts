@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { webhookCallback } from 'grammy'
-import { bot } from '@/lib/telegram-bot'
+import { bot } from '@/lib/telegram-bot-new'
 
 // Создаем webhook handler
 const handleUpdate = webhookCallback(bot, 'std/http')
@@ -11,10 +11,9 @@ export async function POST(request: NextRequest) {
     const secretToken = request.headers.get('x-telegram-bot-api-secret-token')
     const expectedToken = process.env.TELEGRAM_WEBHOOK_SECRET
     
-    // Временно отключено для отладки
-    // if (expectedToken && secretToken !== expectedToken) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    // }
+    if (expectedToken && secretToken !== expectedToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     // Получаем update от Telegram
     const update = await request.json()
