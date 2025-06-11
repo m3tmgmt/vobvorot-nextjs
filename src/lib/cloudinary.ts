@@ -39,6 +39,7 @@ if (typeof window === 'undefined') {
 export interface CloudinaryUploadOptions {
   folder?: string;
   public_id?: string;
+  resource_type?: 'image' | 'video' | 'raw' | 'auto';
   transformation?: Array<{
     width?: number;
     height?: number;
