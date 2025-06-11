@@ -8,7 +8,7 @@ const prisma = new PrismaClient()
 
 // Проверяем переменные окружения
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-const ADMIN_IDS = process.env.TELEGRAM_OWNER_CHAT_ID?.split(',') || []
+const ADMIN_IDS = process.env.TELEGRAM_OWNER_CHAT_ID?.trim().split(',').map(id => id.trim()) || []
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY
 
 if (!BOT_TOKEN) {
@@ -16,7 +16,9 @@ if (!BOT_TOKEN) {
 }
 
 console.log('🤖 Initializing VobvorotAdminBot...')
+console.log(`🔑 Bot token exists: ${!!BOT_TOKEN}`)
 console.log(`📋 Admin IDs: ${ADMIN_IDS.join(', ')}`)
+console.log(`🛠️ Admin API key exists: ${!!ADMIN_API_KEY}`)
 
 // Типы для сессии
 interface SessionData {
@@ -237,12 +239,16 @@ bot.use(createConversation(uploadHomeVideoConversation))
 
 // Команды бота
 bot.command('start', async (ctx) => {
-  if (!isAdmin(ctx)) {
-    await ctx.reply('❌ У вас нет доступа к этому боту')
-    return
-  }
+  try {
+    console.log(`📱 Received /start from user ${ctx.from?.id}`)
+    
+    if (!isAdmin(ctx)) {
+      console.log(`❌ Access denied for user ${ctx.from?.id}`)
+      await ctx.reply('❌ У вас нет доступа к этому боту')
+      return
+    }
 
-  const welcomeMessage = `
+    const welcomeMessage = `
 🤖 *VobvorotAdminBot* приветствует вас!
 
 👋 Добро пожаловать в панель управления VobVorot Store
@@ -256,12 +262,18 @@ bot.command('start', async (ctx) => {
 • 👥 Клиенты - управление клиентами
 
 🚀 Выберите нужный раздел:
-  `
+    `
 
-  await ctx.reply(welcomeMessage, { 
-    reply_markup: mainMenu,
-    parse_mode: 'Markdown'
-  })
+    console.log(`✅ Sending welcome message to admin ${ctx.from?.id}`)
+    await ctx.reply(welcomeMessage, { 
+      reply_markup: mainMenu,
+      parse_mode: 'Markdown'
+    })
+    console.log(`✅ Welcome message sent successfully`)
+  } catch (error) {
+    console.error('❌ Error in /start command:', error)
+    await ctx.reply('❌ Произошла ошибка. Попробуйте позже.')
+  }
 })
 
 bot.command('menu', async (ctx) => {
