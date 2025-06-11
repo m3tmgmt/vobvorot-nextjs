@@ -7,12 +7,14 @@ import { useSession, signOut } from 'next-auth/react'
 import { useCart } from '@/contexts/CartContext'
 import { useWishlist } from '@/contexts/WishlistContext'
 import { usePuzzle } from '@/contexts/PuzzleContext'
+import { UserAccountModal } from '@/components/UserAccountModal'
 
 function NavigationComponent() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const [isOpen, setIsOpen] = useState(false)
   const [mounted, setMounted] = useState(false)
+  const [showAccountModal, setShowAccountModal] = useState(false)
   const { state, dispatch } = useCart()
   const { state: wishlistState, dispatch: wishlistDispatch } = useWishlist()
   const { findPiece } = usePuzzle()
@@ -160,38 +162,29 @@ function NavigationComponent() {
             {status !== 'loading' && (
               <>
                 {session ? (
-                  <>
-                    <li>
-                      <button 
-                        onClick={() => {
-                          router.push('/account')
-                          setIsOpen(false)
-                        }}
-                      >
-                        👤  {session.user.name || session.user.email}
-                      </button>
-                    </li>
-                    <li>
-                      <button 
-                        onClick={() => {
-                          router.push('/account/orders')
-                          setIsOpen(false)
-                        }}
-                      >
-                        📦  My Orders
-                      </button>
-                    </li>
-                    <li>
-                      <button 
-                        onClick={() => {
-                          signOut({ callbackUrl: '/' })
-                          setIsOpen(false)
-                        }}
-                      >
-                        🚪  Sign Out
-                      </button>
-                    </li>
-                  </>
+                  <li>
+                    <button 
+                      onClick={() => {
+                        setShowAccountModal(true)
+                        setIsOpen(false)
+                      }}
+                      style={{
+                        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        color: 'white',
+                        padding: '12px 20px',
+                        borderRadius: '8px',
+                        border: 'none',
+                        fontWeight: '500',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
+                        width: '100%',
+                        transition: 'all 0.2s ease'
+                      }}
+                    >
+                      👤  Personal Account
+                    </button>
+                  </li>
                 ) : (
                   <>
                     <li>
@@ -237,6 +230,12 @@ function NavigationComponent() {
           onClick={() => setIsOpen(false)}
         />
       )}
+
+      {/* User Account Modal */}
+      <UserAccountModal 
+        isOpen={showAccountModal}
+        onClose={() => setShowAccountModal(false)}
+      />
     </>
   )
 }
