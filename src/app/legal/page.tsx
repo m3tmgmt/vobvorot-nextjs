@@ -229,7 +229,7 @@ export default function LegalPage() {
                 flexWrap: 'wrap'
               }}>
                 <a
-                  href="mailto:support@vobvorot.com"
+                  href="mailto:legal@vobvorot.com"
                   style={{
                     padding: '0.75rem 1.5rem',
                     background: 'linear-gradient(45deg, var(--pink-main), var(--cyan-accent))',
@@ -246,7 +246,7 @@ export default function LegalPage() {
                 </a>
                 
                 <a
-                  href="mailto:support@vobvorot.com"
+                  href="mailto:hello@vobvorot.com"
                   style={{
                     padding: '0.75rem 1.5rem',
                     background: 'rgba(0,245,255,0.2)',

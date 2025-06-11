@@ -292,7 +292,7 @@ export default function TermsPage() {
                   border: '1px solid var(--cyan-accent)',
                   borderRadius: '8px'
                 }}>
-                  <p><strong>Email:</strong> support@vobvorot.com</p>
+                  <p><strong>Email:</strong> legal@vobvorot.com</p>
                   <p><strong>Address:</strong> VobVorot Store, Ukraine</p>
                   <p><strong>Phone:</strong> Available upon request</p>
                 </div>

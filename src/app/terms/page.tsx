@@ -112,7 +112,7 @@ export default function TermsPage() {
               color: 'var(--pink-main)',
               fontFamily: 'JetBrains Mono, monospace'
             }}>
-              support@vobvorot.com
+              legal@vobvorot.com
             </p>
           </section>
 

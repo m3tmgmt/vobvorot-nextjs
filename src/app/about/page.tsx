@@ -303,7 +303,7 @@ export default function AboutPage() {
                 className="hero-button" style={{ textDecoration: 'none' }}>
                 📷 Instagram
               </a>
-              <a href="mailto:support@vobvorot.com" 
+              <a href="mailto:hello@vobvorot.com" 
                 className="hero-button" style={{ textDecoration: 'none' }}>
                 💌 Email Us
               </a>

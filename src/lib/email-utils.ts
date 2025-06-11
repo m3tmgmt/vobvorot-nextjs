@@ -203,7 +203,7 @@ export async function sendMarketingEmail(
         const resend = new Resend(process.env.RESEND_API_KEY)
         
         await resend.emails.send({
-          from: process.env.FROM_EMAIL || 'support@vobvorot.com',
+          from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
           to: customer.email,
           subject,
           html: personalizedHtml,
@@ -482,7 +482,7 @@ export async function sendNewsletterEmail(
         const resend = new Resend(process.env.RESEND_API_KEY)
         
         await resend.emails.send({
-          from: process.env.FROM_EMAIL || 'support@vobvorot.com',
+          from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
           to: user.email,
           subject,
           html: personalizedHtml,

@@ -228,7 +228,7 @@ export default function PrivacyPage() {
                   <li><strong>Right to Withdraw Consent:</strong> Withdraw consent at any time</li>
                 </ul>
                 <p style={{ marginTop: '1rem' }}>
-                  To exercise these rights, please contact us at support@vobvorot.com. We will respond within 30 days.
+                  To exercise these rights, please contact us at privacy@vobvorot.com. We will respond within 30 days.
                 </p>
               </section>
 
@@ -369,8 +369,8 @@ export default function PrivacyPage() {
                   border: '1px solid var(--cyan-accent)',
                   borderRadius: '8px'
                 }}>
-                  <p><strong>Data Protection Officer:</strong> support@vobvorot.com</p>
-                  <p><strong>General Inquiries:</strong> support@vobvorot.com</p>
+                  <p><strong>Data Protection Officer:</strong> privacy@vobvorot.com</p>
+                  <p><strong>General Inquiries:</strong> hello@vobvorot.com</p>
                   <p><strong>Address:</strong> VobVorot Store, Ukraine</p>
                   <p><strong>Response Time:</strong> Within 30 days</p>
                 </div>

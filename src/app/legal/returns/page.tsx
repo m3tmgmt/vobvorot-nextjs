@@ -121,7 +121,7 @@ export default function ReturnsPage() {
                   border: '1px solid var(--yellow-neon)',
                   borderRadius: '8px'
                 }}>
-                  <p><strong>Not Sure?</strong> Contact us at support@vobvorot.com before returning to confirm eligibility!</p>
+                  <p><strong>Not Sure?</strong> Contact us at returns@vobvorot.com before returning to confirm eligibility!</p>
                 </div>
               </section>
 
@@ -173,7 +173,7 @@ export default function ReturnsPage() {
                   border: '1px solid var(--pink-main)',
                   borderRadius: '8px'
                 }}>
-                  <p><strong>No Account?</strong> Email support@vobvorot.com with your order number to start a return!</p>
+                  <p><strong>No Account?</strong> Email returns@vobvorot.com with your order number to start a return!</p>
                 </div>
               </section>
 
@@ -293,7 +293,7 @@ export default function ReturnsPage() {
                   Return Process
                 </h3>
                 <ul style={{ marginTop: '1rem', paddingLeft: '2rem' }}>
-                  <li>Contact support@vobvorot.com before shipping</li>
+                  <li>Contact returns@vobvorot.com before shipping</li>
                   <li>We'll provide return instructions and address</li>
                   <li>Return shipping costs are customer's responsibility</li>
                   <li>Use trackable shipping method for protection</li>
@@ -339,7 +339,7 @@ export default function ReturnsPage() {
                 </h3>
                 <ul style={{ marginTop: '1rem', paddingLeft: '2rem' }}>
                   <li>Contact us within 7 days of delivery</li>
-                  <li>Email photos of the damage to support@vobvorot.com</li>
+                  <li>Email photos of the damage to returns@vobvorot.com</li>
                   <li>Include your order number and description</li>
                   <li>Keep all original packaging for investigation</li>
                 </ul>
@@ -385,8 +385,8 @@ export default function ReturnsPage() {
                   border: '1px solid var(--cyan-accent)',
                   borderRadius: '8px'
                 }}>
-                  <p><strong>Returns Team:</strong> support@vobvorot.com</p>
-                  <p><strong>General Support:</strong> support@vobvorot.com</p>
+                  <p><strong>Returns Team:</strong> returns@vobvorot.com</p>
+                  <p><strong>General Support:</strong> hello@vobvorot.com</p>
                   <p><strong>Response Time:</strong> Within 24 hours</p>
                   <p><strong>Live Chat:</strong> Available on website during business hours</p>
                 </div>

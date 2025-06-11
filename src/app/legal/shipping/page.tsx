@@ -268,7 +268,7 @@ export default function ShippingPage() {
                   border: '1px solid var(--pink-main)',
                   borderRadius: '8px'
                 }}>
-                  <p><strong>Can't Find Your Package?</strong> Contact us at support@vobvorot.com with your order number, and we'll investigate immediately!</p>
+                  <p><strong>Can't Find Your Package?</strong> Contact us at shipping@vobvorot.com with your order number, and we'll investigate immediately!</p>
                 </div>
               </section>
 
@@ -349,7 +349,7 @@ export default function ShippingPage() {
                 </ul>
 
                 <p style={{ marginTop: '1rem' }}>
-                  If your location isn't supported at checkout, contact us at support@vobvorot.com 
+                  If your location isn't supported at checkout, contact us at shipping@vobvorot.com 
                   to explore alternative shipping solutions.
                 </p>
               </section>
@@ -374,10 +374,10 @@ export default function ShippingPage() {
                   border: '1px solid var(--cyan-accent)',
                   borderRadius: '8px'
                 }}>
-                  <p><strong>Email:</strong> support@vobvorot.com</p>
+                  <p><strong>Email:</strong> shipping@vobvorot.com</p>
                   <p><strong>Response Time:</strong> Within 24 hours</p>
                   <p><strong>Live Chat:</strong> Available during business hours</p>
-                  <p><strong>Order Issues:</strong> support@vobvorot.com</p>
+                  <p><strong>Order Issues:</strong> hello@vobvorot.com</p>
                 </div>
 
                 <h3 style={{ color: 'var(--pink-main)', fontSize: '1.2rem', marginTop: '1.5rem', marginBottom: '0.5rem' }}>
