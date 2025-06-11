@@ -113,6 +113,7 @@ model Product {
   categoryId      String
   metaTitle       String?
   metaDescription String?
+  videoUrl        String?
   isActive        Boolean        @default(true)
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt

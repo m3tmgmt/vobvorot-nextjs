@@ -374,4 +374,4 @@ This project is proprietary software. All rights reserved.
 
 **VobVorot Store** - Built with Next.js, powered by modern web technologies, managed through Telegram.
 
-*For technical support or feature requests, contact the development team.*
+*For technical support or feature requests, contact the development team.*# Force redeploy Thu Jun 12 01:23:18 EEST 2025

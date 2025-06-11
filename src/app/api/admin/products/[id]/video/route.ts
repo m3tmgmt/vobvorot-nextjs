@@ -5,7 +5,7 @@ const prisma = new PrismaClient()
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Проверка авторизации
@@ -17,7 +17,8 @@ export async function PUT(
     }
 
     const { videoUrl } = await request.json()
-    const productId = params.id
+    const resolvedParams = await params
+    const productId = resolvedParams.id
 
     // Обновляем URL видео для товара
     const updatedProduct = await prisma.product.update({
