@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { webhookCallback } from 'grammy'
-import { bot } from '@/lib/telegram-bot-new'
+import { bot } from '@/lib/telegram-bot-simple'
 
 // Создаем webhook handler
 const handleUpdate = webhookCallback(bot, 'std/http')
