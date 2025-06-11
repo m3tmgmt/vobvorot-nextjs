@@ -312,7 +312,8 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
         konami: false,
         rainbowMode: false,
         matrixMode: false,
-        godMode: false
+        godMode: false,
+        isLoading: false
       }
 
     default:
@@ -330,7 +331,8 @@ export function PuzzleProvider({ children }: { children: React.ReactNode }) {
     konami: false,
     rainbowMode: false,
     matrixMode: false,
-    godMode: false
+    godMode: false,
+    isLoading: false
   })
 
   useEffect(() => {
