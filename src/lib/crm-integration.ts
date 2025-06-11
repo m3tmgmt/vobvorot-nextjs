@@ -123,7 +123,7 @@ export class CRMIntegration {
 
     try {
       // This would typically fetch from your database
-      const analytics = {
+      const analyticsData = {
         orders_today: 5,
         revenue_today: 250.00,
         new_customers: 2,
@@ -134,12 +134,12 @@ export class CRMIntegration {
         ]
       };
 
-      await this.telegramCRM.sendDailyReport(analytics);
+      await this.telegramCRM.sendDailyReport(analyticsData);
 
       // Track in analytics
       analytics.event('crm_daily_report', {
-        orders: analytics.orders_today,
-        revenue: analytics.revenue_today,
+        orders: analyticsData.orders_today,
+        revenue: analyticsData.revenue_today,
         event_category: 'CRM'
       });
 

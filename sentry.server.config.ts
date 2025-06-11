@@ -8,9 +8,7 @@ Sentry.init({
   tracesSampleRate: 1.0,
   
   // Enable automatic instrumentation for server-side
-  integrations: [
-    new Sentry.Http({ tracing: true }),
-  ],
+  integrations: [],
 
   // Custom error filtering for server-side
   beforeSend(event) {

@@ -252,6 +252,9 @@ export default withSentryConfig(nextConfig, {
 
   // Upload source maps
   widenClientFileUpload: true,
-  hideSourceMaps: true,
+  sourcemaps: {
+    disable: false,
+    deleteSourcemapsAfterUpload: true
+  },
   disableLogger: true,
 });

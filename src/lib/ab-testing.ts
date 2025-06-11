@@ -141,7 +141,7 @@ export function getABTestVariant(testName: keyof typeof AB_TESTS): 'control' | '
     ((hash % 2) === 0 ? 'control' : 'variant') : 'control';
 
   // Save assignment
-  const newAssignments = { ...existingAssignments, [testName]: assignment };
+  const newAssignments = { ...existingAssignments, [testName]: assignment as 'control' | 'variant' };
   saveUserABTests(newAssignments);
 
   // Track assignment in analytics
@@ -157,7 +157,7 @@ export function getABTestVariant(testName: keyof typeof AB_TESTS): 'control' | '
 // Get the actual value for a test
 export function getABTestValue(testName: keyof typeof AB_TESTS): any {
   const test = AB_TESTS[testName];
-  if (!test) return test?.variants.control;
+  if (!test) return null;
   
   const variant = getABTestVariant(testName);
   return test.variants[variant];

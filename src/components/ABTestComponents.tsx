@@ -1,7 +1,7 @@
 'use client';
 
 import { useABTest } from '@/lib/ab-testing';
-import { Button } from '@/components/ui/Button';
+import { Button } from '@/components/ui/button';
 
 // A/B Test Hero Button
 export function ABTestHeroButton({ onClick, className }: { onClick?: () => void; className?: string }) {

@@ -15,10 +15,7 @@ Sentry.init({
   
   // Enable automatic instrumentation
   integrations: [
-    new Sentry.Replay({
-      maskAllText: true,
-      blockAllMedia: true,
-    }),
+    // Replay removed as it's not available in this Sentry version
   ],
 
   // Ignore specific errors
