@@ -16,10 +16,29 @@ export async function POST(request: NextRequest) {
   const userAgent = request.headers.get('user-agent') || ''
   
   try {
-    // Get the raw payload
-    const payload = await request.text()
+    // Try to parse form data first (WesternBid sends form-encoded data)
+    const formData = await request.formData()
+    let payload: string
     
-    if (!payload) {
+    if (formData && formData.keys().next().value) {
+      // Convert form data to JSON for processing
+      const formObject: Record<string, any> = {}
+      for (const [key, value] of formData.entries()) {
+        formObject[key] = value.toString()
+      }
+      payload = JSON.stringify(formObject)
+      
+      logger.info('WesternBid form data received', {
+        formKeys: Array.from(formData.keys()),
+        paymentStatus: formObject.payment_status,
+        orderId: formObject.custom || formObject.invoice || formObject.item_number
+      })
+    } else {
+      // Fallback to text payload
+      payload = await request.text()
+    }
+    
+    if (!payload || payload === '{}') {
       logSecurityEvent({
         event: 'INVALID_WEBHOOK',
         message: 'Empty webhook payload received',

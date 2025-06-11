@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
 import { Footer } from '@/components/Footer'
+import PaymentMethodSelector, { type PaymentMethod } from '@/components/PaymentMethodSelector'
 
 interface ShippingInfo {
   firstName: string
@@ -19,7 +20,7 @@ interface ShippingInfo {
 }
 
 interface PaymentInfo {
-  method: 'westernbid'
+  method: PaymentMethod | null
 }
 
 export default function CheckoutPage() {
@@ -43,7 +44,7 @@ export default function CheckoutPage() {
   })
 
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo>({
-    method: 'westernbid'
+    method: null
   })
 
   // Redirect if cart is empty
@@ -102,7 +103,10 @@ export default function CheckoutPage() {
     try {
       const orderData = {
         shippingInfo,
-        paymentInfo,
+        paymentInfo: {
+          method: paymentInfo.method?.id || 'westernbid',
+          gateway: paymentInfo.method?.name || 'WesternBid Gateway'
+        },
         items: state.items,
         subtotal: state.total,
         shippingCost,
@@ -498,77 +502,23 @@ export default function CheckoutPage() {
 
             {/* Step 2: Payment Information */}
             {step === 2 && (
-              <form onSubmit={handlePaymentSubmit}>
-                <h2 style={{
-                  color: 'var(--cyan-accent)',
-                  fontSize: '1.8rem',
-                  marginBottom: '2rem'
-                }}>
-                  Payment Method
-                </h2>
-
-                <div style={{ marginBottom: '2rem' }}>
-                  <div style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '1rem'
-                  }}>
-                    {[
-                      { 
-                        id: 'westernbid', 
-                        label: 'WesternBid Payment', 
-                        desc: 'Secure payment via PayPal and Stripe through WesternBid',
-                        icon: '💳'
-                      }
-                    ].map((method) => (
-                      <label
-                        key={method.id}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          padding: '1rem',
-                          background: paymentInfo.method === method.id 
-                            ? 'rgba(0,245,255,0.1)' 
-                            : 'rgba(255,255,255,0.05)',
-                          border: paymentInfo.method === method.id 
-                            ? '2px solid var(--cyan-accent)' 
-                            : '1px solid rgba(255,255,255,0.2)',
-                          borderRadius: '8px',
-                          cursor: 'pointer',
-                          transition: 'all 0.3s ease'
-                        }}
-                      >
-                        <input
-                          type="radio"
-                          name="paymentMethod"
-                          value={method.id}
-                          checked={paymentInfo.method === method.id}
-                          onChange={(e) => setPaymentInfo({...paymentInfo, method: e.target.value as any})}
-                          style={{ marginRight: '1rem' }}
-                        />
-                        <div style={{ flex: 1 }}>
-                          <div style={{
-                            color: 'var(--white)',
-                            fontWeight: '600',
-                            marginBottom: '0.25rem'
-                          }}>
-                            {method.icon} {method.label}
-                          </div>
-                          <div style={{
-                            color: 'rgba(255,255,255,0.6)',
-                            fontSize: '0.9rem'
-                          }}>
-                            {method.desc}
-                          </div>
-                        </div>
-                      </label>
-                    ))}
-                  </div>
-                </div>
+              <div>
+                <PaymentMethodSelector
+                  onMethodSelect={(method) => {
+                    setPaymentInfo({ method })
+                    // Auto-advance to review step when method is selected
+                    setTimeout(() => setStep(3), 500)
+                  }}
+                  selectedMethod={paymentInfo.method}
+                  amount={finalTotal}
+                  currency="USD"
+                  disabled={loading}
+                />
 
                 <div style={{
                   display: 'flex',
-                  gap: '1rem'
+                  gap: '1rem',
+                  marginTop: '2rem'
                 }}>
                   <button
                     type="button"
@@ -584,26 +534,10 @@ export default function CheckoutPage() {
                       cursor: 'pointer'
                     }}
                   >
-                    Back
-                  </button>
-                  <button
-                    type="submit"
-                    style={{
-                      flex: 2,
-                      padding: '1rem',
-                      background: 'linear-gradient(45deg, var(--pink-main), var(--cyan-accent))',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: 'var(--white)',
-                      fontSize: '1.1rem',
-                      fontWeight: '600',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Review Order
+                    Back to Shipping
                   </button>
                 </div>
-              </form>
+              </div>
             )}
 
             {/* Step 3: Order Review */}
@@ -649,7 +583,11 @@ export default function CheckoutPage() {
                     Payment Method
                   </h3>
                   <div style={{ color: 'rgba(255,255,255,0.8)' }}>
-                    💳 WesternBid Payment (PayPal & Stripe)
+                    {paymentInfo.method ? (
+                      `💳 ${paymentInfo.method.name} - ${paymentInfo.method.description}`
+                    ) : (
+                      '💳 WesternBid Payment (PayPal & Stripe)'
+                    )}
                   </div>
                 </div>
 

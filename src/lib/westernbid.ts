@@ -72,7 +72,7 @@ export interface RefundResponse {
 
 // Webhook Data Interface
 export interface WebhookData {
-  event: 'payment.completed' | 'payment.failed' | 'payment.cancelled' | 'refund.completed' | 'refund.failed'
+  event: 'payment.completed' | 'payment.failed' | 'payment.cancelled' | 'refund.completed' | 'refund.failed' | 'payment.pending' | 'payment.unknown'
   paymentId: string
   orderId: string
   amount: number
@@ -307,7 +307,7 @@ class WesternBidAPI {
     return error.name === 'AbortError' || error.name === 'TypeError'
   }
 
-  // Create a new payment session
+  // Create a new payment session (WesternBid Form-based integration)
   public async createPayment(request: PaymentRequest): Promise<PaymentResponse> {
     try {
       this.logger.info('Creating payment', { orderId: request.orderId, amount: request.amount })
@@ -315,55 +315,31 @@ class WesternBidAPI {
       // Validate request
       this.validatePaymentRequest(request)
       
-      const paymentData = {
-        merchant_id: this.config.merchantId,
-        order_id: request.orderId,
-        amount: Math.round(request.amount * 100), // Convert to cents
-        currency: request.currency.toUpperCase(),
-        description: request.description,
-        customer_email: request.customerEmail,
-        customer_name: request.customerName,
-        customer_phone: request.customerPhone || '',
-        return_url: request.returnUrl,
-        cancel_url: request.cancelUrl,
-        webhook_url: request.webhookUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`,
-        timestamp: Math.floor(Date.now() / 1000),
-        metadata: JSON.stringify(request.metadata || {})
-      }
-
-      const signature = this.generateSignature(paymentData)
+      // Generate unique payment ID for this transaction
+      const paymentId = `wb_${Date.now()}_${request.orderId}`
+      const sessionId = `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
       
-      const response = await this.makeRequest<any>(
-        `${this.config.apiUrl}/v1/payments`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-Merchant-ID': this.config.merchantId,
-            'X-Signature': signature,
-            'X-Timestamp': paymentData.timestamp.toString(),
-            'User-Agent': 'WesternBid-Node/1.0.0'
-          },
-          body: JSON.stringify(paymentData)
-        }
-      )
-
-      this.logger.info('Payment created successfully', { 
-        paymentId: response.payment_id,
-        sessionId: response.session_id
+      // WesternBid uses form-based integration with their payment gateway
+      // Generate the payment URL that will redirect to WesternBid form
+      const paymentUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/api/payment/westernbid/redirect?paymentId=${paymentId}&orderId=${request.orderId}&sessionId=${sessionId}`
+      
+      this.logger.info('Payment session created', { 
+        paymentId,
+        sessionId,
+        paymentUrl
       })
 
       return {
         success: true,
-        paymentId: response.payment_id,
-        paymentUrl: response.payment_url,
-        sessionId: response.session_id
+        paymentId,
+        paymentUrl,
+        sessionId
       }
     } catch (error) {
       this.logger.error('Payment creation failed', error)
       
-      // Fallback to mock payment in sandbox mode
-      if (this.config.environment === 'sandbox' && !(error instanceof WesternBidConfigError)) {
+      // Fallback to mock payment in development
+      if (this.config.environment !== 'production' && !(error instanceof WesternBidConfigError)) {
         return this.createMockPayment(request)
       }
       
@@ -372,6 +348,78 @@ class WesternBidAPI {
         error: error instanceof Error ? error.message : 'Payment creation failed',
         errorCode: error instanceof WesternBidError ? error.code : undefined
       }
+    }
+  }
+
+  // Generate WesternBid payment form data
+  public generatePaymentFormData(request: PaymentRequest, paymentId: string): Record<string, string> {
+    const formData = {
+      // Required WesternBid fields
+      business: this.config.merchantId, // wb_login
+      item_name: request.description,
+      item_number: request.orderId,
+      amount: request.amount.toFixed(2),
+      currency_code: request.currency.toUpperCase(),
+      
+      // Customer info
+      first_name: request.customerName.split(' ')[0] || '',
+      last_name: request.customerName.split(' ').slice(1).join(' ') || '',
+      email: request.customerEmail,
+      
+      // URLs
+      return: request.returnUrl,
+      cancel_return: request.cancelUrl,
+      notify_url: request.webhookUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`,
+      
+      // Transaction info
+      invoice: paymentId,
+      custom: JSON.stringify({
+        orderId: request.orderId,
+        paymentId,
+        metadata: request.metadata || {}
+      }),
+      
+      // Payment options
+      cmd: '_xclick', // Single payment
+      no_note: '1',
+      no_shipping: '1',
+      charset: 'utf-8'
+    }
+
+    // Add signature if secret key is available
+    if (this.config.secretKey) {
+      const signature = this.generateWesternBidSignature(formData)
+      ;(formData as any).verify_sign = signature
+    }
+
+    return formData
+  }
+
+  // Generate WesternBid-specific signature
+  private generateWesternBidSignature(formData: Record<string, string>): string {
+    try {
+      // Create query string from form data
+      const sortedKeys = Object.keys(formData).sort()
+      const queryString = sortedKeys
+        .filter(key => formData[key] !== undefined && formData[key] !== null && formData[key] !== '')
+        .map(key => `${key}=${encodeURIComponent(formData[key])}`)
+        .join('&')
+      
+      // Add secret key
+      const signatureString = queryString + this.config.secretKey
+      
+      // Generate MD5 hash (WesternBid uses MD5 for compatibility)
+      const signature = createHash('md5').update(signatureString).digest('hex')
+      
+      this.logger.info('Generated WesternBid signature', { 
+        queryLength: queryString.length,
+        signatureLength: signature.length
+      })
+      
+      return signature
+    } catch (error) {
+      this.logger.error('Failed to generate WesternBid signature', error)
+      throw new WesternBidSignatureError('Failed to generate WesternBid signature')
     }
   }
 
@@ -556,12 +604,17 @@ class WesternBidAPI {
     }
   }
 
-  // Parse webhook data
+  // Parse webhook data (supports both JSON and form data)
   public parseWebhookData(payload: string): WebhookData | null {
     try {
       const data = JSON.parse(payload)
       
-      // Validate required fields
+      // Check if this is WesternBid form data
+      if (data.payment_status || data.txn_type || data.business) {
+        return this.parseWesternBidFormData(data)
+      }
+      
+      // Standard JSON webhook format
       if (!data.event || !data.payment_id || !data.order_id) {
         this.logger.warn('Invalid webhook data: missing required fields')
         return null
@@ -581,6 +634,98 @@ class WesternBidAPI {
       }
     } catch (error) {
       this.logger.error('Failed to parse webhook data', error)
+      return null
+    }
+  }
+
+  // Parse WesternBid form-based webhook data
+  private parseWesternBidFormData(formData: Record<string, any>): WebhookData | null {
+    try {
+      this.logger.info('Parsing WesternBid form data', {
+        paymentStatus: formData.payment_status,
+        txnType: formData.txn_type,
+        business: formData.business
+      })
+
+      // Extract order information
+      let orderId = formData.item_number || formData.invoice
+      let customData: any = {}
+      
+      if (formData.custom) {
+        try {
+          customData = JSON.parse(formData.custom)
+          orderId = customData.orderId || orderId
+        } catch {
+          // Custom field is not JSON, use as-is
+          customData = { originalCustom: formData.custom }
+        }
+      }
+
+      // Map WesternBid payment statuses to our events
+      let event: 'payment.completed' | 'payment.failed' | 'payment.cancelled' | 'refund.completed' | 'refund.failed' | 'payment.pending' | 'payment.unknown'
+      let status: string
+      
+      switch (formData.payment_status?.toLowerCase()) {
+        case 'completed':
+        case 'success':
+          event = 'payment.completed'
+          status = 'completed'
+          break
+        case 'failed':
+        case 'denied':
+        case 'voided':
+          event = 'payment.failed'
+          status = 'failed'
+          break
+        case 'cancelled':
+        case 'canceled':
+          event = 'payment.cancelled'
+          status = 'cancelled'
+          break
+        case 'refunded':
+          event = 'refund.completed'
+          status = 'refunded'
+          break
+        case 'pending':
+        case 'in_progress':
+          event = 'payment.pending'
+          status = 'pending'
+          break
+        default:
+          this.logger.warn('Unknown WesternBid payment status', {
+            paymentStatus: formData.payment_status,
+            txnType: formData.txn_type
+          })
+          event = 'payment.unknown'
+          status = formData.payment_status || 'unknown'
+      }
+
+      const paymentId = formData.txn_id || formData.transaction_id || customData.paymentId || `wb_${Date.now()}`
+      
+      return {
+        event,
+        paymentId,
+        orderId,
+        amount: parseFloat(formData.mc_gross || formData.payment_gross || formData.amount || '0'),
+        currency: formData.mc_currency || formData.currency_code || 'USD',
+        status,
+        transactionId: formData.txn_id || formData.transaction_id,
+        timestamp: new Date().toISOString(),
+        signature: formData.verify_sign || '',
+        metadata: {
+          ...customData,
+          rawFormData: formData,
+          receiverEmail: formData.receiver_email || formData.business,
+          payerEmail: formData.payer_email,
+          payerName: `${formData.first_name || ''} ${formData.last_name || ''}`.trim(),
+          itemName: formData.item_name,
+          txnType: formData.txn_type,
+          paymentType: formData.payment_type,
+          paymentDate: formData.payment_date
+        }
+      }
+    } catch (error) {
+      this.logger.error('Failed to parse WesternBid form data', error)
       return null
     }
   }
