@@ -91,7 +91,7 @@ export default function ExvicpmourPage() {
             </p>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <div className="product-card" style={{ minHeight: 'auto', padding: '2rem', textAlign: 'center' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👟</div>
+                <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>👠</div>
                 <h4 style={{ color: 'var(--cyan-accent)', marginBottom: '0.5rem' }}>Walk of Desire</h4>
                 <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>Not just shoes — a statement waiting to be worn.</p>
               </div>
@@ -119,8 +119,8 @@ export default function ExvicpmourPage() {
           
           <div className="exvicpmour-story-grid">
             <div className="product-card" style={{ textAlign: 'center', padding: '2.5rem 2rem', position: 'relative', zIndex: 1 }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1.5rem' }}>✸</div>
-              <h3 style={{ color: 'var(--cyan-accent)', marginBottom: '1.5rem', fontSize: '1.3rem' }}>about us ✸</h3>
+              <div style={{ fontSize: '3rem', marginBottom: '1.5rem' }}>💋</div>
+              <h3 style={{ color: 'var(--cyan-accent)', marginBottom: '1.5rem', fontSize: '1.3rem' }}>about us 💋</h3>
               <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1rem', lineHeight: '1.6' }}>
                 Exclusive, not for status — for soul.<br />
                 Vintage is legacy. Custom is self-expression. Punk is freedom. Glamour is rebellious romance.<br />
@@ -141,8 +141,8 @@ export default function ExvicpmourPage() {
             </div>
             
             <div className="product-card" style={{ textAlign: 'center', padding: '2.5rem 2rem', position: 'relative', zIndex: 1 }}>
-              <div style={{ fontSize: '3rem', marginBottom: '1.5rem' }}>✸</div>
-              <h3 style={{ color: 'var(--pink-main)', marginBottom: '1.5rem', fontSize: '1.3rem' }}>artistic vision ✸</h3>
+              <div style={{ fontSize: '3rem', marginBottom: '1.5rem' }}>🦢</div>
+              <h3 style={{ color: 'var(--pink-main)', marginBottom: '1.5rem', fontSize: '1.3rem' }}>artistic vision 🦢</h3>
               <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1rem', lineHeight: '1.6' }}>
                 Inspiration lives inside you.<br />
                 Beauty isn't out there — it's how you look at things.<br />
