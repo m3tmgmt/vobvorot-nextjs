@@ -9,6 +9,7 @@ import { PuzzleProgress } from "@/components/PuzzleProgress";
 import { MusicPlayer } from "@/components/MusicPlayer";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { PerformanceMonitoring } from "@/components/PerformanceMonitoring";
 import { ToastProvider } from "@/components/Toast";
 import { CartProvider } from "@/contexts/CartContext";
 import { PuzzleProvider } from "@/contexts/PuzzleContext";
@@ -17,6 +18,7 @@ import { WishlistProvider } from "@/contexts/WishlistContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { MatrixProvider } from "@/contexts/MatrixContext";
 import { KonamiProvider } from "@/contexts/KonamiContext";
+import { ABTestProvider } from "@/components/ABTestProvider";
 import { generateOrganizationStructuredData, generateWebsiteStructuredData } from "@/lib/seo";
 
 
@@ -134,6 +136,7 @@ export default function RootLayout({
           }}
         />
         <GoogleAnalytics measurementId={process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID} />
+        <PerformanceMonitoring />
       </head>
       <body>
         <ErrorBoundary>
@@ -142,8 +145,9 @@ export default function RootLayout({
               <MatrixProvider>
                 <PuzzleProvider>
                   <KonamiProvider>
-                    <CartProvider>
-                      <WishlistProvider>
+                    <ABTestProvider>
+                      <CartProvider>
+                        <WishlistProvider>
                       <DynamicComponents />
                       <SecretDetector />
                       <Navigation />
@@ -157,8 +161,9 @@ export default function RootLayout({
                           {children}
                         </ErrorBoundary>
                       </main>
-                      </WishlistProvider>
-                    </CartProvider>
+                        </WishlistProvider>
+                      </CartProvider>
+                    </ABTestProvider>
                   </KonamiProvider>
                 </PuzzleProvider>
               </MatrixProvider>

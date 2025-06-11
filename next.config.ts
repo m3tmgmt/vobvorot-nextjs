@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { withSentryConfig } from '@sentry/nextjs';
 
 const nextConfig: NextConfig = {
   // Build configuration
@@ -237,4 +238,20 @@ const nextConfig: NextConfig = {
   }
 };
 
-export default nextConfig;
+export default withSentryConfig(nextConfig, {
+  // For all available options, see:
+  // https://github.com/getsentry/sentry-webpack-plugin#options
+
+  // Suppresses source map uploading logs during build
+  silent: true,
+  org: "vobvorot",
+  project: "nextjs-store",
+
+  // An auth token is required for uploading source maps.
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+
+  // Upload source maps
+  widenClientFileUpload: true,
+  hideSourceMaps: true,
+  disableLogger: true,
+});
