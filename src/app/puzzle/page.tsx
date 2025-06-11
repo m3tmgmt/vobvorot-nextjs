@@ -166,7 +166,7 @@ export default function PuzzlePage() {
           {/* Completed Puzzles */}
           {state.pieces.some(piece => piece.found) && (
             <>
-              <h2 className="section-title">Completed Puzzles</h2>
+              <h2 className="section-title" style={{ marginTop: 'var(--space-20)' }}>Completed Puzzles</h2>
               <div className="cards-grid">
                 {state.pieces.filter(piece => piece.found).map((piece) => (
                   <div 
