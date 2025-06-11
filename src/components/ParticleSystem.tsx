@@ -22,6 +22,8 @@ export default function ParticleSystem() {
 
   useEffect(() => {
     let mounted = true;
+    let isScrolling = false;
+    let scrollTimeout: NodeJS.Timeout;
 
     const createParticle = (): Particle => {
       return {
@@ -36,14 +38,22 @@ export default function ParticleSystem() {
       };
     };
 
+    const handleScroll = () => {
+      isScrolling = true;
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        isScrolling = false;
+      }, 100);
+    };
+
     const updateParticles = (currentTime: number) => {
       if (!mounted) return;
 
       const deltaTime = currentTime - lastTime.current;
       lastTime.current = currentTime;
 
-      // Добавляем новые частицы
-      if (Math.random() < 0.3 && particlesRef.current.length < 20) {
+      // Добавляем новые частицы только если не скроллим
+      if (!isScrolling && Math.random() < 0.3 && particlesRef.current.length < 20) {
         particlesRef.current.push(createParticle());
       }
 
@@ -111,6 +121,7 @@ export default function ParticleSystem() {
     if (!isMobile) {
       lastTime.current = performance.now();
       animationFrame.current = requestAnimationFrame(updateParticles);
+      window.addEventListener('scroll', handleScroll, { passive: true });
     }
 
     return () => {
@@ -118,6 +129,8 @@ export default function ParticleSystem() {
       if (animationFrame.current) {
         cancelAnimationFrame(animationFrame.current);
       }
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeout);
     };
   }, []);
 

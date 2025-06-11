@@ -1,14 +1,14 @@
 'use client'
 
 import Link from 'next/link'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, memo } from 'react'
 import { useRouter } from 'next/navigation'
 import { useSession, signOut } from 'next-auth/react'
 import { useCart } from '@/contexts/CartContext'
 import { useWishlist } from '@/contexts/WishlistContext'
 import { usePuzzle } from '@/contexts/PuzzleContext'
 
-export function Navigation() {
+function NavigationComponent() {
   const router = useRouter()
   const { data: session, status } = useSession()
   const [isOpen, setIsOpen] = useState(false)
@@ -74,7 +74,7 @@ export function Navigation() {
                   setIsOpen(false)
                 }}
               >
-                🏠 Home Base
+                🏠  Home Base
               </button>
             </li>
             <li>
@@ -84,7 +84,7 @@ export function Navigation() {
                   setIsOpen(false)
                 }}
               >
-                ✨ EXVICPMOUR Store
+                ✨  EXVICPMOUR Store
               </button>
             </li>
             <li>
@@ -94,7 +94,7 @@ export function Navigation() {
                   setIsOpen(false)
                 }}
               >
-                🛍️ Digital Catalog
+                🛍️  Digital Catalog
               </button>
             </li>
             <li>
@@ -104,7 +104,7 @@ export function Navigation() {
                   setIsOpen(false)
                 }}
               >
-                🎓 Digital Academy
+                🎓  Digital Academy
               </button>
             </li>
             <li>
@@ -114,7 +114,7 @@ export function Navigation() {
                   setIsOpen(false)
                 }}
               >
-                🧩 Secret Hunters
+                🧩  Secret Hunters
               </button>
             </li>
             <li>
@@ -124,7 +124,7 @@ export function Navigation() {
                   setIsOpen(false)
                 }}
               >
-                🌐 Digital Collective
+                🌐  Digital Collective
               </button>
             </li>
             <li>
@@ -134,12 +134,12 @@ export function Navigation() {
                   setIsOpen(false)
                 }}
               >
-                💖 Our Story
+                💖  Our Story
               </button>
             </li>
             <li>
               <button onClick={toggleCart}>
-                🛒 Digital Bag
+                🛒  Digital Bag
                 {mounted && state.itemCount > 0 && (
                   <span className="cart-count">{state.itemCount}</span>
                 )}
@@ -147,7 +147,7 @@ export function Navigation() {
             </li>
             <li>
               <button onClick={toggleWishlist}>
-                ✨ Dream List
+                ✨  Dream List
                 {mounted && wishlistState.itemCount > 0 && (
                   <span className="cart-count" style={{ background: 'var(--cyan-accent)' }}>
                     {wishlistState.itemCount}
@@ -168,7 +168,7 @@ export function Navigation() {
                           setIsOpen(false)
                         }}
                       >
-                        👤 {session.user.name || session.user.email}
+                        👤  {session.user.name || session.user.email}
                       </button>
                     </li>
                     <li>
@@ -178,7 +178,7 @@ export function Navigation() {
                           setIsOpen(false)
                         }}
                       >
-                        📦 My Orders
+                        📦  My Orders
                       </button>
                     </li>
                     <li>
@@ -188,7 +188,7 @@ export function Navigation() {
                           setIsOpen(false)
                         }}
                       >
-                        🚪 Sign Out
+                        🚪  Sign Out
                       </button>
                     </li>
                   </>
@@ -201,7 +201,7 @@ export function Navigation() {
                           setIsOpen(false)
                         }}
                       >
-                        🔐 Sign In
+                        🔐  Sign In
                       </button>
                     </li>
                     <li>
@@ -211,7 +211,7 @@ export function Navigation() {
                           setIsOpen(false)
                         }}
                       >
-                        ✨ Sign Up
+                        ✨  Sign Up
                       </button>
                     </li>
                   </>
@@ -240,3 +240,5 @@ export function Navigation() {
     </>
   )
 }
+
+export const Navigation = memo(NavigationComponent)

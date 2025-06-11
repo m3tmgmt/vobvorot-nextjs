@@ -7,6 +7,7 @@ import { ProductCard } from '@/components/ProductCard'
 import { usePuzzle } from '@/contexts/PuzzleContext'
 import { Footer } from '@/components/Footer'
 import LettersToFuture from '@/components/LettersToFuture'
+import { LazySection } from '@/components/LazySection'
 
 interface Product {
   id: string
@@ -95,11 +96,7 @@ export default function HomePage() {
         {videos.map((video, index) => (
           <video
             key={video}
-            className="hero-video"
-            style={{
-              opacity: index === currentVideoIndex ? 1 : 0,
-              transition: 'opacity 1s ease-in-out'
-            }}
+            className={`hero-video-container ${index === currentVideoIndex ? 'active' : ''}`}
             autoPlay
             muted
             loop
@@ -123,51 +120,40 @@ export default function HomePage() {
           <p className="hero-subtitle">
             digital playground ✨
           </p>
-          <button 
-            className="hero-button"
-            onClick={() => {
-              console.log('Navigating to /exvicpmour')
-              try {
-                router.push('/exvicpmour')
-              } catch (error) {
-                window.location.href = '/exvicpmour'
-              }
-            }}
-            style={{
-              position: 'relative',
-              zIndex: 10,
-              pointerEvents: 'auto',
-              cursor: 'pointer',
-              userSelect: 'none'
-            }}
-          >
-            Explore EXVICPMOUR
-          </button>
+          <div className="hero-button-wrapper">
+            <button 
+              className="hero-button"
+              onClick={() => {
+                console.log('Navigating to /exvicpmour')
+                try {
+                  router.push('/exvicpmour')
+                } catch (error) {
+                  window.location.href = '/exvicpmour'
+                }
+              }}
+            >
+              Explore EXVICPMOUR
+            </button>
+          </div>
         </div>
         
-        <div style={{position: 'absolute', bottom: '32px', left: '50%', transform: 'translateX(-50%)'}}>
-          <div className="flex" style={{gap: '0.5rem'}}>
-            {videos.map((_, index) => (
-              <button
-                key={index}
-                style={{
-                  width: '12px',
-                  height: '12px',
-                  borderRadius: '50%',
-                  backgroundColor: index === currentVideoIndex ? 'var(--pink-main)' : 'rgba(255,255,255,0.3)',
-                  border: 'none',
-                  cursor: 'pointer',
-                  transition: 'all 0.3s'
-                }}
-                onClick={() => setCurrentVideoIndex(index)}
-              />
-            ))}
-          </div>
+        <div className="hero-pagination">
+          {videos.map((_, index) => (
+            <button
+              key={index}
+              className={`hero-pagination-dot ${index === currentVideoIndex ? 'active' : ''}`}
+              onClick={() => setCurrentVideoIndex(index)}
+            />
+          ))}
         </div>
       </section>
 
       {/* Products Section */}
-      <section className="products-section" style={{ marginTop: '6rem', marginBottom: '6rem' }}>
+      <LazySection 
+        className="products-section section-spacing-large"
+        minHeight="400px"
+        rootMargin="200px"
+      >
         <h2 className="section-title glitch">
           EXVICPMOUR Store
         </h2>
@@ -187,14 +173,19 @@ export default function HomePage() {
         </div>
         
         <div className="products-grid">
-          {filteredProducts.map((product) => (
-            <ProductCard key={product.id} product={product as any} />
+          {filteredProducts.map((product, index) => (
+            <ProductCard 
+              key={product.id} 
+              product={product as any} 
+              priority={index < 4}
+              loading={index < 4 ? 'eager' : 'lazy'}
+            />
           ))}
         </div>
 
         {filteredProducts.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '4rem 0' }}>
-            <h3 style={{ color: 'var(--pink-main)', marginBottom: '1rem' }}>
+          <div className="empty-state">
+            <h3 className="empty-state-title">
               No items found in this category
             </h3>
             <button 
@@ -205,34 +196,27 @@ export default function HomePage() {
             </button>
           </div>
         )}
-      </section>
+      </LazySection>
 
       {/* Interactive Sections */}
-      <section style={{
-        padding: '4rem 2rem',
-        width: '100%',
-        margin: '0 auto',
-        marginTop: '6rem',
-        position: 'relative',
-        zIndex: 2,
-        display: 'flex',
-        flexDirection: 'column',
-        alignItems: 'center'
-      }}>
-        <h2 className="section-title glitch">
-          Interactive Features
-        </h2>
-        
-        <div className="container" style={{ maxWidth: '800px' }}>
+      <LazySection 
+        className="products-section section-spacing-large"
+        minHeight="300px"
+        rootMargin="200px"
+      >
+        <div className="container" style={{ maxWidth: '800px', textAlign: 'center' }}>
+          <h2 className="section-title glitch">
+            Interactive Features
+          </h2>
           <div className="cards-grid">
           {/* Puzzle Game Card */}
-          <div className="product-card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div className="product-card feature-card">
             <div>
-              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🧩</div>
-              <h3 style={{ color: 'var(--cyan-accent)', marginBottom: '1rem' }}>
+              <div className="feature-card-icon">🧩</div>
+              <h3 className="feature-card-title" style={{ color: 'var(--cyan-accent)' }}>
                 Memory Puzzle
               </h3>
-              <p style={{ marginBottom: '1.5rem', color: 'rgba(255,255,255,0.8)' }}>
+              <p className="feature-card-description">
                 Test your memory with our Y2K-themed puzzle game
               </p>
             </div>
@@ -251,13 +235,13 @@ export default function HomePage() {
           </div>
 
           {/* Training Programs Card */}
-          <div className="product-card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div className="product-card feature-card">
             <div>
-              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎓</div>
-              <h3 style={{ color: 'var(--purple-accent)', marginBottom: '1rem' }}>
+              <div className="feature-card-icon">🎓</div>
+              <h3 className="feature-card-title" style={{ color: 'var(--purple-accent)' }}>
                 Training Programs
               </h3>
-              <p style={{ marginBottom: '1.5rem', color: 'rgba(255,255,255,0.8)' }}>
+              <p className="feature-card-description">
                 Learn digital design, curation, and creative coding
               </p>
             </div>
@@ -276,13 +260,13 @@ export default function HomePage() {
           </div>
 
           {/* Community Card */}
-          <div className="product-card" style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+          <div className="product-card feature-card">
             <div>
-              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🌐</div>
-              <h3 style={{ color: 'var(--yellow-neon)', marginBottom: '1rem' }}>
+              <div className="feature-card-icon">🌐</div>
+              <h3 className="feature-card-title" style={{ color: 'var(--yellow-neon)' }}>
                 Community Hub
               </h3>
-              <p style={{ marginBottom: '1.5rem', color: 'rgba(255,255,255,0.8)' }}>
+              <p className="feature-card-description">
                 Connect with creators and join events
               </p>
             </div>
@@ -304,7 +288,7 @@ export default function HomePage() {
           <LettersToFuture />
         </div>
         </div>
-      </section>
+      </LazySection>
 
       
       <Footer />

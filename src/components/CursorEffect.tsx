@@ -26,6 +26,9 @@ export default function CursorEffect() {
 
     // Показать курсор сразу при загрузке
     const showCursorOnLoad = () => {
+      // Добавляем класс для прогрессивного скрытия браузерного курсора
+      document.body.classList.add('custom-cursor-ready');
+      
       if (cursorRef.current) {
         cursorRef.current.style.display = 'block';
       }
@@ -156,6 +159,9 @@ export default function CursorEffect() {
     }
 
     return () => {
+      // Убираем класс при размонтировании
+      document.body.classList.remove('custom-cursor-ready');
+      
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseenter', handleMouseEnter);
       document.removeEventListener('mouseleave', handleMouseLeave);

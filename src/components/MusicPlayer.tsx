@@ -1,16 +1,19 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { usePuzzle } from '@/contexts/PuzzleContext'
 
 export function MusicPlayer() {
   const [mounted, setMounted] = useState(false)
   const { findPiece } = usePuzzle()
+  const router = useRouter()
   const [isPlaying, setIsPlaying] = useState(false)
   const [volume, setVolume] = useState(0.3)
   const [isExpanded, setIsExpanded] = useState(false)
   const [progress, setProgress] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
+  const [isNavigating, setIsNavigating] = useState(false)
   const audioRef = useRef<HTMLAudioElement>(null)
 
   useEffect(() => {
@@ -101,10 +104,18 @@ export function MusicPlayer() {
     }
 
     const handleError = () => {
-      console.log('Audio error, skipping to next track')
+      console.log('Audio error occurred')
       setIsLoading(false)
+      
+      // Не переключаем трек во время навигации, просто приостанавливаем
+      if (isNavigating) {
+        setIsPlaying(false)
+        return
+      }
+      
+      // При ошибке переходим к следующему треку только если не навигируем
+      console.log('Audio error, skipping to next track')
       setIsPlaying(false)
-      // При ошибке переходим к следующему треку
       setCurrentShuffledIndex((prev) => (prev + 1) % shuffledTracks.length)
       setProgress(0)
     }
@@ -112,24 +123,11 @@ export function MusicPlayer() {
     const handleLoadStart = () => setIsLoading(true)
     const handleCanPlay = () => setIsLoading(false)
 
-    // Prevent audio from stopping on page navigation
-    const handleBeforeUnload = () => {
-      if (audio && isPlaying) {
-        try {
-          localStorage.setItem('vobvorot-music-continue', 'true')
-          localStorage.setItem('vobvorot-music-time', audio.currentTime.toString())
-        } catch (error) {
-          console.log('Failed to save music position:', error)
-        }
-      }
-    }
-
     audio.addEventListener('timeupdate', updateProgress)
     audio.addEventListener('ended', handleEnded)
     audio.addEventListener('error', handleError)
     audio.addEventListener('loadstart', handleLoadStart)
     audio.addEventListener('canplay', handleCanPlay)
-    window.addEventListener('beforeunload', handleBeforeUnload)
 
     return () => {
       audio.removeEventListener('timeupdate', updateProgress)
@@ -137,9 +135,64 @@ export function MusicPlayer() {
       audio.removeEventListener('error', handleError)
       audio.removeEventListener('loadstart', handleLoadStart)
       audio.removeEventListener('canplay', handleCanPlay)
-      window.removeEventListener('beforeunload', handleBeforeUnload)
     }
   }, [mounted, currentShuffledIndex, volume, shuffledTracks, isPlaying])
+
+  // Handle navigation events to prevent track switching during navigation
+  useEffect(() => {
+    if (!mounted) return
+
+    // Listen for beforeunload to save state on page refresh/close
+    const handleBeforeUnload = () => {
+      if (audioRef.current && isPlaying) {
+        try {
+          localStorage.setItem('vobvorot-music-continue', 'true')
+          localStorage.setItem('vobvorot-music-time', audioRef.current.currentTime.toString())
+        } catch (error) {
+          console.log('Failed to save music position:', error)
+        }
+      }
+    }
+
+    // Navigation state handlers - use a more specific approach
+    const handleNavigationStart = () => {
+      setIsNavigating(true)
+      console.log('Navigation started - preventing track switching')
+    }
+
+    const handleNavigationComplete = () => {
+      setTimeout(() => {
+        setIsNavigating(false)
+        console.log('Navigation completed - allowing track switching')
+      }, 1000) // Wait 1 second after navigation to ensure audio is stable
+    }
+
+    // Use popstate for back/forward navigation
+    const handlePopState = () => {
+      handleNavigationStart()
+      setTimeout(handleNavigationComplete, 1500)
+    }
+
+    // For link clicks, we'll detect them on the window level
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      const link = target.closest('a')
+      if (link && link.href && link.href !== window.location.href) {
+        handleNavigationStart()
+        setTimeout(handleNavigationComplete, 2000)
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    window.addEventListener('popstate', handlePopState)
+    window.addEventListener('click', handleClick, true)
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+      window.removeEventListener('popstate', handlePopState)
+      window.removeEventListener('click', handleClick, true)
+    }
+  }, [mounted, isPlaying])
 
   // Auto-play when track changes if already playing
   useEffect(() => {

@@ -1,10 +1,11 @@
 'use client'
 
+import { memo } from 'react'
 import { usePuzzle } from '@/contexts/PuzzleContext'
 import { useMatrix } from '@/contexts/MatrixContext'
 import { useClientOnly } from '@/hooks/useClientOnly'
 
-export function Footer() {
+function FooterComponent() {
   const isClient = useClientOnly()
   const { findPiece } = usePuzzle()
   const { activateMatrix } = useMatrix()
@@ -291,3 +292,5 @@ export function Footer() {
     </footer>
   )
 }
+
+export const Footer = memo(FooterComponent)

@@ -3,13 +3,8 @@ import { Navigation } from "@/components/Navigation";
 import { Cart } from "@/components/Cart";
 import { Wishlist } from "@/components/Wishlist";
 import { FloatingCartIcons } from "@/components/FloatingCartIcons";
-import { Effects } from "@/components/Effects";
 import { SecretDetector } from "@/components/SecretDetector";
-import CursorEffect from "@/components/CursorEffect";
-import ParticleSystem from "@/components/ParticleSystem";
-import MatrixEffectWrapper from "@/components/MatrixEffectWrapper";
-import KonamiActivator from "@/components/KonamiActivator";
-import SecretMenu from "@/components/SecretMenu";
+import { DynamicComponents } from "@/components/DynamicComponents";
 import { PuzzleProgress } from "@/components/PuzzleProgress";
 import { MusicPlayer } from "@/components/MusicPlayer";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
@@ -17,6 +12,7 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ToastProvider } from "@/components/Toast";
 import { CartProvider } from "@/contexts/CartContext";
 import { PuzzleProvider } from "@/contexts/PuzzleContext";
+import { CriticalCSS } from "@/components/CriticalCSS";
 import { WishlistProvider } from "@/contexts/WishlistContext";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { MatrixProvider } from "@/contexts/MatrixContext";
@@ -101,8 +97,29 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Progressive cursor hiding - only after custom cursor loads */}
+        <style dangerouslySetInnerHTML={{
+          __html: `
+            /* Initial state - allow browser cursor until custom cursor is ready */
+            .custom-cursor-ready {
+              cursor: none !important;
+            }
+            .custom-cursor-ready *, 
+            .custom-cursor-ready *::before, 
+            .custom-cursor-ready *::after {
+              cursor: none !important;
+              -webkit-cursor: none !important;
+            }
+          `
+        }} />
+        
+        
         <link
           href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap"
+          rel="stylesheet"
+        />
+        <link
+          href="/css/critical.css"
           rel="stylesheet"
         />
         <link
@@ -127,13 +144,8 @@ export default function RootLayout({
                   <KonamiProvider>
                     <CartProvider>
                       <WishlistProvider>
-                      <MatrixEffectWrapper />
-                      <CursorEffect />
-                      <ParticleSystem />
-                      <Effects />
+                      <DynamicComponents />
                       <SecretDetector />
-                      <KonamiActivator />
-                      <SecretMenu />
                       <Navigation />
                       <Cart />
                       <Wishlist />

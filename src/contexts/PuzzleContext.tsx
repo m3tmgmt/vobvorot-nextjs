@@ -34,6 +34,7 @@ interface PuzzleState {
   rainbowMode: boolean
   matrixMode: boolean
   godMode: boolean
+  isLoading: boolean
 }
 
 type PuzzleAction =
@@ -46,6 +47,7 @@ type PuzzleAction =
   | { type: 'DEACTIVATE_GOD_MODE' }
   | { type: 'LOAD_STATE'; payload: PuzzleState }
   | { type: 'RESET_PROGRESS' }
+  | { type: 'SET_LOADING'; payload: boolean }
 
 const initialPieces: PuzzlePiece[] = [
   {

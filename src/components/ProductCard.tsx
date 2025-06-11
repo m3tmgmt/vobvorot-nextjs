@@ -93,14 +93,19 @@ const ProductCard = memo(function ProductCard({
     <ProductErrorBoundary>
       <div className="product-card">
         <Link href={`/products/${product.slug}`}>
-          <div className="product-image">
+          <div className="product-image" style={{
+            position: 'relative',
+            width: '100%',
+            height: '280px',
+            backgroundColor: 'rgba(255,255,255,0.1)',
+            overflow: 'hidden'
+          }}>
             <ProductImageErrorBoundary>
               {primaryImage && !imageError ? (
                 <Image
                   src={primaryImage.url}
                   alt={primaryImage.alt || product.name}
-                  width={280}
-                  height={280}
+                  fill
                   style={{objectFit: 'cover'}}
                   sizes="(max-width: 480px) 200px, (max-width: 768px) 250px, 280px"
                   priority={priority}
@@ -113,7 +118,11 @@ const ProductCard = memo(function ProductCard({
               ) : (
                 <div className="w-full h-full flex-center" style={{
                   background: 'rgba(255,255,255,0.1)',
-                  minHeight: '280px'
+                  width: '100%',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
                 }}>
                   <span style={{color: 'rgba(255,255,255,0.5)'}}>
                     {imageError ? 'Failed to load image' : 'No Image'}

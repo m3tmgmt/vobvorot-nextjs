@@ -45,7 +45,7 @@ export default function AboutPage() {
 
   return (
     <div className="about-section">
-      <div className="hero-section" style={{ minHeight: '60vh', position: 'relative' }}>
+      <div className="hero-section hero-small">
         <div className="hero-overlay"></div>
         
         {/* Matrix Rain Background */}
@@ -73,21 +73,8 @@ export default function AboutPage() {
             digital revolution from Ukraine 🇺🇦 • Y2K aesthetic • future nostalgia
           </p>
           
-          <div style={{
-            marginTop: '2rem',
-            padding: '2rem',
-            background: 'rgba(255,255,255,0.1)',
-            borderRadius: '20px',
-            border: '2px solid var(--cyan-accent)',
-            maxWidth: '700px',
-            margin: '2rem auto 0'
-          }}>
-            <p style={{ 
-              fontSize: '1.2rem', 
-              lineHeight: '1.6',
-              color: 'rgba(255,255,255,0.9)',
-              textAlign: 'center'
-            }}>
+          <div className="section-intro-card">
+            <p className="section-intro-text">
               We are digital archaeologists, collecting fragments of the past 
               and weaving them into tomorrow's dreams. Every piece tells a story, 
               every click reveals a <span 
@@ -105,7 +92,7 @@ export default function AboutPage() {
         </div>
       </div>
 
-      <section className="products-section" style={{ marginTop: '4rem' }}>
+      <section className="products-section section-spacing-medium">
         <div className="container">
           <h2 className="section-title">Our Digital DNA</h2>
           
@@ -137,16 +124,16 @@ export default function AboutPage() {
 
           {/* Stats Section */}
           <div className="stats-grid" style={{ margin: '4rem 0' }}>
-            <div className="product-card" style={{ textAlign: 'center', border: '2px solid var(--pink-main)' }}>
-              <h3 style={{ color: 'var(--pink-main)', fontSize: '3rem', marginBottom: '1rem' }}>500+</h3>
+            <div className="product-card stats-card">
+              <h3 className="stats-number">500+</h3>
               <p style={{ color: 'var(--cyan-accent)' }}>Unique Items Curated</p>
             </div>
-            <div className="product-card" style={{ textAlign: 'center', border: '2px solid var(--purple-accent)' }}>
-              <h3 style={{ color: 'var(--purple-accent)', fontSize: '3rem', marginBottom: '1rem' }}>2020</h3>
+            <div className="product-card stats-card purple">
+              <h3 className="stats-number purple">2020</h3>
               <p style={{ color: 'var(--yellow-neon)' }}>Founded in Kyiv</p>
             </div>
-            <div className="product-card" style={{ textAlign: 'center', border: '2px solid var(--green-neon)' }}>
-              <h3 style={{ color: 'var(--green-neon)', fontSize: '3rem', marginBottom: '1rem' }}>24/7</h3>
+            <div className="product-card stats-card green">
+              <h3 className="stats-number green">24/7</h3>
               <p style={{ color: 'var(--pink-main)' }}>Digital Experience</p>
             </div>
           </div>
@@ -213,29 +200,11 @@ export default function AboutPage() {
           </div>
 
           {/* Mission Statement */}
-          <div style={{
-            background: 'linear-gradient(45deg, rgba(255, 0, 150, 0.1), rgba(0, 255, 255, 0.1))',
-            borderRadius: '20px',
-            padding: '3rem',
-            border: '2px solid var(--pink-main)',
-            textAlign: 'center',
-            marginBottom: '4rem',
-            marginTop: '4rem'
-          }}>
-            <h3 style={{ 
-              color: 'var(--pink-main)', 
-              marginBottom: '2rem',
-              fontSize: '1.8rem'
-            }}>
+          <div className="mission-section">
+            <h3 className="mission-title">
               Our Mission
             </h3>
-            <p style={{ 
-              fontSize: '1.3rem', 
-              lineHeight: '1.7',
-              color: 'rgba(255,255,255,0.9)',
-              maxWidth: '800px',
-              margin: '0 auto'
-            }}>
+            <p className="mission-text">
               To bridge the gap between Ukrainian craftsmanship and global digital culture, 
               creating a space where tradition meets innovation, where every piece has a story, 
               and where the Y2K aesthetic lives on through contemporary eyes.

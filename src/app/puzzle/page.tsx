@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react'
 import { usePuzzle } from '@/contexts/PuzzleContext'
+import { Footer } from '@/components/Footer'
+import { PuzzleCard } from '@/components/PuzzleCard'
+import { AchievementCard } from '@/components/AchievementCard'
 
 export default function PuzzlePage() {
   const { state, findPiece, dispatch, showNotification } = usePuzzle()
@@ -34,10 +37,14 @@ export default function PuzzlePage() {
 
   const progressPercentage = (state.secretsFound / state.pieces.length) * 100
   const unlockedAchievements = state.achievements.filter(a => a.unlocked).length
+  
+  const handleHintToggle = (pieceId: string) => {
+    setSelectedHint(selectedHint === pieceId ? null : pieceId)
+  }
 
   return (
-    <div className="puzzle-hub">
-      <div className="hero-section" style={{ minHeight: '40vh' }}>
+    <div className="puzzle-hub" style={{ willChange: 'auto', transform: 'translateZ(0)' }}>
+      <div className="hero-section hero-compact" style={{ willChange: 'auto' }}>
         <div className="hero-overlay"></div>
         <div className="hero-content">
           <h1 className="hero-title glitch">Puzzle Hub</h1>
@@ -72,7 +79,7 @@ export default function PuzzlePage() {
         </div>
       </div>
 
-      <section className="products-section">
+      <section className="products-section section-spacing-medium">
         <div className="container">
           
           {/* Progress Overview */}
@@ -109,7 +116,9 @@ export default function PuzzlePage() {
             borderRadius: '20px',
             padding: '2rem',
             marginBottom: '3rem',
-            border: '2px solid var(--cyan-accent)'
+            border: '2px solid var(--cyan-accent)',
+            maxWidth: '500px',
+            margin: '0 auto 3rem'
           }}>
             <h3 style={{ color: 'var(--cyan-accent)', marginBottom: '1rem', textAlign: 'center' }}>
               Secret Code Entry
@@ -143,85 +152,14 @@ export default function PuzzlePage() {
 
           {/* Active Puzzles */}
           <h2 className="section-title">Active Puzzles</h2>
-          <div className="cards-grid">
+          <div className="cards-grid" style={{ willChange: 'auto', transform: 'translateZ(0)' }}>
             {state.pieces.filter(piece => !piece.found).map((piece) => (
-              <div 
+              <PuzzleCard 
                 key={piece.id}
-                className="product-card content-card"
-                style={{
-                  borderColor: piece.category === 'easter-egg' ? 'var(--yellow-neon)' : 
-                              piece.category === 'sequence' ? 'var(--purple-accent)' :
-                              piece.category === 'interactive' ? 'var(--cyan-accent)' : 'var(--pink-main)'
-                }}
-              >
-                <div style={{ 
-                  display: 'flex', 
-                  justifyContent: 'space-between', 
-                  alignItems: 'center',
-                  marginBottom: '1rem'
-                }}>
-                  <h3 style={{ color: 'var(--white)' }}>{piece.name}</h3>
-                  <span style={{
-                    background: piece.category === 'easter-egg' ? 'var(--yellow-neon)' : 
-                                piece.category === 'sequence' ? 'var(--purple-accent)' :
-                                piece.category === 'interactive' ? 'var(--cyan-accent)' : 'var(--pink-main)',
-                    color: 'var(--black)',
-                    padding: '0.25rem 0.5rem',
-                    borderRadius: '5px',
-                    fontSize: '0.8rem',
-                    fontWeight: 'bold',
-                    textTransform: 'uppercase'
-                  }}>
-                    {piece.category}
-                  </span>
-                </div>
-                
-                <p style={{ 
-                  color: 'rgba(255,255,255,0.8)', 
-                  marginBottom: '1rem',
-                  fontSize: '0.9rem'
-                }}>
-                  {piece.description}
-                </p>
-                
-                <p style={{ 
-                  color: 'var(--cyan-accent)', 
-                  marginBottom: '1rem',
-                  fontSize: '0.8rem'
-                }}>
-                  📍 Location: {piece.location}
-                </p>
-                
-                <button
-                  onClick={() => setSelectedHint(selectedHint === piece.id ? null : piece.id)}
-                  className="filter-btn"
-                  style={{ 
-                    width: '100%',
-                    background: selectedHint === piece.id ? 'var(--yellow-neon)' : 'transparent',
-                    color: selectedHint === piece.id ? 'var(--black)' : 'var(--yellow-neon)'
-                  }}
-                >
-                  {selectedHint === piece.id ? 'Hide Hint' : 'Show Hint'} 💡
-                </button>
-                
-                {selectedHint === piece.id && (
-                  <div style={{
-                    marginTop: '1rem',
-                    padding: '1rem',
-                    background: 'rgba(255, 255, 0, 0.1)',
-                    borderRadius: '10px',
-                    border: '1px solid var(--yellow-neon)'
-                  }}>
-                    <p style={{ 
-                      color: 'var(--yellow-neon)', 
-                      fontSize: '0.9rem',
-                      fontStyle: 'italic'
-                    }}>
-                      💡 {piece.hint}
-                    </p>
-                  </div>
-                )}
-              </div>
+                piece={piece}
+                onHintToggle={handleHintToggle}
+                showHint={selectedHint === piece.id}
+              />
             ))}
           </div>
 
@@ -273,69 +211,24 @@ export default function PuzzlePage() {
           )}
 
           {/* Achievements Display */}
-          <h2 className="section-title">Achievements</h2>
+          <h2 className="section-title" style={{ marginTop: 'var(--space-20)' }}>Achievements</h2>
           <div className="cards-grid">
             {state.achievements.map((achievement) => (
-              <div 
+              <AchievementCard 
                 key={achievement.id}
-                className="product-card content-card"
-                style={{
-                  borderColor: achievement.unlocked ? achievement.color : 'rgba(255,255,255,0.2)',
-                  background: achievement.unlocked 
-                    ? `linear-gradient(45deg, ${achievement.color}20, ${achievement.color}10)`
-                    : 'rgba(255,255,255,0.05)',
-                  opacity: achievement.unlocked ? 1 : 0.6,
-                  textAlign: 'center'
-                }}
-              >
-                <div style={{ 
-                  fontSize: '3rem', 
-                  marginBottom: '1rem',
-                  filter: achievement.unlocked ? `drop-shadow(0 0 20px ${achievement.color})` : 'grayscale(100%)'
-                }}>
-                  {achievement.icon}
-                </div>
-                <h3 style={{ 
-                  color: achievement.unlocked ? achievement.color : 'rgba(255,255,255,0.5)', 
-                  marginBottom: '0.5rem' 
-                }}>
-                  {achievement.name}
-                </h3>
-                <p style={{ 
-                  color: 'rgba(255,255,255,0.7)', 
-                  fontSize: '0.9rem',
-                  marginBottom: '0.5rem'
-                }}>
-                  {achievement.description}
-                </p>
-                <p style={{ 
-                  color: 'var(--cyan-accent)', 
-                  fontSize: '0.8rem'
-                }}>
-                  {achievement.requirement}
-                </p>
-                {achievement.unlocked && achievement.unlockedAt && (
-                  <p style={{ 
-                    color: 'var(--purple-accent)', 
-                    fontSize: '0.7rem',
-                    marginTop: '0.5rem'
-                  }}>
-                    Unlocked: {achievement.unlockedAt.toLocaleString()}
-                  </p>
-                )}
-              </div>
+                achievement={achievement}
+              />
             ))}
           </div>
 
           {/* Controls */}
-          <div style={{
-            background: 'rgba(255,255,255,0.05)',
-            borderRadius: '20px',
-            padding: '2rem',
-            marginTop: '6rem',
-            paddingTop: '2rem',
+          <div className="product-card" style={{
+            marginTop: 'var(--space-20)',
+            padding: 'var(--space-8)',
             textAlign: 'center',
-            border: '2px solid var(--purple-accent)'
+            border: '2px solid var(--purple-accent)',
+            maxWidth: '600px',
+            margin: 'var(--space-20) auto 0'
           }}>
             <h3 style={{ color: 'var(--purple-accent)', marginBottom: '1rem' }}>
               Puzzle Controls
@@ -371,6 +264,8 @@ export default function PuzzlePage() {
           </div>
         </div>
       </section>
+      
+      <Footer />
     </div>
   )
 }

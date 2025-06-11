@@ -1,9 +1,21 @@
 'use client'
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, memo } from 'react'
 import { useClientOnly } from '@/hooks/useClientOnly'
 
-export function CustomCursor() {
+// Throttle function for better performance
+function throttle(func: Function, limit: number) {
+  let inThrottle: boolean
+  return function(this: any, ...args: any[]) {
+    if (!inThrottle) {
+      func.apply(this, args)
+      inThrottle = true
+      setTimeout(() => inThrottle = false, limit)
+    }
+  }
+}
+
+function CustomCursorComponent() {
   const isClient = useClientOnly()
   const cursorRef = useRef<HTMLDivElement>(null)
   const trailRefs = useRef<HTMLDivElement[]>([])
@@ -42,27 +54,23 @@ export function CustomCursor() {
     const handleMouseMove = (e: MouseEvent) => {
       const { clientX, clientY } = e
       
-      // Update cursor position
-      cursor.style.left = `${clientX - 10}px`
-      cursor.style.top = `${clientY - 10}px`
+      // Optimized cursor position update
+      cursor.style.transform = `translate3d(${clientX - 10}px, ${clientY - 10}px, 0)`
       cursor.style.opacity = '1'
 
       // Store mouse position for trail
       mousePositions.unshift({ x: clientX, y: clientY })
       if (mousePositions.length > trailCount) {
-        mousePositions.splice(trailCount)
+        mousePositions.length = trailCount
       }
 
-      // Update trail positions with delay
+      // Immediate trail updates without setTimeout for better performance
       trailRefs.current.forEach((trail, index) => {
-        setTimeout(() => {
-          const pos = mousePositions[index]
-          if (pos) {
-            trail.style.left = `${pos.x - 3}px`
-            trail.style.top = `${pos.y - 3}px`
-            trail.style.opacity = `${(trailCount - index) / trailCount * 0.7}`
-          }
-        }, index * 20)
+        const pos = mousePositions[index + 1]
+        if (pos) {
+          trail.style.transform = `translate3d(${pos.x - 3}px, ${pos.y - 3}px, 0)`
+          trail.style.opacity = `${(trailCount - index) / trailCount * 0.6}`
+        }
       })
     }
 
@@ -77,25 +85,29 @@ export function CustomCursor() {
       })
     }
 
-    // Add event listeners
-    document.addEventListener('mousemove', handleMouseMove)
+    // Add throttled event listeners for better performance
+    const throttledMouseMove = throttle(handleMouseMove, 16) // ~60fps
+    document.addEventListener('mousemove', throttledMouseMove, { passive: true })
     document.addEventListener('mouseenter', handleMouseEnter)
     document.addEventListener('mouseleave', handleMouseLeave)
 
-    // Show cursor initially
-    cursor.style.opacity = '1'
-    cursor.style.position = 'fixed'
-    cursor.style.width = '20px'
-    cursor.style.height = '20px'
-    cursor.style.background = 'linear-gradient(45deg, var(--pink-main), var(--cyan-accent))'
-    cursor.style.borderRadius = '50%'
-    cursor.style.pointerEvents = 'none'
-    cursor.style.zIndex = '9999'
-    cursor.style.transition = 'transform 0.1s ease'
-    cursor.style.mixBlendMode = 'difference'
+    // Optimized cursor initialization
+    cursor.style.cssText = `
+      position: fixed;
+      width: 20px;
+      height: 20px;
+      background: linear-gradient(45deg, var(--pink-main), var(--cyan-accent));
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 1;
+      mix-blend-mode: difference;
+      will-change: transform;
+      transform: translate3d(0, 0, 0);
+    `
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mousemove', throttledMouseMove)
       document.removeEventListener('mouseenter', handleMouseEnter)
       document.removeEventListener('mouseleave', handleMouseLeave)
       
@@ -116,3 +128,5 @@ export function CustomCursor() {
 
   return <div ref={cursorRef} className="cursor" />
 }
+
+export const CustomCursor = memo(CustomCursorComponent)

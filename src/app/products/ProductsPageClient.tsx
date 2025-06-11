@@ -90,7 +90,7 @@ export default function ProductsPageClient() {
   return (
     <div style={{ minHeight: '100vh' }}>
       {/* Hero Section */}
-      <section className="hero-section" style={{ height: '40vh', position: 'relative', marginBottom: '4rem' }}>
+      <section className="hero-section hero-compact">
         <div className="hero-overlay" style={{ background: 'linear-gradient(135deg, rgba(0,255,255,0.6), rgba(255,107,157,0.6))' }}></div>
         
         <div className="hero-content" style={{ textAlign: 'center' }}>
@@ -104,7 +104,7 @@ export default function ProductsPageClient() {
       </section>
 
       {/* Category Filters */}
-      <section className="products-section" style={{ marginTop: '6rem' }}>
+      <section className="products-section section-spacing-medium">
         <div style={{ marginBottom: '3rem' }}>
           <div className="filter-bar" style={{ marginBottom: '2rem', textAlign: 'center' }}>
             {categories.map((category) => (
@@ -152,7 +152,7 @@ export default function ProductsPageClient() {
 
       {/* Categories Showcase */}
       {activeCategory === 'all' && (
-        <section className="products-section" style={{ background: 'rgba(0,0,0,0.3)', marginTop: '6rem' }}>
+        <section className="products-section section-spacing-large">
           <h2 className="section-title glitch">
             Browse by Category
           </h2>

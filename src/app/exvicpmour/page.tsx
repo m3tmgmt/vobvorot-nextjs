@@ -36,7 +36,7 @@ export default function ExvicpmourPage() {
   return (
     <div style={{ minHeight: '100vh' }}>
       {/* Hero Section */}
-      <section className="hero-section" style={{ height: '60vh', position: 'relative', marginBottom: '4rem' }}>
+      <section className="hero-section hero-small">
         <div className="hero-overlay" style={{ background: 'linear-gradient(135deg, rgba(255,107,157,0.8), rgba(0,255,255,0.6))' }}></div>
         
         <div className="hero-content" style={{ textAlign: 'center' }}>
@@ -54,7 +54,7 @@ export default function ExvicpmourPage() {
       </section>
 
       {/* Products Section */}
-      <section className="products-section" style={{ marginTop: '6rem' }}>
+      <section className="products-section section-spacing-medium">
         <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
           <h2 className="section-title glitch">
             EXVICPMOUR Collection
@@ -108,7 +108,7 @@ export default function ExvicpmourPage() {
       </section>
 
       {/* Brand Story Section */}
-      <section className="products-section" style={{ background: 'rgba(0,0,0,0.3)', marginTop: '6rem' }}>
+      <section className="products-section section-spacing-large">
         <div className="container" style={{ textAlign: 'center' }}>
           <h2 className="section-title glitch">
             The EXVICPMOUR Story
