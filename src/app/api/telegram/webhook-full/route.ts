@@ -1015,6 +1015,9 @@ async function getCurrentVideoInfo(chatId: number) {
 
 async function initializeGalleryWithDefault(chatId: number) {
   try {
+    // Сначала очищаем пустые записи видео
+    await cleanupEmptyVideoRecords()
+    
     // Добавляем дефолтное видео прямо в базу данных
     const defaultVideoUrl = "/assets/videos/hero2.mp4"
     
@@ -1047,6 +1050,39 @@ async function initializeGalleryWithDefault(chatId: number) {
   } catch (error) {
     console.error('Error initializing gallery:', error)
     await sendTelegramMessage(chatId, '❌ Ошибка инициализации галереи')
+  }
+}
+
+async function cleanupEmptyVideoRecords() {
+  try {
+    // Удаляем все пустые записи видео
+    const deleteResult = await prisma.setting.deleteMany({
+      where: {
+        OR: [
+          {
+            key: {
+              startsWith: 'home_video'
+            },
+            value: ''
+          },
+          {
+            key: {
+              startsWith: 'home_video'
+            },
+            value: null
+          }
+        ]
+      }
+    })
+    
+    await saveDebugLog('cleanup_empty_videos', {
+      deleted_count: deleteResult.count,
+      message: 'Cleaned up empty video records'
+    })
+    
+    console.log(`Cleaned up ${deleteResult.count} empty video records`)
+  } catch (error) {
+    console.error('Error cleaning up empty video records:', error)
   }
 }
 
