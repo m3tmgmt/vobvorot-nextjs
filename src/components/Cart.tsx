@@ -133,10 +133,10 @@ export function Cart() {
                 onClick={() => {
                   console.log('Cart: Proceeding to checkout with items:', state.items.length)
                   dispatch({ type: 'TOGGLE_CART' })
-                  router.push('/checkout')
+                  router.push('/test-checkout')
                 }}
               >
-                Proceed to Checkout
+                Proceed to Checkout (Test)
               </button>
             </div>
           </>
