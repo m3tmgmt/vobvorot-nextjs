@@ -5,8 +5,8 @@ export async function GET() {
   try {
     console.log('Testing simple video upload to Cloudinary...')
     
-    // Тест с маленьким видео URL (около 1MB)
-    const testVideoUrl = 'https://sample-videos.com/zip/10/mp4/SampleVideo_360x240_1mb.mp4'
+    // Тест с маленьким видео URL (около 10MB)
+    const testVideoUrl = 'https://www.learningcontainer.com/wp-content/uploads/2020/05/sample-mp4-file.mp4'
     
     console.log('Uploading test video from:', testVideoUrl)
     
