@@ -3,7 +3,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function PUT(request: NextRequest) {
   try {
-    // Проверка авторизации
+    // Проверка авторизации для изменений
     const authHeader = request.headers.get('authorization')
     const expectedToken = `Bearer ${process.env.ADMIN_API_KEY}`
     
