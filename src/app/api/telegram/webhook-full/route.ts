@@ -122,6 +122,24 @@ async function handleCallbackQuery(callbackQuery: any) {
     case 'back_video':
       await sendVideoMenu(chatId)
       break
+    case 'categories':
+      await sendCategoriesMenu(chatId)
+      break
+    case 'categories_list':
+      await sendCategoriesList(chatId)
+      break
+    case 'add_category':
+      await startCreateCategory(chatId, userId)
+      break
+    case 'edit_category':
+      await sendCategoriesListForEdit(chatId)
+      break
+    case 'delete_category':
+      await sendCategoriesListForDelete(chatId)
+      break
+    case 'back_categories':
+      await sendCategoriesMenu(chatId)
+      break
     case 'create_new_category':
       await startCreateCategory(chatId, userId)
       break
@@ -220,6 +238,36 @@ async function handleCallbackQuery(callbackQuery: any) {
         const videoId = parts.slice(1).join('_')
         await confirmProductVideoDelete(chatId, productId, videoId)
       }
+      // ===== НОВЫЕ HANDLERS ДЛЯ КАТЕГОРИЙ =====
+      // Редактирование конкретной категории
+      else if (data.startsWith('edit_category_')) {
+        const categoryId = data.replace('edit_category_', '')
+        await sendCategoryEditMenu(chatId, categoryId)
+      }
+      // Редактирование названия категории
+      else if (data.startsWith('edit_category_name_')) {
+        const categoryId = data.replace('edit_category_name_', '')
+        await startEditCategoryName(chatId, userId, categoryId)
+      }
+      // Переключение статуса категории
+      else if (data.startsWith('toggle_category_status_')) {
+        const categoryId = data.replace('toggle_category_status_', '')
+        await toggleCategoryStatus(chatId, categoryId)
+      }
+      // Удаление категории
+      else if (data.startsWith('delete_category_')) {
+        const categoryId = data.replace('delete_category_', '')
+        await confirmCategoryDelete(chatId, categoryId)
+      }
+      // Подтверждение удаления категории
+      else if (data.startsWith('confirm_delete_category_')) {
+        const categoryId = data.replace('confirm_delete_category_', '')
+        await executeCategoryDelete(chatId, categoryId)
+      }
+      // Отмена удаления категории
+      else if (data.startsWith('cancel_delete_category_')) {
+        await sendCategoriesListForDelete(chatId)
+      }
       break
   }
 }
@@ -290,7 +338,10 @@ async function sendWelcomeMessage(chatId: number, userId: number) {
         { text: '🛍️ Товары', callback_data: 'products' }
       ],
       [
-        { text: '📊 Статистика', callback_data: 'stats' },
+        { text: '🏷️ Категории', callback_data: 'categories' },
+        { text: '📊 Статистика', callback_data: 'stats' }
+      ],
+      [
         { text: '🎬 Видео главной', callback_data: 'video' }
       ]
     ]
@@ -307,7 +358,10 @@ async function sendMainMenu(chatId: number) {
         { text: '🛍️ Товары', callback_data: 'products' }
       ],
       [
-        { text: '📊 Статистика', callback_data: 'stats' },
+        { text: '🏷️ Категории', callback_data: 'categories' },
+        { text: '📊 Статистика', callback_data: 'stats' }
+      ],
+      [
         { text: '🎬 Видео главной', callback_data: 'video' }
       ]
     ]
@@ -579,6 +633,10 @@ async function handleUserState(message: any, userState: any) {
       return await handleEditProductDescription(chatId, userId, text)
     case 'edit_product_price':
       return await handleEditProductPrice(chatId, userId, text)
+    case 'creating_category':
+      return await handleCreateCategory(chatId, userId, text, userState)
+    case 'editing_category_name':
+      return await handleEditCategoryNameInput(chatId, userId, text, userState)
     default:
       // Неизвестное состояние, сбрасываем
       userStates.delete(userId.toString())
@@ -2471,4 +2529,466 @@ export async function GET(request: NextRequest) {
       delete: '?action=delete'
     }
   })
+}
+
+// ===== ФУНКЦИИ ДЛЯ УПРАВЛЕНИЯ КАТЕГОРИЯМИ =====
+
+async function sendCategoriesMenu(chatId: number) {
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: '📋 Список категорий', callback_data: 'categories_list' }
+      ],
+      [
+        { text: '➕ Добавить категорию', callback_data: 'add_category' }
+      ],
+      [
+        { text: '📝 Редактировать', callback_data: 'edit_category' },
+        { text: '🗑️ Удалить', callback_data: 'delete_category' }
+      ],
+      [
+        { text: '⬅️ Назад', callback_data: 'back_main' }
+      ]
+    ]
+  }
+
+  await sendTelegramMessage(chatId, '🏷️ *Управление категориями:*', true, keyboard)
+}
+
+async function sendCategoriesList(chatId: number) {
+  try {
+    const categories = await prisma.category.findMany({
+      orderBy: { sortOrder: 'asc' },
+      include: {
+        _count: {
+          select: { products: true }
+        }
+      }
+    })
+
+    if (categories.length === 0) {
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '➕ Создать первую категорию', callback_data: 'add_category' }],
+          [{ text: '⬅️ Назад', callback_data: 'back_categories' }]
+        ]
+      }
+      await sendTelegramMessage(chatId, '📝 *Категорий пока нет*\n\nСоздайте первую категорию для добавления товаров.', true, keyboard)
+      return
+    }
+
+    let message = '📋 *Список категорий:*\n\n'
+    
+    categories.forEach((category, index) => {
+      const status = category.isActive ? '✅' : '❌'
+      const products = category._count.products
+      message += `${index + 1}. ${status} *${category.name}*\n`
+      message += `   📁 Товаров: ${products}\n`
+      message += `   🔑 ID: ${category.id}\n\n`
+    })
+
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '⬅️ Назад', callback_data: 'back_categories' }]
+      ]
+    }
+
+    await sendTelegramMessage(chatId, message, true, keyboard)
+  } catch (error) {
+    console.error('Error sending categories list:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка получения списка категорий')
+  }
+}
+
+async function sendCategoriesListForEdit(chatId: number) {
+  try {
+    const categories = await prisma.category.findMany({
+      orderBy: { sortOrder: 'asc' }
+    })
+
+    if (categories.length === 0) {
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '➕ Создать первую категорию', callback_data: 'add_category' }],
+          [{ text: '⬅️ Назад', callback_data: 'back_categories' }]
+        ]
+      }
+      await sendTelegramMessage(chatId, '📝 *Нет категорий для редактирования*', true, keyboard)
+      return
+    }
+
+    const inlineKeyboard = []
+    for (const category of categories) {
+      const status = category.isActive ? '✅' : '❌'
+      inlineKeyboard.push([{
+        text: `${status} ${category.name}`,
+        callback_data: `edit_category_${category.id}`
+      }])
+    }
+    
+    inlineKeyboard.push([{ text: '⬅️ Назад', callback_data: 'back_categories' }])
+
+    const keyboard = { inline_keyboard: inlineKeyboard }
+    await sendTelegramMessage(chatId, '📝 *Выберите категорию для редактирования:*', true, keyboard)
+  } catch (error) {
+    console.error('Error sending categories list for edit:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка получения списка категорий')
+  }
+}
+
+async function sendCategoriesListForDelete(chatId: number) {
+  try {
+    const categories = await prisma.category.findMany({
+      orderBy: { sortOrder: 'asc' },
+      include: {
+        _count: {
+          select: { products: true }
+        }
+      }
+    })
+
+    if (categories.length === 0) {
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '⬅️ Назад', callback_data: 'back_categories' }]
+        ]
+      }
+      await sendTelegramMessage(chatId, '🗑️ *Нет категорий для удаления*', true, keyboard)
+      return
+    }
+
+    const inlineKeyboard = []
+    for (const category of categories) {
+      const products = category._count.products
+      const warningIcon = products > 0 ? '⚠️' : '🗑️'
+      inlineKeyboard.push([{
+        text: `${warningIcon} ${category.name} (${products} товаров)`,
+        callback_data: `delete_category_${category.id}`
+      }])
+    }
+    
+    inlineKeyboard.push([{ text: '⬅️ Назад', callback_data: 'back_categories' }])
+
+    const keyboard = { inline_keyboard: inlineKeyboard }
+    await sendTelegramMessage(chatId, '🗑️ *Выберите категорию для удаления:*\n\n⚠️ Категории с товарами удалить нельзя', true, keyboard)
+  } catch (error) {
+    console.error('Error sending categories list for delete:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка получения списка категорий')
+  }
+}
+
+async function sendCategoryEditMenu(chatId: number, categoryId: string) {
+  try {
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId },
+      include: {
+        _count: {
+          select: { products: true }
+        }
+      }
+    })
+
+    if (!category) {
+      await sendTelegramMessage(chatId, '❌ Категория не найдена')
+      return
+    }
+
+    const status = category.isActive ? 'Активна ✅' : 'Неактивна ❌'
+    const products = category._count.products
+
+    const message = `📝 *Редактирование категории:*\n\n` +
+                   `📁 Название: *${category.name}*\n` +
+                   `📊 Статус: ${status}\n` +
+                   `🛍️ Товаров: ${products}\n` +
+                   `🔑 ID: ${category.id}`
+
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '✏️ Изменить название', callback_data: `edit_category_name_${categoryId}` }
+        ],
+        [
+          { text: category.isActive ? '❌ Деактивировать' : '✅ Активировать', callback_data: `toggle_category_status_${categoryId}` }
+        ],
+        [
+          { text: '⬅️ Назад', callback_data: 'edit_category' }
+        ]
+      ]
+    }
+
+    await sendTelegramMessage(chatId, message, true, keyboard)
+  } catch (error) {
+    console.error('Error sending category edit menu:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка получения информации о категории')
+  }
+}
+
+async function startCreateCategory(chatId: number, userId: number) {
+  userStates.set(userId.toString(), {
+    action: 'creating_category',
+    step: 'name',
+    data: {}
+  })
+
+  await sendTelegramMessage(chatId, '➕ *Создание новой категории*\n\n📝 Введите название категории:')
+}
+
+async function startEditCategoryName(chatId: number, userId: number, categoryId: string) {
+  try {
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId }
+    })
+
+    if (!category) {
+      await sendTelegramMessage(chatId, '❌ Категория не найдена')
+      return
+    }
+
+    userStates.set(userId.toString(), {
+      action: 'editing_category_name',
+      step: 'name',
+      data: { categoryId }
+    })
+
+    await sendTelegramMessage(chatId, `✏️ *Редактирование названия категории*\n\nТекущее название: *${category.name}*\n\n📝 Введите новое название:`)
+  } catch (error) {
+    console.error('Error starting category name edit:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка получения информации о категории')
+  }
+}
+
+async function toggleCategoryStatus(chatId: number, categoryId: string) {
+  try {
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId }
+    })
+
+    if (!category) {
+      await sendTelegramMessage(chatId, '❌ Категория не найдена')
+      return
+    }
+
+    const updatedCategory = await prisma.category.update({
+      where: { id: categoryId },
+      data: { isActive: !category.isActive }
+    })
+
+    const newStatus = updatedCategory.isActive ? 'активирована ✅' : 'деактивирована ❌'
+    await sendTelegramMessage(chatId, `✅ Категория "*${updatedCategory.name}*" ${newStatus}`)
+    
+    // Возвращаемся к меню редактирования категории
+    await sendCategoryEditMenu(chatId, categoryId)
+  } catch (error) {
+    console.error('Error toggling category status:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка изменения статуса категории')
+  }
+}
+
+async function confirmCategoryDelete(chatId: number, categoryId: string) {
+  try {
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId },
+      include: {
+        _count: {
+          select: { products: true }
+        }
+      }
+    })
+
+    if (!category) {
+      await sendTelegramMessage(chatId, '❌ Категория не найдена')
+      return
+    }
+
+    const products = category._count.products
+
+    if (products > 0) {
+      await sendTelegramMessage(chatId, `❌ *Нельзя удалить категорию "${category.name}"*\n\nВ ней находится ${products} товаров. Сначала удалите или переместите все товары в другие категории.`)
+      return
+    }
+
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '✅ Да, удалить', callback_data: `confirm_delete_category_${categoryId}` },
+          { text: '❌ Отмена', callback_data: `cancel_delete_category_${categoryId}` }
+        ]
+      ]
+    }
+    
+    await sendTelegramMessage(
+      chatId, 
+      `🗑️ *Подтверждение удаления*\n\n📁 Категория: *${category.name}*\n\n❗ Это действие нельзя отменить!`, 
+      true, 
+      keyboard
+    )
+  } catch (error) {
+    console.error('Error confirming category delete:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка получения информации о категории')
+  }
+}
+
+async function executeCategoryDelete(chatId: number, categoryId: string) {
+  try {
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId },
+      include: {
+        _count: {
+          select: { products: true }
+        }
+      }
+    })
+
+    if (!category) {
+      await sendTelegramMessage(chatId, '❌ Категория не найдена')
+      return
+    }
+
+    if (category._count.products > 0) {
+      await sendTelegramMessage(chatId, '❌ Нельзя удалить категорию с товарами')
+      return
+    }
+
+    await prisma.category.delete({
+      where: { id: categoryId }
+    })
+    
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '⬅️ Назад к категориям', callback_data: 'back_categories' }]
+      ]
+    }
+    
+    await sendTelegramMessage(chatId, `✅ Категория "*${category.name}*" успешно удалена!`, false, keyboard)
+  } catch (error) {
+    console.error('Error executing category delete:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка удаления категории')
+  }
+}
+
+// ===== ФУНКЦИИ ДЛЯ ОБРАБОТКИ ВВОДА ПОЛЬЗОВАТЕЛЯ ПРИ РАБОТЕ С КАТЕГОРИЯМИ =====
+
+async function handleCreateCategory(chatId: number, userId: number, text: string, userState: any) {
+  if (!text || text.startsWith('/')) {
+    await sendTelegramMessage(chatId, '❌ Пожалуйста, введите корректное название категории')
+    return
+  }
+
+  if (text.length > 50) {
+    await sendTelegramMessage(chatId, '❌ Название категории слишком длинное (максимум 50 символов)')
+    return
+  }
+
+  try {
+    // Проверяем, не существует ли уже категория с таким названием
+    const existingCategory = await prisma.category.findFirst({
+      where: {
+        name: {
+          equals: text,
+          mode: 'insensitive'
+        }
+      }
+    })
+
+    if (existingCategory) {
+      await sendTelegramMessage(chatId, `❌ Категория с названием "${text}" уже существует. Выберите другое название.`)
+      return
+    }
+
+    // Создаем slug из названия
+    const slug = text
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .trim()
+    
+    // Создаем категорию
+    const category = await prisma.category.create({
+      data: {
+        name: text,
+        slug: slug + '-' + Date.now(),
+        isActive: true,
+        sortOrder: 0
+      }
+    })
+    
+    // Очищаем состояние пользователя
+    userStates.delete(userId.toString())
+    
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '➕ Создать еще категорию', callback_data: 'add_category' },
+          { text: '📋 Список категорий', callback_data: 'categories_list' }
+        ],
+        [
+          { text: '⬅️ Назад к категориям', callback_data: 'back_categories' }
+        ]
+      ]
+    }
+    
+    await sendTelegramMessage(
+      chatId,
+      `✅ *Категория успешно создана!*\n\n📁 Название: ${category.name}\n🔑 ID: ${category.id}\n📊 Статус: Активна ✅`,
+      true,
+      keyboard
+    )
+    
+  } catch (error) {
+    console.error('Error creating category:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка создания категории. Попробуйте еще раз.')
+  }
+}
+
+async function handleEditCategoryNameInput(chatId: number, userId: number, text: string, userState: any) {
+  if (!text || text.startsWith('/')) {
+    await sendTelegramMessage(chatId, '❌ Пожалуйста, введите корректное название категории')
+    return
+  }
+
+  if (text.length > 50) {
+    await sendTelegramMessage(chatId, '❌ Название категории слишком длинное (максимум 50 символов)')
+    return
+  }
+
+  const categoryId = userState.data.categoryId
+
+  try {
+    // Проверяем, не существует ли уже категория с таким названием (кроме текущей)
+    const existingCategory = await prisma.category.findFirst({
+      where: {
+        name: {
+          equals: text,
+          mode: 'insensitive'
+        },
+        id: {
+          not: categoryId
+        }
+      }
+    })
+
+    if (existingCategory) {
+      await sendTelegramMessage(chatId, `❌ Категория с названием "${text}" уже существует. Выберите другое название.`)
+      return
+    }
+
+    // Обновляем категорию
+    const updatedCategory = await prisma.category.update({
+      where: { id: categoryId },
+      data: { name: text }
+    })
+    
+    // Очищаем состояние пользователя
+    userStates.delete(userId.toString())
+    
+    await sendTelegramMessage(chatId, `✅ Название категории изменено на "*${updatedCategory.name}*"`)
+    
+    // Возвращаемся к меню редактирования категории
+    await sendCategoryEditMenu(chatId, categoryId)
+    
+  } catch (error) {
+    console.error('Error updating category name:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка изменения названия категории. Попробуйте еще раз.')
+  }
 }
