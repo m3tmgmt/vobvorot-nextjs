@@ -218,6 +218,9 @@ async function handleMessage(message: any) {
       case '/products':
         await sendProductsMenu(chatId)
         break
+      case '/fix_gallery':
+        await fixGalleryManually(chatId)
+        break
       default:
         if (text.startsWith('/')) {
           await sendTelegramMessage(chatId, `❓ Неизвестная команда: ${text}\n\nИспользуйте /start для главного меню`)
@@ -1083,6 +1086,57 @@ async function cleanupEmptyVideoRecords() {
     console.log(`Cleaned up ${deleteResult.count} empty video records`)
   } catch (error) {
     console.error('Error cleaning up empty video records:', error)
+  }
+}
+
+async function fixGalleryManually(chatId: number) {
+  try {
+    await sendTelegramMessage(chatId, '🔧 Исправляю галерею видео...')
+    
+    // Очищаем пустые записи
+    await cleanupEmptyVideoRecords()
+    
+    // Проверяем, есть ли видео после очистки
+    const existingVideos = await prisma.setting.findMany({
+      where: {
+        key: {
+          startsWith: 'home_video_'
+        }
+      }
+    })
+    
+    if (existingVideos.length === 0) {
+      // Добавляем дефолтное видео
+      const defaultVideo = await prisma.setting.create({
+        data: {
+          key: `home_video_${Date.now()}`,
+          value: '/assets/videos/hero2.mp4'
+        }
+      })
+      
+      await saveDebugLog('manual_gallery_fix', {
+        video_id: defaultVideo.key,
+        video_url: defaultVideo.value,
+        message: 'Gallery fixed manually via /fix_gallery command'
+      })
+    }
+    
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '🎬 Проверить галерею', callback_data: 'current_video' }],
+        [{ text: '🏠 Главное меню', callback_data: 'back_main' }]
+      ]
+    }
+    
+    await sendTelegramMessage(
+      chatId, 
+      '✅ *Галерея исправлена!*\n\nПустые записи удалены, дефолтное видео добавлено.\n\nТеперь все функции должны работать корректно.', 
+      true, 
+      keyboard
+    )
+  } catch (error) {
+    console.error('Error fixing gallery manually:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка при исправлении галереи')
   }
 }
 
