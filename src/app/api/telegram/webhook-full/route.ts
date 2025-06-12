@@ -1467,8 +1467,31 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
         result = await cloudinaryService.uploadFromUrl(fileUrl, basicOptions)
         console.log('Video uploaded successfully with basic options:', result.secure_url)
       } catch (basicError) {
-        console.error('Basic upload also failed:', basicError)
-        throw basicError
+        console.warn('Basic URL upload also failed, trying buffer upload:', basicError)
+        
+        // Третий подход: загрузка через буфер
+        try {
+          console.log('Fetching video data as buffer...')
+          const videoResponse = await fetch(fileUrl)
+          
+          if (!videoResponse.ok) {
+            throw new Error(`Failed to fetch video: ${videoResponse.status} ${videoResponse.statusText}`)
+          }
+          
+          const videoBuffer = Buffer.from(await videoResponse.arrayBuffer())
+          console.log('Video buffer size:', videoBuffer.length)
+          
+          result = await cloudinaryService.uploadFromBuffer(videoBuffer, {
+            folder: 'vobvorot-videos',
+            resource_type: 'video',
+            overwrite: true,
+            unique_filename: true
+          })
+          console.log('Video uploaded successfully via buffer:', result.secure_url)
+        } catch (bufferError) {
+          console.error('Buffer upload also failed:', bufferError)
+          throw bufferError
+        }
       }
     }
     
