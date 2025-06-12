@@ -31,7 +31,7 @@ export async function POST(request: NextRequest) {
         url: result.secure_url,
         publicId: result.public_id,
         format: result.format,
-        duration: result.duration,
+        duration: (result as any).duration || 'N/A',
         size: result.bytes
       }
     })
