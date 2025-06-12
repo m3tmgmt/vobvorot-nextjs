@@ -29,6 +29,8 @@ function NavigationComponent() {
       wishlistDispatch({ type: 'TOGGLE_WISHLIST' })
     }
     dispatch({ type: 'TOGGLE_CART' })
+    // Закрываем навигационное меню на мобильных устройствах
+    setIsOpen(false)
   }
 
   const toggleWishlist = () => {
@@ -37,6 +39,8 @@ function NavigationComponent() {
       dispatch({ type: 'TOGGLE_CART' })
     }
     wishlistDispatch({ type: 'TOGGLE_WISHLIST' })
+    // Закрываем навигационное меню на мобильных устройствах
+    setIsOpen(false)
   }
 
   return (
@@ -44,9 +48,9 @@ function NavigationComponent() {
       {/* Hamburger Menu Button */}
       <button 
         className="nav-toggle"
-        onClick={() => setIsOpen(true)}
+        onClick={() => setIsOpen(!isOpen)}
       >
-        ☰
+        {isOpen ? '✕' : '☰'}
       </button>
 
       {/* Navigation Sidebar */}
@@ -76,7 +80,7 @@ function NavigationComponent() {
                   setIsOpen(false)
                 }}
               >
-                🏠  Home Base
+                💒  Main Energy
               </button>
             </li>
             <li>
@@ -96,7 +100,7 @@ function NavigationComponent() {
                   setIsOpen(false)
                 }}
               >
-                🛍️  Digital Catalog
+                🛍️  Icons For Sale
               </button>
             </li>
             <li>
@@ -106,7 +110,7 @@ function NavigationComponent() {
                   setIsOpen(false)
                 }}
               >
-                🎓  Digital Academy
+                🐇  Health, But Hotter
               </button>
             </li>
             <li>
@@ -126,7 +130,7 @@ function NavigationComponent() {
                   setIsOpen(false)
                 }}
               >
-                🌐  Digital Collective
+                🪽  Creative Ties
               </button>
             </li>
             <li>
@@ -146,12 +150,12 @@ function NavigationComponent() {
                   setIsOpen(false)
                 }}
               >
-                ✍️  Your Name, My Pic
+                💎  Your Name, My Pic
               </button>
             </li>
             <li>
               <button onClick={toggleCart}>
-                🛒  Digital Bag
+                🛒  Almost Yours
                 {mounted && state.itemCount > 0 && (
                   <span className="cart-count">{state.itemCount}</span>
                 )}

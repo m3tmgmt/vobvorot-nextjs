@@ -38,6 +38,26 @@ export default function PuzzlePage() {
   const progressPercentage = (state.secretsFound / state.pieces.length) * 100
   const unlockedAchievements = state.achievements.filter(a => a.unlocked).length
   
+  // Подсчет элементов для grid центрирования
+  const activePuzzles = state.pieces.filter(piece => !piece.found)
+  const completedPuzzles = state.pieces.filter(piece => piece.found)
+  
+  // Функция для добавления пустой карточки если нужно центрировать последний элемент
+  const addSpacerIfNeeded = (items: any[], renderItem: (item: any) => React.ReactNode) => {
+    const elements = items.map(renderItem)
+    
+    // Если количество нечетное и больше 1, добавляем невидимую карточку для центрирования
+    if (items.length > 1 && items.length % 2 === 1) {
+      elements.push(
+        <div key="spacer" style={{ visibility: 'hidden', pointerEvents: 'none' }} className="product-card">
+          {/* Пустая карточка для выравнивания */}
+        </div>
+      )
+    }
+    
+    return elements
+  }
+  
   const handleHintToggle = (pieceId: string) => {
     setSelectedHint(selectedHint === pieceId ? null : pieceId)
   }
@@ -152,8 +172,12 @@ export default function PuzzlePage() {
 
           {/* Active Puzzles */}
           <h2 className="section-title">Active Puzzles</h2>
-          <div className="cards-grid" style={{ willChange: 'auto', transform: 'translateZ(0)' }}>
-            {state.pieces.filter(piece => !piece.found).map((piece) => (
+          <div 
+            className={`puzzle-grid ${activePuzzles.length === 1 ? 'single-item' : ''}`}
+            data-count={activePuzzles.length}
+            style={{ willChange: 'auto', transform: 'translateZ(0)' }}
+          >
+            {addSpacerIfNeeded(activePuzzles, (piece) => (
               <PuzzleCard 
                 key={piece.id}
                 piece={piece}
@@ -164,11 +188,14 @@ export default function PuzzlePage() {
           </div>
 
           {/* Completed Puzzles */}
-          {state.pieces.some(piece => piece.found) && (
+          {completedPuzzles.length > 0 && (
             <>
               <h2 className="section-title" style={{ marginTop: 'var(--space-20)' }}>Completed Puzzles</h2>
-              <div className="cards-grid">
-                {state.pieces.filter(piece => piece.found).map((piece) => (
+              <div 
+                className={`puzzle-grid ${completedPuzzles.length === 1 ? 'single-item' : ''}`}
+                data-count={completedPuzzles.length}
+              >
+                {addSpacerIfNeeded(completedPuzzles, (piece) => (
                   <div 
                     key={piece.id}
                     className="product-card content-card"
@@ -212,7 +239,7 @@ export default function PuzzlePage() {
 
           {/* Achievements Display */}
           <h2 className="section-title" style={{ marginTop: 'var(--space-20)' }}>Achievements</h2>
-          <div className="cards-grid">
+          <div className="achievements-grid">
             {state.achievements.map((achievement) => (
               <AchievementCard 
                 key={achievement.id}

@@ -27,8 +27,9 @@ export default function CommunityPage() {
               textAlign: 'center',
               lineHeight: '1.6'
             }}>
-              Join our global community of digital artists, vintage collectors, and Y2K enthusiasts. 
-              Share your creations and discover unique pieces from fellow creators.
+              we're here for the ones who feel deeply, create wildly, and believe in more.
+              souls with vision, hearts with roots.
+              let's build, dream, and lift each other — together.
             </p>
           </div>
         </div>
@@ -41,25 +42,26 @@ export default function CommunityPage() {
           <div className="cards-grid">
             <div className="product-card content-card" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🌐</div>
-              <h3 style={{ color: 'var(--cyan-accent)', marginBottom: '1rem' }}>Global Network</h3>
+              <h3 style={{ color: 'var(--cyan-accent)', marginBottom: '1rem' }}>world's open</h3>
               <p style={{ color: 'rgba(255,255,255,0.8)', lineHeight: '1.6' }}>
-                Connect with creators from Ukraine and around the world
+                we collab from anywhere — no borders, just vision
               </p>
             </div>
 
             <div className="product-card content-card" style={{ textAlign: 'center' }}>
               <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎨</div>
-              <h3 style={{ color: 'var(--pink-main)', marginBottom: '1rem' }}>Creative Showcase</h3>
+              <h3 style={{ color: 'var(--pink-main)', marginBottom: '1rem' }}>share your art. join the vision.</h3>
               <p style={{ color: 'rgba(255,255,255,0.8)', lineHeight: '1.6' }}>
-                Share your artwork, designs, and vintage finds with the community
+                show us what you do. be seen. be weird. be brilliant.
+                let's grow, glow & build something rare — together
               </p>
             </div>
 
             <div className="product-card content-card" style={{ textAlign: 'center' }}>
-              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>🎪</div>
-              <h3 style={{ color: 'var(--yellow-neon)', marginBottom: '1rem' }}>Events & Meetups</h3>
+              <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>📡</div>
+              <h3 style={{ color: 'var(--yellow-neon)', marginBottom: '1rem' }}>join the vision IRL & online</h3>
               <p style={{ color: 'rgba(255,255,255,0.8)', lineHeight: '1.6' }}>
-                Join virtual and IRL events celebrating Y2K culture and digital art
+                virtual hangs, collab trips, late-night planning — build, dream, create together
               </p>
             </div>
           </div>
@@ -73,7 +75,7 @@ export default function CommunityPage() {
             marginTop: '4rem'
           }}>
             <h3 style={{ color: 'var(--cyan-accent)', marginBottom: '1.5rem', fontSize: '1.5rem' }}>
-              Join the Movement
+              Enter the era. Your era.
             </h3>
             <p style={{ 
               fontSize: '1.1rem', 
@@ -82,8 +84,10 @@ export default function CommunityPage() {
               maxWidth: '600px',
               margin: '0 auto 2rem'
             }}>
-              Be part of our growing community where Y2K nostalgia meets modern creativity. 
-              Coming soon with exclusive member benefits and early access to drops.
+              First to know, first to feel.
+              Drops, updates, unreleased things.
+              Be part of the creative core — rare minds only.
+              A space where visionaries connect, collaborate, and make it iconic.
             </p>
             <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
               <button className="hero-button">Discord Server</button>

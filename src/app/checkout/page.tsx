@@ -162,10 +162,11 @@ export default function CheckoutPage() {
     )
   }
 
-  if (!session) {
-    router.push('/auth/signin?callbackUrl=/checkout')
-    return null
-  }
+  // Allow guest checkout - authentication not required
+  // if (!session) {
+  //   router.push('/auth/signin?callbackUrl=/checkout')
+  //   return null
+  // }
 
   if (state.items.length === 0) {
     return null // Will redirect
@@ -228,7 +229,7 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        <div style={{
+        <div className="checkout-grid" style={{
           display: 'grid',
           gridTemplateColumns: '1fr 300px',
           gap: '2rem'
@@ -482,6 +483,7 @@ export default function CheckoutPage() {
 
                 <button
                   type="submit"
+                  className="form-button"
                   style={{
                     width: '100%',
                     padding: '1rem',
@@ -637,7 +639,7 @@ export default function CheckoutPage() {
           </div>
 
           {/* Order Summary */}
-          <div style={{
+          <div className="checkout-sidebar" style={{
             background: 'rgba(0,0,0,0.6)',
             border: '2px solid var(--pink-main)',
             borderRadius: '16px',

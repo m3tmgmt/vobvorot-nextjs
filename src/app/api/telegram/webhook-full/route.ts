@@ -146,6 +146,30 @@ async function handleCallbackQuery(callbackQuery: any) {
     case 'delete_products':
       await sendProductsListForDelete(chatId)
       break
+    case 'photo_upload_done':
+      // Завершаем загрузку фото и переходим к видео
+      const userState = userStates.get(userId.toString())
+      if (userState && userState.action === 'add_product_photo') {
+        userState.action = 'add_product_video'
+        userStates.set(userId.toString(), userState)
+        await sendTelegramMessage(chatId, '🎬 Отправьте видео товара или напишите "пропустить":')
+      }
+      break
+    case 'photo_upload_skip':
+      // Пропускаем загрузку фото и переходим к видео
+      const userStateSkip = userStates.get(userId.toString())
+      if (userStateSkip && userStateSkip.action === 'add_product_photo') {
+        userStateSkip.action = 'add_product_video'
+        userStates.set(userId.toString(), userStateSkip)
+        await sendTelegramMessage(chatId, '⏭️ Фото пропущены\n\n🎬 Отправьте видео товара или напишите "пропустить":')
+      }
+      break
+    case 'cancel_product_creation':
+      // Отменяем создание товара и сбрасываем состояние
+      userStates.delete(userId.toString())
+      await sendTelegramMessage(chatId, '❌ Создание товара отменено')
+      await sendMainMenu(chatId)
+      break
     default:
       // Проверяем, не является ли это выбором категории
       if (data.startsWith('select_category_')) {
@@ -283,16 +307,12 @@ async function handleMessage(message: any) {
     return
   }
   
-  // Проверяем состояние пользователя
-  const userState = userStates.get(userId.toString())
-  
-  if (userState) {
-    return await handleUserState(message, userState)
-  }
-  
-  // Обработка обычных команд
-  if (text) {
-    console.log(`👤 User ${username} (${userId}): ${text}`)
+  // Сначала обрабатываем команды (приоритет выше состояния)
+  if (text && text.startsWith('/')) {
+    console.log(`👤 User ${username} (${userId}) - Command: ${text}`)
+    
+    // Очищаем состояние пользователя при получении команды
+    userStates.delete(userId.toString())
     
     switch(text) {
       case '/start':
@@ -311,12 +331,22 @@ async function handleMessage(message: any) {
         await fixGalleryManually(chatId)
         break
       default:
-        if (text.startsWith('/')) {
-          await sendTelegramMessage(chatId, `❓ Неизвестная команда: ${text}\n\nИспользуйте /start для главного меню`)
-        } else {
-          await sendMainMenu(chatId)
-        }
+        await sendTelegramMessage(chatId, `❓ Неизвестная команда: ${text}\n\nИспользуйте /start для главного меню`)
     }
+    return
+  }
+  
+  // Проверяем состояние пользователя
+  const userState = userStates.get(userId.toString())
+  
+  if (userState) {
+    return await handleUserState(message, userState)
+  }
+  
+  // Обработка обычных сообщений
+  if (text) {
+    console.log(`👤 User ${username} (${userId}): ${text}`)
+    await sendMainMenu(chatId)
   }
 }
 
@@ -324,10 +354,6 @@ async function sendWelcomeMessage(chatId: number, userId: number) {
   const welcomeMessage = `🤖 *VobvorotAdminBot* приветствует вас!
 
 👋 Добро пожаловать в панель управления VobVorot Store
-
-✅ Ваш ID: ${userId}
-✅ Доступ подтвержден
-✅ Новый бот активен
 
 🚀 Выберите нужный раздел:`
 
@@ -608,6 +634,8 @@ async function handleUserState(message: any, userState: any) {
   const photo = message.photo
   const video = message.video
   
+  console.log('handleUserState called for user:', userId, 'action:', userState?.action, 'text:', text, 'hasPhoto:', !!photo)
+  
   switch(userState.action) {
     case 'add_product_name':
       return await handleAddProductName(chatId, userId, text)
@@ -618,9 +646,19 @@ async function handleUserState(message: any, userState: any) {
     case 'add_product_category':
       return await handleAddProductCategory(chatId, userId, text)
     case 'add_product_photo':
-      return await handleAddProductPhoto(chatId, userId, photo)
+      // Проверяем команду "готово" для завершения загрузки фото
+      if (text === 'готово' || text === 'done') {
+        const userState = userStates.get(userId.toString())
+        userState.action = 'add_product_video'
+        userStates.set(userId.toString(), userState)
+        return await sendTelegramMessage(chatId, '🎬 Отправьте видео товара или напишите "пропустить":')
+      } else {
+        return await handleAddProductPhoto(chatId, userId, photo, text)
+      }
     case 'add_product_video':
       return await handleAddProductVideo(chatId, userId, video, text)
+    case 'add_product_stock':
+      return await handleAddProductStock(chatId, userId, text)
     case 'upload_home_video':
       return await handleUploadHomeVideo(chatId, userId, video)
     case 'upload_product_video':
@@ -631,13 +669,17 @@ async function handleUserState(message: any, userState: any) {
       return await handleEditProductDescription(chatId, userId, text)
     case 'edit_product_price':
       return await handleEditProductPrice(chatId, userId, text)
+    case 'edit_product_stock':
+      return await handleEditProductStock(chatId, userId, text)
     case 'creating_category':
       return await handleCreateCategory(chatId, userId, text, userState)
     case 'editing_category_name':
       return await handleEditCategoryNameInput(chatId, userId, text, userState)
     default:
       // Неизвестное состояние, сбрасываем
+      console.error('Unknown user state action:', userState?.action, 'for user:', userId)
       userStates.delete(userId.toString())
+      await sendTelegramMessage(chatId, `❌ Неизвестное состояние: ${userState?.action}. Начните заново.`)
       await sendMainMenu(chatId)
   }
 }
@@ -669,6 +711,13 @@ async function handleAddProductDescription(chatId: number, userId: number, text:
   }
   
   const userState = userStates.get(userId.toString())
+  if (!userState) {
+    console.error('No user state found for user', userId)
+    await sendTelegramMessage(chatId, '❌ Ошибка состояния. Начните заново с /start')
+    return
+  }
+  
+  console.log('Setting description for user', userId, 'description:', text)
   userState.productData.description = text
   userState.action = 'add_product_price'
   userStates.set(userId.toString(), userState)
@@ -685,19 +734,30 @@ async function handleAddProductPrice(chatId: number, userId: number, text: strin
   }
   
   const userState = userStates.get(userId.toString())
+  if (!userState) {
+    console.error('No user state found for user', userId, 'at price step')
+    await sendTelegramMessage(chatId, '❌ Ошибка состояния. Начните заново с /start')
+    return
+  }
+  
+  console.log('Setting price for user', userId, 'price:', price)
   userState.productData.price = price
   userState.action = 'add_product_category'
   userStates.set(userId.toString(), userState)
   
+  console.log('Calling sendCategorySelection for user', userId)
   await sendCategorySelection(chatId)
 }
 
 async function sendCategorySelection(chatId: number) {
   try {
+    console.log('sendCategorySelection called for chatId:', chatId)
     const categories = await prisma.category.findMany({
       where: { isActive: true },
       orderBy: { name: 'asc' }
     })
+    
+    console.log('Found categories:', categories.length)
     
     if (categories.length === 0) {
       await sendTelegramMessage(chatId, '❌ В системе нет активных категорий. Сначала создайте категорию в админ-панели.')
@@ -758,7 +818,23 @@ async function handleCategorySelection(chatId: number, userId: number, categoryI
     userState.action = 'add_product_photo'
     userStates.set(userId.toString(), userState)
     
-    await sendTelegramMessage(chatId, `✅ Выбрана категория: ${category.name}\n\n📸 Отправьте фото товара:`)
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '⏭️ Пропустить фото', callback_data: 'photo_upload_skip' }
+        ],
+        [
+          { text: '❌ Отменить создание товара', callback_data: 'cancel_product_creation' }
+        ]
+      ]
+    }
+    
+    await sendTelegramMessage(
+      chatId, 
+      `✅ Выбрана категория: ${category.name}\n\n📸 Отправьте фотографии товара (можно несколько).\nНапишите "готово" когда закончите или используйте кнопку для пропуска:`,
+      false,
+      keyboard
+    )
     
   } catch (error) {
     console.error('Error handling category selection:', error)
@@ -767,9 +843,24 @@ async function handleCategorySelection(chatId: number, userId: number, categoryI
 }
 
 
-async function handleAddProductPhoto(chatId: number, userId: number, photo: any) {
+async function handleAddProductPhoto(chatId: number, userId: number, photo: any, text: string) {
+  const userState = userStates.get(userId.toString())
+  
+  // Если пользователь хочет пропустить добавление фото
+  if (text === 'пропустить' || text === 'skip') {
+    userState.action = 'add_product_video'
+    userStates.set(userId.toString(), userState)
+    await sendTelegramMessage(chatId, '🎬 Отправьте видео товара или напишите "пропустить":')
+    return
+  }
+  
+  // Если нет фото
   if (!photo) {
-    await sendTelegramMessage(chatId, '❌ Пожалуйста, отправьте фото товара')
+    if (text && (text !== 'пропустить' && text !== 'skip')) {
+      await sendTelegramMessage(chatId, '❌ Пожалуйста, отправьте фото товара или используйте кнопки')
+    } else {
+      await sendTelegramMessage(chatId, '❌ Пожалуйста, отправьте фото товара или напишите "пропустить"')
+    }
     return
   }
   
@@ -782,12 +873,39 @@ async function handleAddProductPhoto(chatId: number, userId: number, photo: any)
       throw new Error('Failed to upload photo')
     }
     
-    const userState = userStates.get(userId.toString())
-    userState.productData.imageUrl = photoUrl
-    userState.action = 'add_product_video'
+    // Инициализируем массив изображений если его нет
+    if (!userState.productData.images) {
+      userState.productData.images = []
+    }
+    
+    // Добавляем изображение в массив
+    userState.productData.images.push({
+      url: photoUrl,
+      isPrimary: userState.productData.images.length === 0 // Первое фото - главное
+    })
+    
     userStates.set(userId.toString(), userState)
     
-    await sendTelegramMessage(chatId, '🎬 Отправьте видео товара или напишите "пропустить":')
+    const photoCount = userState.productData.images.length
+    
+    // Добавляем кнопки к сообщению
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '✅ Готово', callback_data: 'photo_upload_done' }
+        ],
+        [
+          { text: '❌ Отменить', callback_data: 'cancel_product_creation' }
+        ]
+      ]
+    }
+    
+    await sendTelegramMessage(
+      chatId, 
+      `✅ Фото ${photoCount} загружено!\n\n📸 Отправьте еще фото или нажмите "Готово" для продолжения:`,
+      false,
+      keyboard
+    )
   } catch (error) {
     console.error('Error uploading photo:', error)
     await sendTelegramMessage(chatId, '❌ Ошибка загрузки фото. Попробуйте еще раз.')
@@ -815,6 +933,34 @@ async function handleAddProductVideo(chatId: number, userId: number, video: any,
     await sendTelegramMessage(chatId, '❌ Отправьте видео или напишите "пропустить"')
     return
   }
+  
+  // Переходим к запросу количества товара
+  userState.action = 'add_product_stock'
+  userStates.set(userId.toString(), userState)
+  await sendTelegramMessage(chatId, '📦 Введите количество товара в наличии (например: 50):')
+}
+
+async function handleAddProductStock(chatId: number, userId: number, text: string) {
+  const userState = userStates.get(userId.toString())
+  
+  if (!text || text.startsWith('/')) {
+    await sendTelegramMessage(chatId, '❌ Введите корректное количество товара:')
+    return
+  }
+  
+  const stock = parseInt(text.trim())
+  
+  if (isNaN(stock) || stock < 0) {
+    await sendTelegramMessage(chatId, '❌ Количество должно быть числом (0 или больше). Попробуйте еще раз:')
+    return
+  }
+  
+  if (stock > 10000) {
+    await sendTelegramMessage(chatId, '❌ Слишком большое количество. Максимум 10000 штук:')
+    return
+  }
+  
+  userState.productData.stock = stock
   
   // Создаем товар
   await createProductFromBot(chatId, userId, userState.productData)
@@ -870,14 +1016,27 @@ async function createProductFromBot(chatId: number, userId: number, productData:
       data: {
         sku: `SKU-${product.id.slice(-8).toUpperCase()}`,
         price: productData.price,
-        stock: 100,
+        stock: productData.stock || 100,
         productId: product.id,
         isActive: true
       }
     })
     
-    // Создаем изображение
-    if (productData.imageUrl) {
+    // Создаем изображения
+    if (productData.images && productData.images.length > 0) {
+      // Создаем множественные изображения
+      for (const image of productData.images) {
+        await prisma.productImage.create({
+          data: {
+            url: image.url,
+            alt: productData.name,
+            isPrimary: image.isPrimary,
+            productId: product.id
+          }
+        })
+      }
+    } else if (productData.imageUrl) {
+      // Поддержка старого формата (одно изображение)
       await prisma.productImage.create({
         data: {
           url: productData.imageUrl,
@@ -1330,6 +1489,7 @@ async function startProductEdit(chatId: number, userId: number, productId: strin
     }
 
     const minPrice = Math.min(...product.skus.map(sku => Number(sku.price)))
+    const totalStock = product.skus.reduce((sum, sku) => sum + sku.stock, 0)
     
     const message = `📝 *Редактирование товара:*
 
@@ -1337,6 +1497,7 @@ async function startProductEdit(chatId: number, userId: number, productId: strin
 📄 *Описание:* ${product.description || 'Не указано'}
 💰 *Цена:* $${minPrice}
 🏷️ *Категория:* ${product.category?.name || 'Не указана'}
+📊 *Количество:* ${totalStock} шт.
 🎬 *Видео:* ${product.videoUrl ? '✅ Есть' : '❌ Нет'}
 📸 *Фото:* ${product.images.length > 0 ? `✅ ${product.images.length} шт.` : '❌ Нет'}
 
@@ -1351,6 +1512,9 @@ async function startProductEdit(chatId: number, userId: number, productId: strin
         [
           { text: '💰 Цена', callback_data: `edit_field_${productId}_price` },
           { text: '🏷️ Категория', callback_data: `edit_field_${productId}_category` }
+        ],
+        [
+          { text: '📊 Количество', callback_data: `edit_field_${productId}_stock` }
         ],
         [
           { text: '🎬 Управление видео', callback_data: `manage_product_videos_${productId}` }
@@ -1399,6 +1563,11 @@ async function startFieldEdit(chatId: number, userId: number, productId: string,
         const currentPrice = Math.min(...product.skus.map(sku => Number(sku.price)))
         message = `💰 *Текущая цена:* $${currentPrice}\n\nВведите новую цену товара в USD:`
         action = 'edit_product_price'
+        break
+      case 'stock':
+        const currentStock = product.skus.reduce((sum, sku) => sum + sku.stock, 0)
+        message = `📊 *Текущее количество:* ${currentStock} шт.\n\nВведите новое количество товара в наличии:`
+        action = 'edit_product_stock'
         break
       case 'category':
         await sendCategorySelectionForEdit(chatId, productId)
@@ -1535,6 +1704,41 @@ async function handleEditProductPrice(chatId: number, userId: number, text: stri
   } catch (error) {
     console.error('Error updating product price:', error)
     await sendTelegramMessage(chatId, '❌ Ошибка обновления цены')
+  }
+}
+
+async function handleEditProductStock(chatId: number, userId: number, text: string) {
+  const stock = parseInt(text.trim())
+  
+  if (isNaN(stock) || stock < 0) {
+    await sendTelegramMessage(chatId, '❌ Введите корректное количество (число 0 или больше)')
+    return
+  }
+
+  if (stock > 10000) {
+    await sendTelegramMessage(chatId, '❌ Слишком большое количество. Максимум 10000 штук')
+    return
+  }
+
+  const userState = userStates.get(userId.toString())
+  if (!userState || !userState.productId) {
+    await sendTelegramMessage(chatId, '❌ Ошибка состояния')
+    return
+  }
+
+  try {
+    // Обновляем количество для всех SKU товара
+    await prisma.productSku.updateMany({
+      where: { productId: userState.productId },
+      data: { stock: stock }
+    })
+
+    userStates.delete(userId.toString())
+    await sendTelegramMessage(chatId, `✅ Количество товара обновлено на: ${stock} шт.`)
+    await startProductEdit(chatId, userId, userState.productId)
+  } catch (error) {
+    console.error('Error updating product stock:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка обновления количества')
   }
 }
 

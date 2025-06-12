@@ -32,7 +32,7 @@ export function FloatingCartIcons() {
   }
 
   return (
-    <div style={{
+    <div className="floating-cart-icons" style={{
       position: 'fixed',
       top: '20px',
       right: '20px',

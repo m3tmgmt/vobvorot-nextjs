@@ -1,10 +1,12 @@
 'use client'
 
 import Image from 'next/image'
+import { useRouter } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
 
 export function Cart() {
   const { state, dispatch } = useCart()
+  const router = useRouter()
 
   const updateQuantity = (productId: string, skuId: string, newQuantity: number) => {
     dispatch({
@@ -130,7 +132,7 @@ export function Cart() {
                 className="checkout-btn"
                 onClick={() => {
                   dispatch({ type: 'TOGGLE_CART' })
-                  window.location.href = '/checkout'
+                  router.push('/checkout')
                 }}
               >
                 Proceed to Checkout

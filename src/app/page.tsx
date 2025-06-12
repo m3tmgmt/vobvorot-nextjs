@@ -279,12 +279,12 @@ export default function HomePage() {
           {/* Training Programs Card */}
           <div className="product-card feature-card">
             <div>
-              <div className="feature-card-icon">🎓</div>
+              <div className="feature-card-icon">🐇</div>
               <h3 className="feature-card-title" style={{ color: 'var(--purple-accent)' }}>
-                Training Programs
+                Stay Healthy, Stay Iconic
               </h3>
               <p className="feature-card-description">
-                Learn digital design, curation, and creative coding
+                diva mode: activated
               </p>
             </div>
             <button 

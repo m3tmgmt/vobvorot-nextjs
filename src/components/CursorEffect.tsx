@@ -187,7 +187,7 @@ export default function CursorEffect() {
           background: 'linear-gradient(45deg, var(--pink-main), var(--cyan-accent))',
           borderRadius: '50%',
           pointerEvents: 'none',
-          zIndex: 9999,
+          zIndex: 'var(--z-cursor)' as any,
           transition: 'opacity 0.2s ease',
           mixBlendMode: 'difference',
           display: 'block',
@@ -212,7 +212,7 @@ export default function CursorEffect() {
             background: 'var(--pink-neon)',
             borderRadius: '50%',
             pointerEvents: 'none',
-            zIndex: 9998,
+            zIndex: 'var(--z-cursor-trail)' as any,
             opacity: 0.7,
             display: 'block',
             willChange: 'transform'

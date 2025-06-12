@@ -73,10 +73,6 @@ export default function SecretMenu() {
         document.body.classList.toggle('particles-x10')
         break
         
-      case 'puzzles':
-        dispatch({ type: 'TOGGLE_GOD_MODE' })
-        break
-        
       case 'sound':
         dispatch({ type: 'TOGGLE_SOUND' })
         break
@@ -265,29 +261,6 @@ export default function SecretMenu() {
           [3] Particle Density x10
         </button>
 
-        <button
-          onClick={() => handleMenuAction('puzzles')}
-          style={{
-            background: 'rgba(0, 255, 65, 0.1)',
-            border: '1px solid #00FF41',
-            color: '#00FF41',
-            padding: '0.8rem',
-            borderRadius: '5px',
-            fontSize: '0.9rem',
-            textAlign: 'left',
-            transition: 'all 0.3s ease',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 255, 65, 0.2)'
-            e.currentTarget.style.transform = 'translateX(5px)'
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(0, 255, 65, 0.1)'
-            e.currentTarget.style.transform = 'translateX(0)'
-          }}
-        >
-          [4] God Mode: {state.godModeActive ? 'ON' : 'OFF'}
-        </button>
 
         <button
           onClick={() => handleMenuAction('sound')}
@@ -310,7 +283,7 @@ export default function SecretMenu() {
             e.currentTarget.style.transform = 'translateX(0)'
           }}
         >
-          [5] Sound Effects: {state.soundEnabled ? 'ON' : 'OFF'}
+          [4] Sound Effects: {state.soundEnabled ? 'ON' : 'OFF'}
         </button>
 
         <button
@@ -334,7 +307,7 @@ export default function SecretMenu() {
             e.currentTarget.style.transform = 'translateX(0)'
           }}
         >
-          [6] Developer Credits
+          [5] Developer Credits
         </button>
       </div>
 

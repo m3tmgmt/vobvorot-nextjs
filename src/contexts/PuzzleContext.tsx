@@ -33,7 +33,6 @@ interface PuzzleState {
   konami: boolean
   rainbowMode: boolean
   matrixMode: boolean
-  godMode: boolean
   isLoading: boolean
 }
 
@@ -43,8 +42,6 @@ type PuzzleAction =
   | { type: 'TOGGLE_KONAMI' }
   | { type: 'TOGGLE_RAINBOW' }
   | { type: 'TOGGLE_MATRIX' }
-  | { type: 'ACTIVATE_GOD_MODE' }
-  | { type: 'DEACTIVATE_GOD_MODE' }
   | { type: 'LOAD_STATE'; payload: PuzzleState }
   | { type: 'RESET_PROGRESS' }
   | { type: 'SET_LOADING'; payload: boolean }
@@ -294,11 +291,6 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
     case 'TOGGLE_MATRIX':
       return { ...state, matrixMode: !state.matrixMode }
 
-    case 'ACTIVATE_GOD_MODE':
-      return { ...state, godMode: true }
-
-    case 'DEACTIVATE_GOD_MODE':
-      return { ...state, godMode: false }
 
     case 'LOAD_STATE':
       return action.payload
@@ -312,7 +304,6 @@ function puzzleReducer(state: PuzzleState, action: PuzzleAction): PuzzleState {
         konami: false,
         rainbowMode: false,
         matrixMode: false,
-        godMode: false,
         isLoading: false
       }
 
@@ -331,7 +322,6 @@ export function PuzzleProvider({ children }: { children: React.ReactNode }) {
     konami: false,
     rainbowMode: false,
     matrixMode: false,
-    godMode: false,
     isLoading: false
   })
 

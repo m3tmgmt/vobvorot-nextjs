@@ -53,12 +53,13 @@ export async function POST(request: NextRequest) {
   try {
     session = await getServerSession(authOptions)
     
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
-    }
+    // Allow guest checkout - authentication is optional for orders
+    // if (!session?.user?.id) {
+    //   return NextResponse.json(
+    //     { error: 'Unauthorized' },
+    //     { status: 401 }
+    //   )
+    // }
 
     orderData = await request.json()
     
@@ -77,7 +78,7 @@ export async function POST(request: NextRequest) {
     const order = await prisma.order.create({
       data: {
         orderNumber,
-        userId: session.user.id,
+        userId: session?.user?.id || null, // Allow null for guest orders
         status: 'PENDING',
         currency: 'USD',
         subtotal: orderData.subtotal,
@@ -228,7 +229,7 @@ export async function POST(request: NextRequest) {
     logger.info('Creating WesternBid payment', {
       orderNumber,
       amount: orderData.total,
-      userId: session.user.id,
+      userId: session?.user?.id || 'guest',
       customerEmail: orderData.shippingInfo.email
     })
     
@@ -247,8 +248,8 @@ export async function POST(request: NextRequest) {
       webhookUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`,
       metadata: {
         orderNumber: orderNumber,
-        userId: session.user.id,
-        userEmail: session.user.email,
+        userId: session?.user?.id || 'guest',
+        userEmail: session?.user?.email || orderData.shippingInfo.email,
         itemCount: orderData.items.length,
         shippingCountry: orderData.shippingInfo.country
       }
@@ -257,7 +258,7 @@ export async function POST(request: NextRequest) {
     // Log payment creation attempt
     logPaymentCreation({
       orderId: orderNumber,
-      userId: session.user.id,
+      userId: session?.user?.id || 'guest',
       amount: orderData.total,
       currency: 'USD',
       gateway: 'WESTERNBID',
@@ -299,7 +300,7 @@ export async function POST(request: NextRequest) {
       logPaymentFailure({
         orderId: orderNumber,
         paymentId: paymentResult.paymentId,
-        userId: session.user.id,
+        userId: session?.user?.id || 'guest',
         amount: orderData.total,
         currency: 'USD',
         gateway: 'WESTERNBID',

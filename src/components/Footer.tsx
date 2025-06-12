@@ -57,7 +57,7 @@ function FooterComponent() {
         position: 'relative',
         zIndex: 1
       }}>
-        <div style={{
+        <div className="footer-grid" style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
           gap: '2rem',
@@ -79,7 +79,7 @@ function FooterComponent() {
               lineHeight: '1.6',
               fontSize: '0.9rem'
             }}>
-              digital playground for Y2K enthusiasts • vintage treasures • puzzle adventures ✨
+              All rights reserved to the fantasy
             </p>
           </div>
 
@@ -176,16 +176,19 @@ function FooterComponent() {
               <div style={{ marginTop: '0.5rem' }}>
                 <button
                   onClick={() => activateMatrix(10000)}
+                  className="matrix-mode-btn"
                   style={{
                     background: 'rgba(57,255,20,0.1)',
                     border: '1px solid var(--green-neon)',
                     color: 'var(--green-neon)',
-                    padding: '4px 8px',
+                    padding: '6px 12px',
                     borderRadius: '3px',
                     fontSize: '0.7rem',
                     cursor: 'pointer',
                     fontFamily: 'JetBrains Mono, monospace',
-                    transition: 'all 0.3s ease'
+                    transition: 'all 0.3s ease',
+                    minHeight: '32px',
+                    touchAction: 'manipulation'
                   }}
                   onMouseEnter={(e) => {
                     e.currentTarget.style.background = 'rgba(57,255,20,0.2)'
@@ -196,6 +199,18 @@ function FooterComponent() {
                     e.currentTarget.style.background = 'rgba(57,255,20,0.1)'
                     e.currentTarget.style.textShadow = 'none'
                     e.currentTarget.style.boxShadow = 'none'
+                  }}
+                  onTouchStart={(e) => {
+                    e.currentTarget.style.background = 'rgba(57,255,20,0.2)'
+                    e.currentTarget.style.textShadow = '0 0 8px var(--green-neon)'
+                    e.currentTarget.style.boxShadow = '0 0 10px rgba(57,255,20,0.3)'
+                  }}
+                  onTouchEnd={(e) => {
+                    setTimeout(() => {
+                      e.currentTarget.style.background = 'rgba(57,255,20,0.1)'
+                      e.currentTarget.style.textShadow = 'none'
+                      e.currentTarget.style.boxShadow = 'none'
+                    }, 150)
                   }}
                 >
                   Matrix Mode

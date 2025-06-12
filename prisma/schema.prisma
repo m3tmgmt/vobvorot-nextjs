@@ -182,7 +182,7 @@ model ProductSku {
 model Order {
   id              String        @id @default(cuid())
   orderNumber     String        @unique
-  userId          String
+  userId          String?       // Allow null for guest orders
   status          OrderStatus   @default(PENDING)
   shippingName    String
   shippingEmail   String
@@ -215,7 +215,7 @@ model Order {
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   items           OrderItem[]
-  user            User          @relation(fields: [userId], references: [id])
+  user            User?         @relation(fields: [userId], references: [id])
 
   @@index([userId])
   @@index([orderNumber])

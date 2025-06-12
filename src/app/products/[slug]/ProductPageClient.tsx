@@ -5,7 +5,6 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
 import { useWishlist } from '@/contexts/WishlistContext'
-import ProductVideoGallery from '@/components/ProductVideoGallery'
 // import { ProductReviews } from '@/components/ProductReviews' // Скрыто до появления серийных товаров
 
 interface Product {
@@ -163,16 +162,27 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
 
       {/* Hero Section with Video Background */}
       <section className="hero-section">
-        {product.video && (
+        {product.video ? (
           <video
-            className="hero-video"
+            className="hero-video-container active"
             autoPlay
             muted
             loop
             playsInline
+            style={{
+              filter: 'none',
+              backdropFilter: 'none',
+              mixBlendMode: 'normal',
+              zIndex: 5
+            } as React.CSSProperties}
           >
             <source src={product.video.url} type="video/mp4" />
           </video>
+        ) : (
+          <div className="hero-video-container active" style={{
+            backgroundColor: '#0a0a0a'
+          }}>
+          </div>
         )}
         
         <div className="hero-overlay"></div>
@@ -198,8 +208,8 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
       <div className="products-section" style={{ marginTop: '4rem' }}>
         <div className="container" style={{ 
           display: 'grid', 
-          gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', 
-          gap: '3rem'
+          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', 
+          gap: '2rem'
         }}>
           {/* Image Section */}
           <div>
@@ -450,31 +460,6 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
           </div>
         </div>
 
-        {/* Video Gallery Section */}
-        <div style={{ 
-          maxWidth: '1200px', 
-          margin: '3rem auto 0 auto', 
-          padding: '0 2rem' 
-        }}>
-          <h2 style={{ 
-            fontSize: '2rem',
-            fontWeight: '700',
-            color: 'var(--cyan-accent)',
-            marginBottom: '1.5rem',
-            textAlign: 'center'
-          }}>
-            Product Videos
-          </h2>
-          <ProductVideoGallery 
-            productId={product.id}
-            className="product-videos"
-            autoplay={false}
-            controls={true}
-            muted={true}
-            loop={false}
-            playsInline={true}
-          />
-        </div>
 
         {/* Reviews Section - скрыто для уникальных товаров */}
         {/* <div style={{ maxWidth: '1200px', margin: '0 auto', padding: '0 2rem' }}>

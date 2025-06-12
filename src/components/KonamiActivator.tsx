@@ -77,19 +77,6 @@ export default function KonamiActivator() {
     }
   }, [state.colorTheme])
 
-  // Handle God Mode
-  useEffect(() => {
-    if (state.godModeActive) {
-      // Add god mode class to body
-      document.body.classList.add('god-mode-active')
-      
-      // Show all puzzle pieces
-      puzzleDispatch({ type: 'ACTIVATE_GOD_MODE' })
-    } else {
-      document.body.classList.remove('god-mode-active')
-      puzzleDispatch({ type: 'DEACTIVATE_GOD_MODE' })
-    }
-  }, [state.godModeActive])
 
   const showActivationMessage = () => {
     const message = document.createElement('div')

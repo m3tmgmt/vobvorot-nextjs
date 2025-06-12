@@ -5,7 +5,6 @@ import { createContext, useContext, useReducer, ReactNode, useEffect } from 'rea
 interface KonamiState {
   isActivated: boolean
   secretMenuOpen: boolean
-  godModeActive: boolean
   currentSequence: string[]
   colorTheme: 'default' | 'matrix' | 'cyber' | 'neon'
   soundEnabled: boolean
@@ -17,7 +16,6 @@ type KonamiAction =
   | { type: 'ACTIVATE_KONAMI' }
   | { type: 'DEACTIVATE_KONAMI' }
   | { type: 'TOGGLE_SECRET_MENU' }
-  | { type: 'TOGGLE_GOD_MODE' }
   | { type: 'SET_COLOR_THEME'; payload: KonamiState['colorTheme'] }
   | { type: 'TOGGLE_SOUND' }
   | { type: 'RESET_SEQUENCE' }
@@ -32,7 +30,6 @@ const KONAMI_SEQUENCE = [
 const initialState: KonamiState = {
   isActivated: false,
   secretMenuOpen: false,
-  godModeActive: false,
   currentSequence: [],
   colorTheme: 'default',
   soundEnabled: true,
@@ -75,20 +72,13 @@ function konamiReducer(state: KonamiState, action: KonamiAction): KonamiState {
       return {
         ...state,
         isActivated: false,
-        secretMenuOpen: false,
-        godModeActive: false
+        secretMenuOpen: false
       }
       
     case 'TOGGLE_SECRET_MENU':
       return {
         ...state,
         secretMenuOpen: !state.secretMenuOpen
-      }
-      
-    case 'TOGGLE_GOD_MODE':
-      return {
-        ...state,
-        godModeActive: !state.godModeActive
       }
       
     case 'SET_COLOR_THEME':

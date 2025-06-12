@@ -38,7 +38,7 @@ export default function ProductsPageClient() {
         return res.json()
       })
       .then((productsData) => {
-        const productsList = productsData.products || []
+        const productsList = productsData.data?.products || productsData.products || []
         setAllProducts(productsList)
         setProducts(productsList)
         
@@ -90,14 +90,14 @@ export default function ProductsPageClient() {
   return (
     <div style={{ minHeight: '100vh' }}>
       {/* Hero Section */}
-      <section className="hero-section hero-compact">
-        <div className="hero-overlay" style={{ background: 'linear-gradient(135deg, rgba(0,255,255,0.6), rgba(255,107,157,0.6))' }}></div>
+      <section className="hero-section">
+        <div className="hero-overlay"></div>
         
         <div className="hero-content" style={{ textAlign: 'center' }}>
-          <h1 className="hero-title glitch" data-logo style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>
+          <h1 className="hero-title glitch" data-logo>
             All Products
           </h1>
-          <p className="hero-subtitle" style={{ fontSize: '1.3rem' }}>
+          <p className="hero-subtitle">
             Discover our complete collection ✨
           </p>
         </div>

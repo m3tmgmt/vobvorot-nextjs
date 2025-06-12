@@ -36,14 +36,14 @@ export default function ExvicpmourPage() {
   return (
     <div style={{ minHeight: '100vh' }}>
       {/* Hero Section */}
-      <section className="hero-section hero-small">
-        <div className="hero-overlay" style={{ background: 'linear-gradient(135deg, rgba(255,107,157,0.8), rgba(0,255,255,0.6))' }}></div>
+      <section className="hero-section">
+        <div className="hero-overlay"></div>
         
         <div className="hero-content" style={{ textAlign: 'center' }}>
-          <h1 className="hero-title glitch" data-logo style={{ fontSize: '4rem', marginBottom: '1rem' }}>
+          <h1 className="hero-title glitch" data-logo>
             EXVICPMOUR
           </h1>
-          <p className="hero-subtitle" style={{ fontSize: '1.5rem', marginBottom: '2rem' }}>
+          <p className="hero-subtitle">
             Exclusive Collection ✨
           </p>
           <p style={{ fontSize: '1.1rem', maxWidth: '600px', margin: '0 auto', color: 'rgba(255,255,255,0.9)', lineHeight: '1.6' }}>

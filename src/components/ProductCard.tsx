@@ -146,49 +146,49 @@ const ProductCard = memo(function ProductCard({
         </Link>
 
       <div className="product-info">
-        <p className="product-category">{product.category.name}</p>
-        
-        <Link href={`/products/${product.slug}`}>
-          <h3 className="product-title">
-            {product.name}
-          </h3>
-        </Link>
-
-        {/* Rating - скрыто для уникальных товаров */}
-        {/* {product.averageRating && product.averageRating > 0 && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-            marginBottom: '0.5rem'
+        {/* Компактная двухколоночная раскладка в 2 строки */}
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: '1fr auto',
+          gridTemplateRows: 'auto auto',
+          gap: '0.5rem',
+          alignItems: 'start',
+          marginBottom: '1rem'
+        }}>
+          {/* Первая строка: Название товара и категория */}
+          <Link href={`/products/${product.slug}`} style={{ gridColumn: '1', gridRow: '1' }}>
+            <h3 className="product-title" style={{ margin: 0 }}>
+              {product.name}
+            </h3>
+          </Link>
+          <p className="product-category" style={{ 
+            margin: 0, 
+            gridColumn: '2', 
+            gridRow: '1',
+            textAlign: 'right',
+            fontSize: '0.8rem'
           }}>
-            <div style={{ display: 'flex', gap: '1px' }}>
-              {[1, 2, 3, 4, 5].map((star) => (
-                <span
-                  key={star}
-                  style={{
-                    color: star <= Math.round(product.averageRating!) ? 'var(--yellow-neon)' : 'rgba(255,255,255,0.3)',
-                    fontSize: '0.9rem'
-                  }}
-                >
-                  ★
-                </span>
-              ))}
-            </div>
-            <span style={{
-              color: 'rgba(255,255,255,0.7)',
-              fontSize: '0.8rem'
-            }}>
-              ({product.averageRating.toFixed(1)})
-            </span>
-          </div>
-        )} */}
-
-        <p className="product-price">${minPrice} USD</p>
-        
-        <p className="product-stock">
-          {inStock ? (totalStock === 1 ? 'last one!' : `${totalStock} left`) : 'sold out'}
-        </p>
+            {product.category.name}
+          </p>
+          
+          {/* Вторая строка: Цена и остатки */}
+          <p className="product-price" style={{ 
+            margin: 0, 
+            gridColumn: '1', 
+            gridRow: '2' 
+          }}>
+            ${minPrice} USD
+          </p>
+          <p className="product-stock" style={{ 
+            margin: 0, 
+            gridColumn: '2', 
+            gridRow: '2',
+            textAlign: 'right',
+            fontSize: '0.85rem' 
+          }}>
+            {inStock ? (totalStock === 1 ? 'last one!' : `${totalStock} left`) : 'sold out'}
+          </p>
+        </div>
 
         <button
           onClick={handleAddToCart}
