@@ -1397,9 +1397,12 @@ async function uploadPhotoToCloudinary(photos: any[]): Promise<string | null> {
 async function uploadVideoToCloudinary(video: any): Promise<string | null> {
   try {
     console.log('Starting video upload for file_id:', video.file_id)
+    console.log('Video object:', JSON.stringify(video, null, 2))
     
     const fileResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${video.file_id}`)
     const fileData = await fileResponse.json()
+    
+    console.log('Telegram getFile response:', JSON.stringify(fileData, null, 2))
     
     if (!fileData.ok) {
       console.error('Failed to get file from Telegram:', fileData)
@@ -1409,11 +1412,18 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
     const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`
     console.log('Uploading video from URL:', fileUrl)
     console.log('File size:', fileData.result.file_size)
+    console.log('File path:', fileData.result.file_path)
     
     // Проверяем размер файла (Telegram имеет лимит 20MB для ботов)
     if (fileData.result.file_size > 20 * 1024 * 1024) {
       console.error('File too large:', fileData.result.file_size)
       throw new Error('Файл слишком большой. Максимальный размер 20MB')
+    }
+    
+    // Проверяем минимальный размер (избегаем слишком маленьких файлов)
+    if (fileData.result.file_size < 1024) {
+      console.error('File too small:', fileData.result.file_size)
+      throw new Error('Файл слишком маленький. Минимальный размер 1KB')
     }
     
     // Упрощенные настройки для начального тестирования
@@ -1436,10 +1446,35 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
     
     console.log('Upload options:', JSON.stringify(uploadOptions, null, 2))
     
-    const result = await cloudinaryService.uploadFromUrl(fileUrl, uploadOptions)
+    // Пробуем несколько подходов к загрузке
+    let result
+    try {
+      // Первый подход: загрузка с трансформацией
+      result = await cloudinaryService.uploadFromUrl(fileUrl, uploadOptions)
+      console.log('Video uploaded successfully with transformations:', result.secure_url)
+    } catch (transformError) {
+      console.warn('Upload with transformations failed, trying basic upload:', transformError)
+      
+      // Второй подход: базовая загрузка без трансформаций
+      const basicOptions = {
+        folder: 'vobvorot-videos',
+        resource_type: 'video',
+        overwrite: true,
+        unique_filename: true
+      }
+      
+      try {
+        result = await cloudinaryService.uploadFromUrl(fileUrl, basicOptions)
+        console.log('Video uploaded successfully with basic options:', result.secure_url)
+      } catch (basicError) {
+        console.error('Basic upload also failed:', basicError)
+        throw basicError
+      }
+    }
     
-    console.log('Video uploaded successfully:', result.secure_url)
     console.log('Video public_id:', result.public_id)
+    console.log('Video format:', result.format)
+    console.log('Video size:', result.bytes)
     
     return result.secure_url
   } catch (error) {
