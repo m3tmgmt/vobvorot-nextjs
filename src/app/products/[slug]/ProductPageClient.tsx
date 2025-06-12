@@ -5,6 +5,7 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
 import { useWishlist } from '@/contexts/WishlistContext'
+import ProductVideoGallery from '@/components/ProductVideoGallery'
 // import { ProductReviews } from '@/components/ProductReviews' // Скрыто до появления серийных товаров
 
 interface Product {
@@ -447,6 +448,32 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
               </button>
             </div>
           </div>
+        </div>
+
+        {/* Video Gallery Section */}
+        <div style={{ 
+          maxWidth: '1200px', 
+          margin: '3rem auto 0 auto', 
+          padding: '0 2rem' 
+        }}>
+          <h2 style={{ 
+            fontSize: '2rem',
+            fontWeight: '700',
+            color: 'var(--cyan-accent)',
+            marginBottom: '1.5rem',
+            textAlign: 'center'
+          }}>
+            Product Videos
+          </h2>
+          <ProductVideoGallery 
+            productId={product.id}
+            className="product-videos"
+            autoplay={false}
+            controls={true}
+            muted={true}
+            loop={false}
+            playsInline={true}
+          />
         </div>
 
         {/* Reviews Section - скрыто для уникальных товаров */}

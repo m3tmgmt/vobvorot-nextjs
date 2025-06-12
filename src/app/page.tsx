@@ -27,8 +27,8 @@ export default function HomePage() {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [activeFilter, setActiveFilter] = useState('all')
   const [availableCategories, setAvailableCategories] = useState<{id: string, name: string, icon: string}[]>([])
-  const [homeVideo, setHomeVideo] = useState<string>('/assets/videos/hero2.mp4')
-  const [allVideos, setAllVideos] = useState<string[]>(['/assets/videos/hero2.mp4'])
+  const [homeVideo, setHomeVideo] = useState<string>('')
+  const [allVideos, setAllVideos] = useState<string[]>([])
   const { findPiece, dispatch: puzzleDispatch } = usePuzzle()
   
   const videos = useMemo(() => allVideos, [allVideos])
@@ -43,8 +43,8 @@ export default function HomePage() {
     { id: 'bags', name: 'Bags', icon: '👜' }
   ]
 
-  // Загружаем галерею видео с API
-  useEffect(() => {
+  // Функция для загрузки видео галереи
+  const loadVideosGallery = () => {
     console.log('Fetching home videos gallery from API...')
     fetch('/api/admin/site/home-videos')
       .then(res => {
@@ -60,11 +60,18 @@ export default function HomePage() {
           setAllVideos(videoUrls) // Обновляем массив всех видео
           console.log('Home videos gallery loaded. Total videos:', videoUrls.length)
         } else {
-          console.log('No videos in gallery, using default')
-          setAllVideos(['/assets/videos/hero2.mp4']) // Fallback к дефолтному видео
+          console.log('No videos in gallery, showing empty state')
+          setAllVideos([]) // Пустой массив - нет видео для показа
         }
       })
       .catch(err => console.error('Failed to fetch home videos:', err))
+  }
+
+  // Загружаем галерею видео с API и обновляем каждые 30 секунд
+  useEffect(() => {
+    loadVideosGallery()
+    const interval = setInterval(loadVideosGallery, 30000) // Обновляем каждые 30 секунд
+    return () => clearInterval(interval)
   }, [])
 
   useEffect(() => {
@@ -115,22 +122,31 @@ export default function HomePage() {
     <div>
       {/* Hero Section */}
       <section className="hero-section">
-        {videos.map((video, index) => (
-          <video
-            key={`${video}-${index}`}
-            className={`hero-video-container ${index === currentVideoIndex ? 'active' : ''}`}
-            autoPlay
-            muted
-            loop
-            playsInline
-            onError={(e) => console.error('Video error:', e, 'Video src:', video)}
-            onLoadStart={() => console.log('Video load started:', video)}
-            onLoadedData={() => console.log('Video loaded successfully:', video)}
-            onCanPlay={() => console.log('Video can play:', video)}
-          >
-            <source src={video} type="video/mp4" />
-          </video>
-        ))}
+        {videos.length > 0 ? (
+          videos.map((video, index) => (
+            <video
+              key={`${video}-${index}`}
+              className={`hero-video-container ${index === currentVideoIndex ? 'active' : ''}`}
+              autoPlay
+              muted
+              loop
+              playsInline
+              onError={(e) => console.error('Video error:', e, 'Video src:', video)}
+              onLoadStart={() => console.log('Video load started:', video)}
+              onLoadedData={() => console.log('Video loaded successfully:', video)}
+              onCanPlay={() => console.log('Video can play:', video)}
+            >
+              <source src={video} type="video/mp4" />
+            </video>
+          ))
+        ) : (
+          // Нет видео - скрытый placeholder
+          <div className="hero-video-container active" style={{
+            backgroundColor: '#0a0a0a'
+          }}>
+            {/* Пустой блок без текста */}
+          </div>
+        )}
         
         <div className="hero-overlay"></div>
         

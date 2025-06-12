@@ -179,6 +179,47 @@ async function handleCallbackQuery(callbackQuery: any) {
         const categoryId = parts[3]
         await updateProductCategory(chatId, userId, productId, categoryId)
       }
+      // ===== НОВЫЕ HANDLERS ДЛЯ ТОВАРНЫХ ВИДЕО =====
+      // Управление видео конкретного товара
+      else if (data.startsWith('manage_product_videos_')) {
+        const productId = data.replace('manage_product_videos_', '')
+        await sendProductVideoMenu(chatId, productId)
+      }
+      // Загрузка видео для товара
+      else if (data.startsWith('upload_product_video_')) {
+        const productId = data.replace('upload_product_video_', '')
+        await startUploadProductVideo(chatId, userId, productId)
+      }
+      // Удаление видео товара
+      else if (data.startsWith('delete_product_video_')) {
+        const productId = data.replace('delete_product_video_', '')
+        await deleteProductVideo(chatId, productId)
+      }
+      // Просмотр текущих видео товара
+      else if (data.startsWith('current_product_videos_')) {
+        const productId = data.replace('current_product_videos_', '')
+        await getCurrentProductVideoInfo(chatId, productId)
+      }
+      // Подтверждение удаления видео товара (ВАЖНО: перед confirm_delete_product_video_)
+      else if (data.startsWith('confirm_delete_product_video_')) {
+        const parts = data.replace('confirm_delete_product_video_', '').split('_')
+        const productId = parts[0]
+        const videoId = parts.slice(1).join('_')
+        await executeProductVideoDelete(chatId, productId, videoId)
+      }
+      // Отмена удаления видео товара
+      else if (data.startsWith('cancel_delete_product_video_')) {
+        const parts = data.replace('cancel_delete_product_video_', '').split('_')
+        const productId = parts[0]
+        await deleteProductVideo(chatId, productId)
+      }
+      // Выбор конкретного видео товара для удаления
+      else if (data.startsWith('select_delete_product_video_')) {
+        const parts = data.replace('select_delete_product_video_', '').split('_')
+        const productId = parts[0]
+        const videoId = parts.slice(1).join('_')
+        await confirmProductVideoDelete(chatId, productId, videoId)
+      }
       break
   }
 }
@@ -530,6 +571,8 @@ async function handleUserState(message: any, userState: any) {
       return await handleCreateCategoryName(chatId, userId, text)
     case 'upload_home_video':
       return await handleUploadHomeVideo(chatId, userId, video)
+    case 'upload_product_video':
+      return await handleUploadProductVideo(chatId, userId, video, userState.productId)
     case 'edit_product_name':
       return await handleEditProductName(chatId, userId, text)
     case 'edit_product_description':
@@ -943,11 +986,19 @@ async function handleUploadHomeVideo(chatId: number, userId: number, video: any)
 
 async function deleteHomeVideo(chatId: number) {
   try {
-    // Получаем список всех видео
-    const response = await fetch(`https://vobvorot.com/api/admin/site/home-videos`)
-    const data = await response.json()
+    // Получаем список всех видео напрямую из базы данных
+    const videos = await prisma.setting.findMany({
+      where: {
+        key: {
+          startsWith: 'home_video_'
+        }
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
     
-    if (!data.videos || data.videos.length === 0) {
+    if (!videos || videos.length === 0) {
       const keyboard = {
         inline_keyboard: [
           [{ text: '⬅️ Назад к видео', callback_data: 'back_video' }]
@@ -959,12 +1010,12 @@ async function deleteHomeVideo(chatId: number) {
     
     // Создаем кнопки для выбора видео для удаления
     const videoButtons = []
-    for (const video of data.videos) {
-      const videoName = video.url.split('/').pop()?.split('.')[0] || 'video'
+    for (const video of videos) {
+      const videoName = video.value.split('/').pop()?.split('.')[0] || 'video'
       const shortName = videoName.length > 20 ? videoName.substring(0, 20) + '...' : videoName
       videoButtons.push([{
         text: `🗑️ ${shortName}`,
-        callback_data: `delete_video_${video.id}`
+        callback_data: `confirm_delete_video_${video.key}`
       }])
     }
     
@@ -975,7 +1026,7 @@ async function deleteHomeVideo(chatId: number) {
       inline_keyboard: videoButtons
     }
     
-    await sendTelegramMessage(chatId, `🗑️ *Выберите видео для удаления:*\n\nВсего видео: ${data.videos.length}`, true, keyboard)
+    await sendTelegramMessage(chatId, `🗑️ *Выберите видео для удаления:*\n\nВсего видео: ${videos.length}`, true, keyboard)
   } catch (error) {
     console.error('Error showing delete video menu:', error)
     await sendTelegramMessage(chatId, '❌ Ошибка получения списка видео')
@@ -984,8 +1035,17 @@ async function deleteHomeVideo(chatId: number) {
 
 async function getCurrentVideoInfo(chatId: number) {
   try {
-    const response = await fetch(`https://vobvorot.com/api/admin/site/home-videos`)
-    const data = await response.json()
+    // Получаем список всех видео напрямую из базы данных
+    const videos = await prisma.setting.findMany({
+      where: {
+        key: {
+          startsWith: 'home_video_'
+        }
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
     
     const keyboard = {
       inline_keyboard: [
@@ -993,22 +1053,29 @@ async function getCurrentVideoInfo(chatId: number) {
       ]
     }
     
-    if (data.videos && data.videos.length > 0) {
-      let message = `🎬 *Галерея видео главной страницы:*\n\n📊 Всего видео: ${data.videos.length}\n\n`
+    if (videos && videos.length > 0) {
+      let message = `🎬 *Галерея видео главной страницы:*\n\n📊 Всего видео: ${videos.length}\n\n`
       
-      data.videos.forEach((video: any, index: number) => {
-        const videoName = video.url.split('/').pop()?.split('.')[0] || 'video'
+      videos.forEach((video: any, index: number) => {
+        const videoName = video.value.split('/').pop()?.split('.')[0] || 'video'
         const shortName = videoName.length > 30 ? videoName.substring(0, 30) + '...' : videoName
         const createdDate = new Date(video.createdAt).toLocaleString('ru-RU')
         message += `${index + 1}. 🎥 ${shortName}\n`
         message += `   📅 ${createdDate}\n`
-        message += `   🔗 ${video.url.length > 50 ? video.url.substring(0, 50) + '...' : video.url}\n\n`
+        message += `   🔗 ${video.value.length > 50 ? video.value.substring(0, 50) + '...' : video.value}\n\n`
       })
       
       await sendTelegramMessage(chatId, message, true, keyboard)
     } else {
-      // Галерея пуста - инициализируем её дефолтным видео
-      await initializeGalleryWithDefault(chatId)
+      // Галерея пуста - показываем сообщение без автоматической инициализации
+      const emptyKeyboard = {
+        inline_keyboard: [
+          [{ text: '📤 Загрузить видео', callback_data: 'upload_video' }],
+          [{ text: '⬅️ Назад к видео', callback_data: 'back_video' }]
+        ]
+      }
+      
+      await sendTelegramMessage(chatId, `🎬 *Галерея видео главной страницы:*\n\n📊 Всего видео: 0\n\n✨ Галерея пуста. Загрузите первое видео!`, true, emptyKeyboard)
     }
   } catch (error) {
     console.error('Error getting video info:', error)
@@ -1072,7 +1139,7 @@ async function cleanupEmptyVideoRecords() {
             key: {
               startsWith: 'home_video'
             },
-            value: null
+            value: ''
           }
         ]
       }
@@ -1275,6 +1342,9 @@ async function startProductEdit(chatId: number, userId: number, productId: strin
         [
           { text: '💰 Цена', callback_data: `edit_field_${productId}_price` },
           { text: '🏷️ Категория', callback_data: `edit_field_${productId}_category` }
+        ],
+        [
+          { text: '🎬 Управление видео', callback_data: `manage_product_videos_${productId}` }
         ],
         [
           { text: '⬅️ Назад к списку', callback_data: 'edit_product' }
@@ -1982,6 +2052,380 @@ async function deleteVideoFromGallery(videoId: string): Promise<void> {
   } catch (error) {
     console.error('Error deleting video from gallery:', error)
     await saveDebugLog('delete_video_from_gallery_error', {
+      error_type: error instanceof Error ? error.name : typeof error,
+      error_message: error instanceof Error ? error.message : String(error)
+    })
+    throw error
+  }
+}
+
+// ===== ФУНКЦИИ ДЛЯ УПРАВЛЕНИЯ ТОВАРНЫМИ ВИДЕО =====
+
+async function sendProductVideoMenu(chatId: number, productId: string) {
+  try {
+    // Получаем информацию о товаре
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, name: true }
+    })
+
+    if (!product) {
+      await sendTelegramMessage(chatId, '❌ Товар не найден')
+      return
+    }
+
+    // Получаем количество видео для товара
+    const videoCount = await prisma.setting.count({
+      where: {
+        key: {
+          startsWith: `product_video_${productId}_`
+        }
+      }
+    })
+
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '📤 Загрузить видео', callback_data: `upload_product_video_${productId}` },
+          { text: '🗑️ Удалить видео', callback_data: `delete_product_video_${productId}` }
+        ],
+        [
+          { text: 'ℹ️ Текущие видео', callback_data: `current_product_videos_${productId}` }
+        ],
+        [
+          { text: '⬅️ Назад к товару', callback_data: `edit_product_${productId}` }
+        ]
+      ]
+    }
+
+    await sendTelegramMessage(
+      chatId, 
+      `🎬 *Управление видео товара*\n\n📦 Товар: ${product.name}\n🎥 Видео: ${videoCount} шт.\n\nВыберите действие:`, 
+      true, 
+      keyboard
+    )
+  } catch (error) {
+    console.error('Error sending product video menu:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка загрузки меню видео')
+  }
+}
+
+async function startUploadProductVideo(chatId: number, userId: number, productId: string) {
+  try {
+    // Проверяем, что товар существует
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, name: true }
+    })
+
+    if (!product) {
+      await sendTelegramMessage(chatId, '❌ Товар не найден')
+      return
+    }
+
+    userStates.set(userId.toString(), { 
+      action: 'upload_product_video',
+      productId: productId
+    })
+    
+    await sendTelegramMessage(
+      chatId, 
+      `🎬 Отправьте видео для товара:\n\n📦 ${product.name}\n\n📝 Видео будет добавлено в галерею товара.`
+    )
+  } catch (error) {
+    console.error('Error starting product video upload:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка начала загрузки видео')
+  }
+}
+
+async function handleUploadProductVideo(chatId: number, userId: number, video: any, productId: string) {
+  if (!video) {
+    await sendTelegramMessage(chatId, '❌ Пожалуйста, отправьте видео файл')
+    return
+  }
+
+  await sendTelegramMessage(chatId, '⏳ Загружаю видео...')
+
+  try {
+    await saveDebugLog('handle_product_video_upload_start', {
+      chatId: chatId,
+      userId: userId,
+      productId: productId,
+      video_file_id: video.file_id,
+      video_file_size: video.file_size,
+      video_duration: video.duration
+    })
+
+    // Проверяем размер файла
+    if (video.file_size && video.file_size > 20 * 1024 * 1024) {
+      await sendTelegramMessage(chatId, '❌ Файл слишком большой. Максимальный размер: 20MB')
+      userStates.delete(userId.toString())
+      return
+    }
+
+    const videoUrl = await uploadVideoToCloudinary(video)
+
+    if (videoUrl) {
+      await addVideoToProductGallery(productId, videoUrl)
+
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '⬅️ Назад к видео товара', callback_data: `manage_product_videos_${productId}` }]
+        ]
+      }
+
+      await sendTelegramMessage(
+        chatId, 
+        `✅ Видео добавлено в галерею товара!\n\n🔗 URL: ${videoUrl}`, 
+        false, 
+        keyboard
+      )
+    } else {
+      await sendTelegramMessage(chatId, '❌ Ошибка загрузки видео')
+    }
+  } catch (error) {
+    console.error('Error uploading product video:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка загрузки видео')
+  }
+
+  userStates.delete(userId.toString())
+}
+
+async function deleteProductVideo(chatId: number, productId: string) {
+  try {
+    // Получаем список всех видео товара
+    const videos = await prisma.setting.findMany({
+      where: {
+        key: {
+          startsWith: `product_video_${productId}_`
+        }
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
+
+    if (!videos || videos.length === 0) {
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '⬅️ Назад к видео товара', callback_data: `manage_product_videos_${productId}` }]
+        ]
+      }
+      await sendTelegramMessage(chatId, '❌ Нет видео для удаления', false, keyboard)
+      return
+    }
+
+    // Создаем кнопки для выбора видео для удаления
+    const videoButtons = []
+    for (const video of videos) {
+      const videoName = video.value.split('/').pop()?.split('.')[0] || 'video'
+      const shortName = videoName.length > 20 ? videoName.substring(0, 20) + '...' : videoName
+      videoButtons.push([{
+        text: `🗑️ ${shortName}`,
+        callback_data: `select_delete_product_video_${productId}_${video.key.replace(`product_video_${productId}_`, '')}`
+      }])
+    }
+
+    // Добавляем кнопку "Назад"
+    videoButtons.push([{ text: '⬅️ Назад к видео товара', callback_data: `manage_product_videos_${productId}` }])
+
+    const keyboard = {
+      inline_keyboard: videoButtons
+    }
+
+    await sendTelegramMessage(chatId, `🗑️ *Выберите видео для удаления:*\n\nВсего видео: ${videos.length}`, true, keyboard)
+  } catch (error) {
+    console.error('Error showing delete product video menu:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка получения списка видео товара')
+  }
+}
+
+async function getCurrentProductVideoInfo(chatId: number, productId: string) {
+  try {
+    // Получаем информацию о товаре
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true, name: true }
+    })
+
+    if (!product) {
+      await sendTelegramMessage(chatId, '❌ Товар не найден')
+      return
+    }
+
+    // Получаем список всех видео товара
+    const videos = await prisma.setting.findMany({
+      where: {
+        key: {
+          startsWith: `product_video_${productId}_`
+        }
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
+
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '⬅️ Назад к видео товара', callback_data: `manage_product_videos_${productId}` }]
+      ]
+    }
+
+    if (videos && videos.length > 0) {
+      let message = `🎬 *Галерея видео товара:*\n\n📦 Товар: ${product.name}\n📊 Всего видео: ${videos.length}\n\n`
+
+      videos.forEach((video: any, index: number) => {
+        const videoName = video.value.split('/').pop()?.split('.')[0] || 'video'
+        const shortName = videoName.length > 30 ? videoName.substring(0, 30) + '...' : videoName
+        const createdDate = new Date(video.createdAt).toLocaleString('ru-RU')
+        message += `${index + 1}. 🎥 ${shortName}\n`
+        message += `   📅 ${createdDate}\n`
+        message += `   🔗 ${video.value.length > 50 ? video.value.substring(0, 50) + '...' : video.value}\n\n`
+      })
+
+      await sendTelegramMessage(chatId, message, true, keyboard)
+    } else {
+      const emptyKeyboard = {
+        inline_keyboard: [
+          [{ text: '📤 Загрузить видео', callback_data: `upload_product_video_${productId}` }],
+          [{ text: '⬅️ Назад к видео товара', callback_data: `manage_product_videos_${productId}` }]
+        ]
+      }
+
+      await sendTelegramMessage(
+        chatId, 
+        `🎬 *Галерея видео товара:*\n\n📦 Товар: ${product.name}\n📊 Всего видео: 0\n\n✨ Галерея пуста. Загрузите первое видео!`, 
+        true, 
+        emptyKeyboard
+      )
+    }
+  } catch (error) {
+    console.error('Error getting product video info:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка получения информации о видео товара')
+  }
+}
+
+async function confirmProductVideoDelete(chatId: number, productId: string, videoId: string) {
+  try {
+    // Восстанавливаем полный ID видео
+    const fullVideoId = `product_video_${productId}_${videoId}`
+    
+    // Получаем информацию о видео
+    const video = await prisma.setting.findUnique({
+      where: { key: fullVideoId }
+    })
+
+    if (!video) {
+      await sendTelegramMessage(chatId, '❌ Видео не найдено')
+      return
+    }
+
+    const videoName = video.value.split('/').pop()?.split('.')[0] || 'video'
+    const shortName = videoName.length > 30 ? videoName.substring(0, 30) + '...' : videoName
+
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '✅ Да, удалить', callback_data: `confirm_delete_product_video_${productId}_${videoId}` },
+          { text: '❌ Отмена', callback_data: `cancel_delete_product_video_${productId}_${videoId}` }
+        ]
+      ]
+    }
+
+    await sendTelegramMessage(
+      chatId,
+      `🗑️ *Подтверждение удаления*\n\n🎥 Видео: ${shortName}\n🔗 URL: ${video.value.length > 50 ? video.value.substring(0, 50) + '...' : video.value}\n\n❗ Это действие нельзя отменить!`,
+      true,
+      keyboard
+    )
+  } catch (error) {
+    console.error('Error confirming product video delete:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка получения информации о видео')
+  }
+}
+
+async function executeProductVideoDelete(chatId: number, productId: string, videoId: string) {
+  try {
+    // Восстанавливаем полный ID видео
+    const fullVideoId = `product_video_${productId}_${videoId}`
+    
+    await deleteVideoFromProductGallery(productId, fullVideoId)
+
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '⬅️ Назад к видео товара', callback_data: `manage_product_videos_${productId}` }]
+      ]
+    }
+
+    await sendTelegramMessage(chatId, '✅ Видео товара успешно удалено из галереи!', false, keyboard)
+  } catch (error) {
+    console.error('Error executing product video delete:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка удаления видео товара')
+  }
+}
+
+// Функции для работы с галереей видео товаров
+async function addVideoToProductGallery(productId: string, videoUrl: string): Promise<void> {
+  try {
+    await saveDebugLog('add_video_to_product_gallery_start', {
+      productId: productId,
+      videoUrl: videoUrl,
+      method: 'direct_database_insert'
+    })
+
+    // Добавляем видео напрямую в базу данных
+    const timestamp = Date.now()
+    const videoKey = `product_video_${productId}_${timestamp}`
+
+    const addedVideo = await prisma.setting.create({
+      data: {
+        key: videoKey,
+        value: videoUrl
+      }
+    })
+
+    await saveDebugLog('add_video_to_product_gallery_success', {
+      productId: productId,
+      videoUrl: videoUrl,
+      videoId: addedVideo.key,
+      message: 'Added to product gallery successfully'
+    })
+
+    console.log('Video added to product gallery:', videoUrl, 'ID:', addedVideo.key)
+  } catch (error) {
+    console.error('Error adding video to product gallery:', error)
+    await saveDebugLog('add_video_to_product_gallery_error', {
+      error_type: error instanceof Error ? error.name : typeof error,
+      error_message: error instanceof Error ? error.message : String(error)
+    })
+    throw error
+  }
+}
+
+async function deleteVideoFromProductGallery(productId: string, videoId: string): Promise<void> {
+  try {
+    await saveDebugLog('delete_video_from_product_gallery_start', {
+      productId: productId,
+      videoId: videoId,
+      method: 'direct_database_delete'
+    })
+
+    // Удаляем видео напрямую из базы данных
+    const deletedVideo = await prisma.setting.delete({
+      where: { key: videoId }
+    })
+
+    await saveDebugLog('delete_video_from_product_gallery_success', {
+      productId: productId,
+      videoId: videoId,
+      deletedVideoUrl: deletedVideo.value,
+      message: 'Deleted from product gallery successfully'
+    })
+
+    console.log('Video deleted from product gallery:', videoId, 'URL was:', deletedVideo.value)
+  } catch (error) {
+    console.error('Error deleting video from product gallery:', error)
+    await saveDebugLog('delete_video_from_product_gallery_error', {
       error_type: error instanceof Error ? error.name : typeof error,
       error_message: error instanceof Error ? error.message : String(error)
     })
