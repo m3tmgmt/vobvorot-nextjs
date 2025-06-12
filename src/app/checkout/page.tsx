@@ -1,6 +1,5 @@
 'use client'
 
-import { useSession } from 'next-auth/react'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
@@ -24,7 +23,6 @@ interface PaymentInfo {
 }
 
 export default function CheckoutPage() {
-  const { data: session, status } = useSession()
   const { state, dispatch } = useCart()
   const router = useRouter()
   const [step, setStep] = useState(1) // 1: Shipping, 2: Payment, 3: Review
@@ -34,7 +32,7 @@ export default function CheckoutPage() {
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo>({
     firstName: '',
     lastName: '',
-    email: session?.user?.email || '',
+    email: '',
     phone: '',
     address: '',
     city: '',
@@ -54,15 +52,7 @@ export default function CheckoutPage() {
     }
   }, [state.items.length, router])
 
-  // Update email from session
-  useEffect(() => {
-    if (session?.user?.email) {
-      setShippingInfo(prev => ({
-        ...prev,
-        email: session.user.email!
-      }))
-    }
-  }, [session])
+  // Note: Guest checkout enabled - no session required
 
   // Calculate shipping cost based on country
   useEffect(() => {
@@ -147,26 +137,7 @@ export default function CheckoutPage() {
     }
   }
 
-  if (status === 'loading') {
-    return (
-      <div style={{ 
-        minHeight: '100vh', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center' 
-      }}>
-        <div style={{ color: 'var(--pink-main)', fontSize: '1.2rem' }}>
-          Loading...
-        </div>
-      </div>
-    )
-  }
-
-  // Allow guest checkout - authentication not required
-  // if (!session) {
-  //   router.push('/auth/signin?callbackUrl=/checkout')
-  //   return null
-  // }
+  // Guest checkout enabled - no authentication required
 
   if (state.items.length === 0) {
     return null // Will redirect
