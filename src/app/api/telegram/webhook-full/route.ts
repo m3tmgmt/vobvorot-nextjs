@@ -1456,7 +1456,7 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
       console.warn('Upload with transformations failed, trying basic upload:', transformError)
       
       // Второй подход: базовая загрузка без трансформаций
-      const basicOptions = {
+      const basicOptions: any = {
         folder: 'vobvorot-videos',
         resource_type: 'video',
         overwrite: true,
