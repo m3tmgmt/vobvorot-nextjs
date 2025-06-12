@@ -25,7 +25,12 @@ export async function POST(request: NextRequest) {
       console.log(`👤 User ${userId} sent: ${text}`)
       
       // Проверяем права администратора
-      if (!ADMIN_IDS.includes(userId.toString())) {
+      const userIdStr = userId.toString()
+      const isAdmin = ADMIN_IDS.includes(userIdStr)
+      console.log(`🔐 User ${userId} (${userIdStr}) admin check: ${isAdmin}`)
+      console.log(`📋 Admin IDs: [${ADMIN_IDS.join(', ')}]`)
+      
+      if (!isAdmin) {
         console.log(`❌ Access denied for user ${userId}`)
         await sendMessage(chatId, '❌ У вас нет доступа к этому боту')
         return NextResponse.json({ ok: true })
@@ -34,17 +39,40 @@ export async function POST(request: NextRequest) {
       // Обрабатываем команды
       if (text === '/start') {
         console.log(`✅ Sending welcome to admin ${userId}`)
-        const welcomeMessage = `
-🎉 VobvorotAdminBot работает!
+        const welcomeMessage = `🎉 VobvorotAdminBot работает!
 
 ✅ Новый токен: 7700098378...
-✅ Webhook: активен
+✅ Webhook: активен  
 ✅ Доступ: подтвержден
-✅ ID: ${userId}
+✅ Ваш ID: ${userId}
+✅ Админ ID в системе: ${ADMIN_IDS.join(', ')}
 
-Простая версия для тестирования.
-        `
+🔧 Простая версия для тестирования.
+
+Доступные команды:
+/start - это сообщение
+/test - тест функций
+/menu - будущее главное меню`
+        
         await sendMessage(chatId, welcomeMessage)
+      } else if (text === '/test') {
+        console.log(`🧪 Test command from admin ${userId}`)
+        await sendMessage(chatId, `🧪 Тест успешен!
+        
+✅ Бот получил команду
+✅ Пользователь авторизован  
+✅ Сообщение отправлено
+
+Время: ${new Date().toLocaleString('ru-RU')}`)
+      } else if (text === '/menu') {
+        await sendMessage(chatId, '📱 Главное меню будет здесь после завершения тестирования')
+      } else if (text.startsWith('/')) {
+        await sendMessage(chatId, `❓ Неизвестная команда: ${text}
+        
+Доступные команды:
+/start - приветствие
+/test - тест
+/menu - меню`)
       } else {
         await sendMessage(chatId, '👋 Используйте /start для начала работы')
       }
