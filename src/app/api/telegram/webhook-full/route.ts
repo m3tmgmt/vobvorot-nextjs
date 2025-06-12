@@ -845,6 +845,13 @@ async function handleUploadHomeVideo(chatId: number, userId: number, video: any)
   await sendTelegramMessage(chatId, '⏳ Загружаю видео...')
   
   try {
+    // Проверяем размер файла заранее
+    if (video.file_size && video.file_size > 20 * 1024 * 1024) {
+      await sendTelegramMessage(chatId, '❌ Файл слишком большой. Максимальный размер: 20MB\n\nПопробуйте сжать видео или выберите файл меньшего размера.')
+      userStates.delete(userId.toString())
+      return
+    }
+    
     const videoUrl = await uploadVideoToCloudinary(video)
     
     if (videoUrl) {
@@ -856,13 +863,26 @@ async function handleUploadHomeVideo(chatId: number, userId: number, video: any)
         ]
       }
       
-      await sendTelegramMessage(chatId, '✅ Видео главной страницы обновлено!', false, keyboard)
+      await sendTelegramMessage(chatId, `✅ Видео главной страницы обновлено!\n\n🔗 URL: ${videoUrl}\n\nВидео будет автоматически конвертировано в MP4 формат для веб-совместимости.`, false, keyboard)
     } else {
-      await sendTelegramMessage(chatId, '❌ Ошибка загрузки видео')
+      await sendTelegramMessage(chatId, '❌ Ошибка загрузки видео\n\nВозможные причины:\n• Неподдерживаемый формат\n• Проблемы с сетью\n• Превышен размер файла\n\nПопробуйте загрузить видео в формате MP4, MOV или AVI размером до 20MB.')
     }
   } catch (error) {
     console.error('Error uploading video:', error)
-    await sendTelegramMessage(chatId, '❌ Ошибка загрузки видео')
+    
+    let errorMessage = '❌ Ошибка загрузки видео'
+    
+    if (error instanceof Error) {
+      if (error.message.includes('размер')) {
+        errorMessage = '❌ ' + error.message
+      } else if (error.message.includes('формат')) {
+        errorMessage = '❌ Неподдерживаемый формат видео\n\nПоддерживаемые форматы: MP4, MOV, AVI, MKV'
+      } else if (error.message.includes('network') || error.message.includes('timeout')) {
+        errorMessage = '❌ Ошибка сети. Попробуйте еще раз через несколько секунд.'
+      }
+    }
+    
+    await sendTelegramMessage(chatId, errorMessage)
   }
   
   userStates.delete(userId.toString())
@@ -1376,6 +1396,8 @@ async function uploadPhotoToCloudinary(photos: any[]): Promise<string | null> {
 
 async function uploadVideoToCloudinary(video: any): Promise<string | null> {
   try {
+    console.log('Starting video upload for file_id:', video.file_id)
+    
     const fileResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${video.file_id}`)
     const fileData = await fileResponse.json()
     
@@ -1386,36 +1408,56 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
     
     const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`
     console.log('Uploading video from URL:', fileUrl)
+    console.log('File size:', fileData.result.file_size)
     
-    const result = await cloudinaryService.uploadFromUrl(fileUrl, {
+    // Проверяем размер файла (Telegram имеет лимит 20MB для ботов)
+    if (fileData.result.file_size > 20 * 1024 * 1024) {
+      console.error('File too large:', fileData.result.file_size)
+      throw new Error('Файл слишком большой. Максимальный размер 20MB')
+    }
+    
+    // Упрощенные настройки для начального тестирования
+    const uploadOptions: any = {
       folder: 'vobvorot-videos',
       resource_type: 'video',
-      // Автоматическая конвертация в веб-совместимые форматы
-      format: 'mp4',
-      video_codec: 'h264',
-      audio_codec: 'aac',
-      // Оптимизация для веба
-      flags: 'streaming_attachment',
-      transformation: [
-        {
-          video_codec: 'h264',
-          audio_codec: 'aac',
-          format: 'mp4',
-          quality: 'auto',
-          fetch_format: 'auto'
-        }
-      ]
-    })
+      overwrite: true,
+      unique_filename: true
+    }
+    
+    // Добавляем базовую трансформацию только если это не очень большой файл
+    if (fileData.result.file_size < 10 * 1024 * 1024) {
+      uploadOptions.transformation = [{
+        format: 'mp4',
+        video_codec: 'h264',
+        audio_codec: 'aac',
+        quality: 'auto'
+      }]
+    }
+    
+    console.log('Upload options:', JSON.stringify(uploadOptions, null, 2))
+    
+    const result = await cloudinaryService.uploadFromUrl(fileUrl, uploadOptions)
     
     console.log('Video uploaded successfully:', result.secure_url)
+    console.log('Video public_id:', result.public_id)
+    
     return result.secure_url
   } catch (error) {
     console.error('Error uploading video:', error)
+    
     // Более детальное логирование ошибки
     if (error instanceof Error) {
+      console.error('Error name:', error.name)
       console.error('Error message:', error.message)
       console.error('Error stack:', error.stack)
     }
+    
+    // Логируем дополнительную информацию если это ошибка Cloudinary
+    if (error && typeof error === 'object' && 'http_code' in error) {
+      console.error('Cloudinary HTTP code:', (error as any).http_code)
+      console.error('Cloudinary error details:', (error as any).error)
+    }
+    
     return null
   }
 }
