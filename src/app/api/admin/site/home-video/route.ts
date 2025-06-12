@@ -1,7 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-
-// Используем переменную окружения для хранения URL видео
-let homeVideoUrl: string | null = null
+import { prisma } from '@/lib/prisma'
 
 export async function PUT(request: NextRequest) {
   try {
@@ -15,11 +13,17 @@ export async function PUT(request: NextRequest) {
 
     const { videoUrl } = await request.json()
 
-    // Сохраняем URL видео в память (для простоты в продакшн среде)
-    homeVideoUrl = videoUrl
+    // Сохраняем в базу данных используя upsert
+    await prisma.setting.upsert({
+      where: { key: 'home_video_url' },
+      update: { value: videoUrl || '' },
+      create: { 
+        key: 'home_video_url',
+        value: videoUrl || ''
+      }
+    })
     
-    // В будущем можно сохранять в базу данных
-    console.log('Home video updated:', videoUrl)
+    console.log('Home video updated in database:', videoUrl)
 
     return NextResponse.json({
       success: true,
@@ -38,10 +42,18 @@ export async function PUT(request: NextRequest) {
 
 export async function GET() {
   try {
+    // Получаем видео из базы данных
+    const setting = await prisma.setting.findUnique({
+      where: { key: 'home_video_url' }
+    })
+    
+    const videoUrl = setting?.value || null
+    const hasVideo = videoUrl && videoUrl.trim() !== ''
+    
     return NextResponse.json({
-      videoUrl: homeVideoUrl,
+      videoUrl: hasVideo ? videoUrl : null,
       updatedAt: new Date().toISOString(),
-      message: homeVideoUrl ? 'Home video configured' : 'No home video configured'
+      message: hasVideo ? 'Home video configured' : 'No home video configured'
     })
   } catch (error) {
     console.error('Error reading home video config:', error)
