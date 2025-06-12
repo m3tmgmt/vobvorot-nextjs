@@ -943,7 +943,7 @@ export async function GET(request: NextRequest) {
   const action = searchParams.get('action')
   
   if (action === 'set') {
-    const webhookUrl = 'https://vobvorot-nextjs-gdohidokg-m3tmgmt-gmailcoms-projects.vercel.app/api/telegram/webhook-full'
+    const webhookUrl = 'https://vobvorot.com/api/telegram/webhook-full'
     
     const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
       method: 'POST',
