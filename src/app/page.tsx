@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ProductCard } from '@/components/ProductCard'
@@ -30,7 +30,7 @@ export default function HomePage() {
   const [homeVideo, setHomeVideo] = useState<string>('/assets/videos/hero2.mp4')
   const { findPiece, dispatch: puzzleDispatch } = usePuzzle()
   
-  const videos = [homeVideo]
+  const videos = useMemo(() => [homeVideo], [homeVideo])
 
   const allCategories = [
     { id: 'all', name: 'All Items', icon: '✨' },
@@ -59,7 +59,7 @@ export default function HomePage() {
       setCurrentVideoIndex((prev) => (prev + 1) % videos.length)
     }, 8000)
     return () => clearInterval(interval)
-  }, [])
+  }, [videos.length])
 
   useEffect(() => {
     fetch('/api/products?limit=12')
