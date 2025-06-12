@@ -1919,31 +1919,37 @@ async function addVideoToGallery(videoUrl: string): Promise<void> {
   try {
     await saveDebugLog('add_video_to_gallery_start', {
       videoUrl: videoUrl,
-      method: 'new_gallery_api'
+      method: 'direct_database_insert'
     })
     
-    const response = await fetch(`https://vobvorot.com/api/admin/site/home-videos`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${ADMIN_API_KEY}`
-      },
-      body: JSON.stringify({ videoUrl })
+    // Добавляем видео напрямую в базу данных, минуя API
+    const timestamp = Date.now()
+    const videoKey = `home_video_${timestamp}`
+    
+    const addedVideo = await prisma.setting.create({
+      data: {
+        key: videoKey,
+        value: videoUrl
+      }
     })
     
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
-    }
-    
-    const data = await response.json()
+    // Подсчитываем общее количество видео
+    const totalVideos = await prisma.setting.count({
+      where: {
+        key: {
+          startsWith: 'home_video_'
+        }
+      }
+    })
     
     await saveDebugLog('add_video_to_gallery_success', {
       videoUrl: videoUrl,
-      totalVideos: data.count,
-      message: 'Added to gallery successfully'
+      videoId: addedVideo.key,
+      totalVideos: totalVideos,
+      message: 'Added to gallery successfully via direct database access'
     })
     
-    console.log('Video added to gallery:', videoUrl, 'Total videos:', data.count)
+    console.log('Video added to gallery:', videoUrl, 'ID:', addedVideo.key, 'Total videos:', totalVideos)
   } catch (error) {
     console.error('Error adding video to gallery:', error)
     await saveDebugLog('add_video_to_gallery_error', {
@@ -1958,31 +1964,21 @@ async function deleteVideoFromGallery(videoId: string): Promise<void> {
   try {
     await saveDebugLog('delete_video_from_gallery_start', {
       videoId: videoId,
-      method: 'new_gallery_api'
+      method: 'direct_database_delete'
     })
     
-    const response = await fetch(`https://vobvorot.com/api/admin/site/home-videos`, {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${ADMIN_API_KEY}`
-      },
-      body: JSON.stringify({ videoId })
+    // Удаляем видео напрямую из базы данных, минуя API
+    const deletedVideo = await prisma.setting.delete({
+      where: { key: videoId }
     })
-    
-    if (!response.ok) {
-      throw new Error(`API error: ${response.status}`)
-    }
-    
-    const data = await response.json()
     
     await saveDebugLog('delete_video_from_gallery_success', {
       videoId: videoId,
-      remainingVideos: data.count,
-      message: 'Deleted from gallery successfully'
+      deletedVideoUrl: deletedVideo.value,
+      message: 'Deleted from gallery successfully via direct database access'
     })
     
-    console.log('Video deleted from gallery:', videoId, 'Remaining videos:', data.count)
+    console.log('Video deleted from gallery:', videoId, 'URL was:', deletedVideo.value)
   } catch (error) {
     console.error('Error deleting video from gallery:', error)
     await saveDebugLog('delete_video_from_gallery_error', {
