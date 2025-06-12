@@ -144,12 +144,26 @@ async function handleCallbackQuery(callbackQuery: any) {
         const productId = data.replace('delete_product_', '')
         await confirmProductDelete(chatId, productId)
       }
-      // Проверяем подтверждение удаления
+      // Проверяем удаление конкретного видео
+      else if (data.startsWith('delete_video_')) {
+        const videoId = data.replace('delete_video_', '')
+        await confirmVideoDelete(chatId, videoId)
+      }
+      // Проверяем подтверждение удаления видео (ВАЖНО: это должно быть ПЕРЕД confirm_delete_)
+      else if (data.startsWith('confirm_delete_video_')) {
+        const videoId = data.replace('confirm_delete_video_', '')
+        await executeVideoDelete(chatId, videoId)
+      }
+      // Проверяем отмену удаления видео
+      else if (data.startsWith('cancel_delete_video_')) {
+        await deleteHomeVideo(chatId)
+      }
+      // Проверяем подтверждение удаления товара
       else if (data.startsWith('confirm_delete_')) {
         const productId = data.replace('confirm_delete_', '')
         await deleteProduct(chatId, productId)
       }
-      // Проверяем отмену удаления
+      // Проверяем отмену удаления товара
       else if (data.startsWith('cancel_delete_')) {
         await sendProductsListForDelete(chatId)
       }
@@ -164,20 +178,6 @@ async function handleCallbackQuery(callbackQuery: any) {
         const productId = parts[2]
         const categoryId = parts[3]
         await updateProductCategory(chatId, userId, productId, categoryId)
-      }
-      // Проверяем удаление конкретного видео
-      else if (data.startsWith('delete_video_')) {
-        const videoId = data.replace('delete_video_', '')
-        await confirmVideoDelete(chatId, videoId)
-      }
-      // Проверяем подтверждение удаления видео
-      else if (data.startsWith('confirm_delete_video_')) {
-        const videoId = data.replace('confirm_delete_video_', '')
-        await executeVideoDelete(chatId, videoId)
-      }
-      // Проверяем отмену удаления видео
-      else if (data.startsWith('cancel_delete_video_')) {
-        await deleteHomeVideo(chatId)
       }
       break
   }
