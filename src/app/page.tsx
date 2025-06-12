@@ -34,8 +34,8 @@ export default function HomePage() {
 
   const allCategories = [
     { id: 'all', name: 'All Items', icon: '✨' },
-    { id: 'cameras', name: 'Cameras', icon: '📷' },
-    { id: 'fashion', name: 'Fashion', icon: '👗' },
+    { id: 'electronics', name: 'Electronics', icon: '📱' },
+    { id: 'clothing', name: 'Clothing', icon: '👗' },
     { id: 'accessories', name: 'Accessories', icon: '💍' },
     { id: 'vintage', name: 'Vintage', icon: '📼' },
     { id: 'custom', name: 'Custom', icon: '🎨' },
@@ -87,15 +87,10 @@ export default function HomePage() {
     if (categoryId === 'all') {
       setFilteredProducts(products)
     } else {
-      // Since we don't have exact category matches, simulate filtering
-      const filtered = products.filter((_, index) => {
-        if (categoryId === 'cameras') return index % 5 === 0
-        if (categoryId === 'fashion') return index % 5 === 1 || index % 5 === 2
-        if (categoryId === 'accessories') return index % 5 === 3
-        if (categoryId === 'vintage') return index % 3 === 0
-        if (categoryId === 'custom') return index % 3 === 1
-        return true
-      })
+      // Filter by actual category slug
+      const filtered = products.filter(product => 
+        product.category.slug === categoryId
+      )
       setFilteredProducts(filtered)
     }
   }

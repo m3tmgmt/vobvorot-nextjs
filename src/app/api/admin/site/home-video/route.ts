@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { writeFileSync, readFileSync } from 'fs'
-import { join } from 'path'
+
+// Используем переменную окружения для хранения URL видео
+let homeVideoUrl: string | null = null
 
 export async function PUT(request: NextRequest) {
   try {
@@ -14,27 +15,11 @@ export async function PUT(request: NextRequest) {
 
     const { videoUrl } = await request.json()
 
-    // Сохраняем URL видео в конфигурационный файл
-    const configPath = join(process.cwd(), 'public', 'config', 'home-video.json')
+    // Сохраняем URL видео в память (для простоты в продакшн среде)
+    homeVideoUrl = videoUrl
     
-    // Создаем директорию если не существует
-    const configDir = join(process.cwd(), 'public', 'config')
-    try {
-      const fs = require('fs')
-      if (!fs.existsSync(configDir)) {
-        fs.mkdirSync(configDir, { recursive: true })
-      }
-    } catch (dirError) {
-      console.log('Directory creation handled')
-    }
-
-    const config = {
-      videoUrl: videoUrl,
-      updatedAt: new Date().toISOString(),
-      updatedBy: 'telegram-bot'
-    }
-
-    writeFileSync(configPath, JSON.stringify(config, null, 2))
+    // В будущем можно сохранять в базу данных
+    console.log('Home video updated:', videoUrl)
 
     return NextResponse.json({
       success: true,
@@ -53,19 +38,11 @@ export async function PUT(request: NextRequest) {
 
 export async function GET() {
   try {
-    const configPath = join(process.cwd(), 'public', 'config', 'home-video.json')
-    
-    try {
-      const config = JSON.parse(readFileSync(configPath, 'utf8'))
-      return NextResponse.json(config)
-    } catch (readError) {
-      // Файл не существует или поврежден
-      return NextResponse.json({
-        videoUrl: null,
-        message: 'No home video configured'
-      })
-    }
-
+    return NextResponse.json({
+      videoUrl: homeVideoUrl,
+      updatedAt: new Date().toISOString(),
+      message: homeVideoUrl ? 'Home video configured' : 'No home video configured'
+    })
   } catch (error) {
     console.error('Error reading home video config:', error)
     return NextResponse.json(

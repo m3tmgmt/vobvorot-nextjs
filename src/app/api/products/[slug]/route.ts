@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { sharedProducts } from '@/lib/shared-data'
+import { prisma } from '@/lib/prisma'
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +7,20 @@ export async function GET(
 ) {
   try {
     const { slug } = await params
-    const product = sharedProducts.find(p => p.slug === slug)
+    
+    const product = await prisma.product.findFirst({
+      where: { 
+        slug,
+        isActive: true 
+      },
+      include: {
+        images: true,
+        skus: {
+          where: { isActive: true }
+        },
+        category: true
+      }
+    })
 
     if (!product) {
       return NextResponse.json(
@@ -16,21 +29,7 @@ export async function GET(
       )
     }
 
-    // Преобразуем в формат, ожидаемый фронтендом
-    const formattedProduct = {
-      ...product,
-      skus: [
-        {
-          id: product.id,
-          price: product.price,
-          stock: product.stock,
-          size: product.sizes?.[0],
-          color: product.colors?.[0]
-        }
-      ]
-    }
-
-    return NextResponse.json(formattedProduct)
+    return NextResponse.json(product)
   } catch (error) {
     console.error('Error fetching product:', error)
     return NextResponse.json(

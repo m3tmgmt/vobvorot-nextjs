@@ -85,7 +85,7 @@ async function handleCallbackQuery(callbackQuery: any) {
       await startAddProduct(chatId, userId)
       break
     case 'edit_product':
-      await startEditProduct(chatId)
+      await sendProductsListForEdit(chatId)
       break
     case 'upload_video':
       await startUploadVideo(chatId, userId)
@@ -111,11 +111,45 @@ async function handleCallbackQuery(callbackQuery: any) {
     case 'create_new_category':
       await startCreateCategory(chatId, userId)
       break
+    case 'delete_products':
+      await sendProductsListForDelete(chatId)
+      break
     default:
       // Проверяем, не является ли это выбором категории
       if (data.startsWith('select_category_')) {
         const categoryId = data.replace('select_category_', '')
         await handleCategorySelection(chatId, userId, categoryId)
+      }
+      // Проверяем, не является ли это редактированием товара
+      else if (data.startsWith('edit_product_')) {
+        const productId = data.replace('edit_product_', '')
+        await startProductEdit(chatId, userId, productId)
+      }
+      // Проверяем, не является ли это удалением товара
+      else if (data.startsWith('delete_product_')) {
+        const productId = data.replace('delete_product_', '')
+        await confirmProductDelete(chatId, productId)
+      }
+      // Проверяем подтверждение удаления
+      else if (data.startsWith('confirm_delete_')) {
+        const productId = data.replace('confirm_delete_', '')
+        await deleteProduct(chatId, productId)
+      }
+      // Проверяем отмену удаления
+      else if (data.startsWith('cancel_delete_')) {
+        await sendProductsListForDelete(chatId)
+      }
+      // Проверяем выбор поля для редактирования
+      else if (data.startsWith('edit_field_')) {
+        const [, productId, field] = data.split('_').slice(1)
+        await startFieldEdit(chatId, userId, productId, field)
+      }
+      // Проверяем выбор новой категории при редактировании
+      else if (data.startsWith('edit_category_')) {
+        const parts = data.split('_')
+        const productId = parts[2]
+        const categoryId = parts[3]
+        await updateProductCategory(chatId, userId, productId, categoryId)
       }
       break
   }
@@ -237,8 +271,11 @@ async function sendProductsMenu(chatId: number) {
         { text: '📋 Список товаров', callback_data: 'products_list' }
       ],
       [
-        { text: '➕ Добавить товар', callback_data: 'add_product' },
-        { text: '📝 Редактировать', callback_data: 'edit_product' }
+        { text: '➕ Добавить товар', callback_data: 'add_product' }
+      ],
+      [
+        { text: '📝 Редактировать', callback_data: 'edit_product' },
+        { text: '🗑️ Удалить', callback_data: 'delete_products' }
       ],
       [
         { text: '⬅️ Назад', callback_data: 'back_main' }
@@ -462,6 +499,12 @@ async function handleUserState(message: any, userState: any) {
       return await handleCreateCategoryName(chatId, userId, text)
     case 'upload_home_video':
       return await handleUploadHomeVideo(chatId, userId, video)
+    case 'edit_product_name':
+      return await handleEditProductName(chatId, userId, text)
+    case 'edit_product_description':
+      return await handleEditProductDescription(chatId, userId, text)
+    case 'edit_product_price':
+      return await handleEditProductPrice(chatId, userId, text)
     default:
       // Неизвестное состояние, сбрасываем
       userStates.delete(userId.toString())
@@ -869,8 +912,443 @@ async function getCurrentVideoInfo(chatId: number) {
   }
 }
 
-async function startEditProduct(chatId: number) {
-  await sendTelegramMessage(chatId, '📝 Редактирование товаров будет добавлено в следующем обновлении')
+// Функции для редактирования товаров
+async function sendProductsListForEdit(chatId: number) {
+  try {
+    const products = await prisma.product.findMany({
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        skus: true,
+        category: true,
+        _count: {
+          select: { skus: true }
+        }
+      }
+    })
+
+    if (products.length === 0) {
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '⬅️ Назад к товарам', callback_data: 'back_products' }]
+        ]
+      }
+      await sendTelegramMessage(chatId, '📝 *Редактирование товаров*\n\nТоваров для редактирования не найдено', true, keyboard)
+      return
+    }
+
+    // Создаем кнопки для каждого товара
+    const productButtons = []
+    for (const product of products) {
+      const minPrice = Math.min(...product.skus.map(sku => Number(sku.price)))
+      productButtons.push([{
+        text: `📝 ${product.name} - $${minPrice}`,
+        callback_data: `edit_product_${product.id}`
+      }])
+    }
+
+    // Добавляем кнопку "Назад"
+    productButtons.push([{ text: '⬅️ Назад к товарам', callback_data: 'back_products' }])
+
+    const keyboard = {
+      inline_keyboard: productButtons
+    }
+
+    await sendTelegramMessage(chatId, '📝 *Выберите товар для редактирования:*', true, keyboard)
+  } catch (error) {
+    console.error('Error getting products for edit:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка получения списка товаров')
+  }
+}
+
+async function sendProductsListForDelete(chatId: number) {
+  try {
+    const products = await prisma.product.findMany({
+      take: 10,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        skus: true,
+        category: true,
+        _count: {
+          select: { skus: true }
+        }
+      }
+    })
+
+    if (products.length === 0) {
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '⬅️ Назад к товарам', callback_data: 'back_products' }]
+        ]
+      }
+      await sendTelegramMessage(chatId, '🗑️ *Удаление товаров*\n\nТоваров для удаления не найдено', true, keyboard)
+      return
+    }
+
+    // Создаем кнопки для каждого товара
+    const productButtons = []
+    for (const product of products) {
+      const minPrice = Math.min(...product.skus.map(sku => Number(sku.price)))
+      productButtons.push([{
+        text: `🗑️ ${product.name} - $${minPrice}`,
+        callback_data: `delete_product_${product.id}`
+      }])
+    }
+
+    // Добавляем кнопку "Назад"
+    productButtons.push([{ text: '⬅️ Назад к товарам', callback_data: 'back_products' }])
+
+    const keyboard = {
+      inline_keyboard: productButtons
+    }
+
+    await sendTelegramMessage(chatId, '🗑️ *Выберите товар для удаления:*', true, keyboard)
+  } catch (error) {
+    console.error('Error getting products for delete:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка получения списка товаров')
+  }
+}
+
+async function startProductEdit(chatId: number, userId: number, productId: string) {
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        skus: true,
+        category: true,
+        images: true
+      }
+    })
+
+    if (!product) {
+      await sendTelegramMessage(chatId, '❌ Товар не найден')
+      return
+    }
+
+    const minPrice = Math.min(...product.skus.map(sku => Number(sku.price)))
+    
+    const message = `📝 *Редактирование товара:*
+
+📦 *Название:* ${product.name}
+📄 *Описание:* ${product.description || 'Не указано'}
+💰 *Цена:* $${minPrice}
+🏷️ *Категория:* ${product.category?.name || 'Не указана'}
+🎬 *Видео:* ${product.videoUrl ? '✅ Есть' : '❌ Нет'}
+📸 *Фото:* ${product.images.length > 0 ? `✅ ${product.images.length} шт.` : '❌ Нет'}
+
+Выберите поле для редактирования:`
+
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '📝 Название', callback_data: `edit_field_${productId}_name` },
+          { text: '📄 Описание', callback_data: `edit_field_${productId}_description` }
+        ],
+        [
+          { text: '💰 Цена', callback_data: `edit_field_${productId}_price` },
+          { text: '🏷️ Категория', callback_data: `edit_field_${productId}_category` }
+        ],
+        [
+          { text: '⬅️ Назад к списку', callback_data: 'edit_product' }
+        ]
+      ]
+    }
+
+    await sendTelegramMessage(chatId, message, true, keyboard)
+  } catch (error) {
+    console.error('Error starting product edit:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка загрузки товара')
+  }
+}
+
+async function startFieldEdit(chatId: number, userId: number, productId: string, field: string) {
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        skus: true,
+        category: true
+      }
+    })
+
+    if (!product) {
+      await sendTelegramMessage(chatId, '❌ Товар не найден')
+      return
+    }
+
+    let message = ''
+    let action = ''
+
+    switch (field) {
+      case 'name':
+        message = `📝 *Текущее название:* ${product.name}\n\nВведите новое название товара:`
+        action = 'edit_product_name'
+        break
+      case 'description':
+        message = `📄 *Текущее описание:* ${product.description || 'Не указано'}\n\nВведите новое описание товара:`
+        action = 'edit_product_description'
+        break
+      case 'price':
+        const currentPrice = Math.min(...product.skus.map(sku => Number(sku.price)))
+        message = `💰 *Текущая цена:* $${currentPrice}\n\nВведите новую цену товара в USD:`
+        action = 'edit_product_price'
+        break
+      case 'category':
+        await sendCategorySelectionForEdit(chatId, productId)
+        return
+    }
+
+    userStates.set(userId.toString(), {
+      action: action,
+      productId: productId,
+      editData: {}
+    })
+
+    await sendTelegramMessage(chatId, message, true)
+  } catch (error) {
+    console.error('Error starting field edit:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка')
+  }
+}
+
+async function sendCategorySelectionForEdit(chatId: number, productId: string) {
+  try {
+    const categories = await prisma.category.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' }
+    })
+    
+    if (categories.length === 0) {
+      await sendTelegramMessage(chatId, '❌ Активных категорий не найдено')
+      return
+    }
+    
+    const categoryButtons = []
+    for (let i = 0; i < categories.length; i += 2) {
+      const row = []
+      row.push({ text: categories[i].name, callback_data: `edit_category_${productId}_${categories[i].id}` })
+      if (categories[i + 1]) {
+        row.push({ text: categories[i + 1].name, callback_data: `edit_category_${productId}_${categories[i + 1].id}` })
+      }
+      categoryButtons.push(row)
+    }
+    
+    categoryButtons.push([{ text: '⬅️ Отмена', callback_data: `edit_product_${productId}` }])
+    
+    const keyboard = {
+      inline_keyboard: categoryButtons
+    }
+    
+    await sendTelegramMessage(chatId, '🏷️ Выберите новую категорию:', true, keyboard)
+    
+  } catch (error) {
+    console.error('Error fetching categories for edit:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка загрузки категорий')
+  }
+}
+
+async function handleEditProductName(chatId: number, userId: number, text: string) {
+  if (!text || text.startsWith('/')) {
+    await sendTelegramMessage(chatId, '❌ Введите корректное название товара')
+    return
+  }
+
+  const userState = userStates.get(userId.toString())
+  if (!userState || !userState.productId) {
+    await sendTelegramMessage(chatId, '❌ Ошибка состояния')
+    return
+  }
+
+  try {
+    await prisma.product.update({
+      where: { id: userState.productId },
+      data: { name: text }
+    })
+
+    userStates.delete(userId.toString())
+    await sendTelegramMessage(chatId, `✅ Название товара обновлено на: "${text}"`)
+    await startProductEdit(chatId, userId, userState.productId)
+  } catch (error) {
+    console.error('Error updating product name:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка обновления названия')
+  }
+}
+
+async function handleEditProductDescription(chatId: number, userId: number, text: string) {
+  if (!text || text.startsWith('/')) {
+    await sendTelegramMessage(chatId, '❌ Введите корректное описание товара')
+    return
+  }
+
+  const userState = userStates.get(userId.toString())
+  if (!userState || !userState.productId) {
+    await sendTelegramMessage(chatId, '❌ Ошибка состояния')
+    return
+  }
+
+  try {
+    await prisma.product.update({
+      where: { id: userState.productId },
+      data: { description: text }
+    })
+
+    userStates.delete(userId.toString())
+    await sendTelegramMessage(chatId, `✅ Описание товара обновлено`)
+    await startProductEdit(chatId, userId, userState.productId)
+  } catch (error) {
+    console.error('Error updating product description:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка обновления описания')
+  }
+}
+
+async function handleEditProductPrice(chatId: number, userId: number, text: string) {
+  const price = parseFloat(text)
+  
+  if (isNaN(price) || price <= 0) {
+    await sendTelegramMessage(chatId, '❌ Введите корректную цену (например: 25.99)')
+    return
+  }
+
+  const userState = userStates.get(userId.toString())
+  if (!userState || !userState.productId) {
+    await sendTelegramMessage(chatId, '❌ Ошибка состояния')
+    return
+  }
+
+  try {
+    // Обновляем цену первого SKU (если их несколько, обновляем все)
+    await prisma.productSku.updateMany({
+      where: { productId: userState.productId },
+      data: { price: price }
+    })
+
+    userStates.delete(userId.toString())
+    await sendTelegramMessage(chatId, `✅ Цена товара обновлена на: $${price}`)
+    await startProductEdit(chatId, userId, userState.productId)
+  } catch (error) {
+    console.error('Error updating product price:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка обновления цены')
+  }
+}
+
+async function updateProductCategory(chatId: number, userId: number, productId: string, categoryId: string) {
+  try {
+    const category = await prisma.category.findUnique({
+      where: { id: categoryId }
+    })
+
+    if (!category) {
+      await sendTelegramMessage(chatId, '❌ Категория не найдена')
+      return
+    }
+
+    await prisma.product.update({
+      where: { id: productId },
+      data: { categoryId: categoryId }
+    })
+
+    await sendTelegramMessage(chatId, `✅ Категория товара обновлена на: "${category.name}"`)
+    await startProductEdit(chatId, userId, productId)
+  } catch (error) {
+    console.error('Error updating product category:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка обновления категории')
+  }
+}
+
+// Функции для удаления товаров
+async function confirmProductDelete(chatId: number, productId: string) {
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        skus: true,
+        category: true
+      }
+    })
+
+    if (!product) {
+      await sendTelegramMessage(chatId, '❌ Товар не найден')
+      return
+    }
+
+    const minPrice = Math.min(...product.skus.map(sku => Number(sku.price)))
+    
+    const message = `🗑️ *Подтверждение удаления*
+
+⚠️ Вы действительно хотите удалить товар?
+
+📦 *Название:* ${product.name}
+💰 *Цена:* $${minPrice}
+🏷️ *Категория:* ${product.category?.name || 'Не указана'}
+
+*Это действие нельзя отменить!*`
+
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '✅ Да, удалить', callback_data: `confirm_delete_${productId}` },
+          { text: '❌ Отмена', callback_data: `cancel_delete_${productId}` }
+        ]
+      ]
+    }
+
+    await sendTelegramMessage(chatId, message, true, keyboard)
+  } catch (error) {
+    console.error('Error confirming product delete:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка загрузки товара')
+  }
+}
+
+async function deleteProduct(chatId: number, productId: string) {
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      include: {
+        skus: true,
+        images: true
+      }
+    })
+
+    if (!product) {
+      await sendTelegramMessage(chatId, '❌ Товар не найден')
+      return
+    }
+
+    await sendTelegramMessage(chatId, '⏳ Удаляю товар...')
+
+    // Удаляем связанные данные
+    await prisma.productImage.deleteMany({
+      where: { productId: productId }
+    })
+
+    await prisma.productSku.deleteMany({
+      where: { productId: productId }
+    })
+
+    // Удаляем сам товар
+    await prisma.product.delete({
+      where: { id: productId }
+    })
+
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '🗑️ Удалить еще', callback_data: 'delete_products' },
+          { text: '⬅️ К товарам', callback_data: 'back_products' }
+        ]
+      ]
+    }
+
+    await sendTelegramMessage(
+      chatId,
+      `✅ *Товар успешно удален!*\n\n📦 ${product.name}`,
+      true,
+      keyboard
+    )
+  } catch (error) {
+    console.error('Error deleting product:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка удаления товара')
+  }
 }
 
 // Функции загрузки файлов
