@@ -55,6 +55,7 @@ export default function HomePage() {
         if (data.videoUrl) {
           console.log('Setting home video to:', data.videoUrl)
           setHomeVideo(data.videoUrl)
+          console.log('Home video state updated. New videos array will be:', [data.videoUrl])
         } else {
           console.log('No videoUrl in response, using default')
         }
@@ -112,7 +113,7 @@ export default function HomePage() {
       <section className="hero-section">
         {videos.map((video, index) => (
           <video
-            key={video}
+            key={`${video}-${index}`}
             className={`hero-video-container ${index === currentVideoIndex ? 'active' : ''}`}
             autoPlay
             muted
@@ -120,6 +121,8 @@ export default function HomePage() {
             playsInline
             onError={(e) => console.error('Video error:', e, 'Video src:', video)}
             onLoadStart={() => console.log('Video load started:', video)}
+            onLoadedData={() => console.log('Video loaded successfully:', video)}
+            onCanPlay={() => console.log('Video can play:', video)}
           >
             <source src={video} type="video/mp4" />
           </video>
