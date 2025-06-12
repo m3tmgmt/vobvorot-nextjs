@@ -131,6 +131,7 @@ export function Cart() {
               <button 
                 className="checkout-btn"
                 onClick={() => {
+                  console.log('Cart: Proceeding to checkout with items:', state.items.length)
                   dispatch({ type: 'TOGGLE_CART' })
                   router.push('/checkout')
                 }}

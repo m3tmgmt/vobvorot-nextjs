@@ -28,6 +28,7 @@ export default function CheckoutPage() {
   const [step, setStep] = useState(1) // 1: Shipping, 2: Payment, 3: Review
   const [loading, setLoading] = useState(false)
   const [shippingCost, setShippingCost] = useState(0)
+  const [mounted, setMounted] = useState(false)
   
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo>({
     firstName: '',
@@ -45,12 +46,18 @@ export default function CheckoutPage() {
     method: null
   })
 
-  // Redirect if cart is empty
+  // Mount detection
   useEffect(() => {
-    if (state.items.length === 0) {
+    setMounted(true)
+  }, [])
+
+  // Redirect if cart is empty (only after component is mounted)
+  useEffect(() => {
+    if (mounted && state.items.length === 0) {
+      console.log('Checkout: Cart is empty, redirecting to products')
       router.push('/products')
     }
-  }, [state.items.length, router])
+  }, [mounted, state.items.length, router])
 
   // Note: Guest checkout enabled - no session required
 
@@ -135,6 +142,22 @@ export default function CheckoutPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  // Show loading while cart is being loaded from localStorage
+  if (!mounted) {
+    return (
+      <div style={{ 
+        minHeight: '100vh', 
+        display: 'flex', 
+        alignItems: 'center', 
+        justifyContent: 'center' 
+      }}>
+        <div style={{ color: 'var(--pink-main)', fontSize: '1.2rem' }}>
+          Loading checkout...
+        </div>
+      </div>
+    )
   }
 
   // Guest checkout enabled - no authentication required
