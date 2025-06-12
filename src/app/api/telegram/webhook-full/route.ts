@@ -1657,20 +1657,33 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
 
 async function updateHomeVideo(videoUrl: string): Promise<void> {
   try {
-    const response = await fetch(`https://vobvorot.com/api/admin/site/home-video`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${ADMIN_API_KEY}`
-      },
-      body: JSON.stringify({ videoUrl })
+    await saveDebugLog('update_home_video_start', {
+      videoUrl: videoUrl,
+      method: 'direct_database_update'
     })
-
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`)
-    }
+    
+    // Обновляем видео прямо в базе данных, минуя API
+    await prisma.setting.upsert({
+      where: { key: 'home_video_url' },
+      update: { value: videoUrl || '' },
+      create: { 
+        key: 'home_video_url',
+        value: videoUrl || ''
+      }
+    })
+    
+    await saveDebugLog('update_home_video_success', {
+      videoUrl: videoUrl,
+      message: 'Updated directly in database'
+    })
+    
+    console.log('Home video updated directly in database:', videoUrl)
   } catch (error) {
     console.error('Error updating home video:', error)
+    await saveDebugLog('update_home_video_error', {
+      error_type: error instanceof Error ? error.name : typeof error,
+      error_message: error instanceof Error ? error.message : String(error)
+    })
     throw error
   }
 }

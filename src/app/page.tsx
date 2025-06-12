@@ -44,11 +44,19 @@ export default function HomePage() {
 
   // Загружаем видео с API
   useEffect(() => {
+    console.log('Fetching home video from API...')
     fetch('/api/admin/site/home-video')
-      .then(res => res.json())
+      .then(res => {
+        console.log('Home video API response status:', res.status)
+        return res.json()
+      })
       .then(data => {
+        console.log('Home video API data:', data)
         if (data.videoUrl) {
+          console.log('Setting home video to:', data.videoUrl)
           setHomeVideo(data.videoUrl)
+        } else {
+          console.log('No videoUrl in response, using default')
         }
       })
       .catch(err => console.error('Failed to fetch home video:', err))
@@ -95,6 +103,9 @@ export default function HomePage() {
     }
   }
 
+  console.log('Current home video state:', homeVideo)
+  console.log('Videos array:', videos)
+
   return (
     <div>
       {/* Hero Section */}
@@ -107,6 +118,8 @@ export default function HomePage() {
             muted
             loop
             playsInline
+            onError={(e) => console.error('Video error:', e, 'Video src:', video)}
+            onLoadStart={() => console.log('Video load started:', video)}
           >
             <source src={video} type="video/mp4" />
           </video>

@@ -82,7 +82,7 @@ const nextConfig: NextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: https: blob:",
-              "media-src 'self' https://www.soundhelix.com",
+              "media-src 'self' https://www.soundhelix.com https://res.cloudinary.com",
               "connect-src 'self' https://api.westernbid.com https://www.google-analytics.com https://vitals.vercel-insights.com https://www.soundhelix.com",
               "frame-src 'self' https://js.stripe.com",
               "object-src 'none'",
