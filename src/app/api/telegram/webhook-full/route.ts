@@ -1379,18 +1379,43 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
     const fileResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${video.file_id}`)
     const fileData = await fileResponse.json()
     
-    if (!fileData.ok) return null
+    if (!fileData.ok) {
+      console.error('Failed to get file from Telegram:', fileData)
+      return null
+    }
     
     const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${fileData.result.file_path}`
+    console.log('Uploading video from URL:', fileUrl)
     
     const result = await cloudinaryService.uploadFromUrl(fileUrl, {
       folder: 'vobvorot-videos',
-      resource_type: 'video'
+      resource_type: 'video',
+      // Автоматическая конвертация в веб-совместимые форматы
+      format: 'mp4',
+      video_codec: 'h264',
+      audio_codec: 'aac',
+      // Оптимизация для веба
+      flags: 'streaming_attachment',
+      transformation: [
+        {
+          video_codec: 'h264',
+          audio_codec: 'aac',
+          format: 'mp4',
+          quality: 'auto',
+          fetch_format: 'auto'
+        }
+      ]
     })
     
+    console.log('Video uploaded successfully:', result.secure_url)
     return result.secure_url
   } catch (error) {
     console.error('Error uploading video:', error)
+    // Более детальное логирование ошибки
+    if (error instanceof Error) {
+      console.error('Error message:', error.message)
+      console.error('Error stack:', error.stack)
+    }
     return null
   }
 }
