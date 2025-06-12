@@ -1431,12 +1431,14 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
       folder: 'vobvorot-videos',
       resource_type: 'video',
       overwrite: true,
-      unique_filename: true
+      unique_filename: true,
+      chunk_size: 6000000, // 6MB chunks для больших файлов
+      timeout: 60000 // 60 секунд таймаут
     }
     
     // Добавляем базовую трансформацию только если это не очень большой файл
     if (fileData.result.file_size < 10 * 1024 * 1024) {
-      uploadOptions.transformation = [{
+      uploadOptions.eager = [{
         format: 'mp4',
         video_codec: 'h264',
         audio_codec: 'aac',
@@ -1449,8 +1451,9 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
     // Пробуем несколько подходов к загрузке
     let result
     try {
-      // Первый подход: загрузка с трансформацией
-      result = await cloudinaryService.uploadFromUrl(fileUrl, uploadOptions)
+      // Первый подход: прямая загрузка через cloudinary API
+      const { cloudinary } = await import('@/lib/cloudinary')
+      result = await cloudinary.uploader.upload(fileUrl, uploadOptions)
       console.log('Video uploaded successfully with transformations:', result.secure_url)
     } catch (transformError) {
       console.warn('Upload with transformations failed, trying basic upload:', transformError)
@@ -1464,7 +1467,8 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
       }
       
       try {
-        result = await cloudinaryService.uploadFromUrl(fileUrl, basicOptions)
+        const { cloudinary } = await import('@/lib/cloudinary')
+        result = await cloudinary.uploader.upload(fileUrl, basicOptions)
         console.log('Video uploaded successfully with basic options:', result.secure_url)
       } catch (basicError) {
         console.warn('Basic URL upload also failed, trying buffer upload:', basicError)
