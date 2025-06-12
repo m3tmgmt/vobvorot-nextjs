@@ -1453,9 +1453,15 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
     }
     
     // Логируем дополнительную информацию если это ошибка Cloudinary
-    if (error && typeof error === 'object' && 'http_code' in error) {
-      console.error('Cloudinary HTTP code:', (error as any).http_code)
-      console.error('Cloudinary error details:', (error as any).error)
+    if (error && typeof error === 'object') {
+      console.error('Full error object:', JSON.stringify(error, null, 2))
+      if ('http_code' in error) {
+        console.error('Cloudinary HTTP code:', (error as any).http_code)
+        console.error('Cloudinary error details:', (error as any).error)
+      }
+      if ('response' in error) {
+        console.error('HTTP response:', (error as any).response)
+      }
     }
     
     return null
