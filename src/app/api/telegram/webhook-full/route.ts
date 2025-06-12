@@ -621,8 +621,6 @@ async function handleUserState(message: any, userState: any) {
       return await handleAddProductPhoto(chatId, userId, photo)
     case 'add_product_video':
       return await handleAddProductVideo(chatId, userId, video, text)
-    case 'create_category_name':
-      return await handleCreateCategoryName(chatId, userId, text)
     case 'upload_home_video':
       return await handleUploadHomeVideo(chatId, userId, video)
     case 'upload_product_video':
@@ -768,58 +766,6 @@ async function handleCategorySelection(chatId: number, userId: number, categoryI
   }
 }
 
-async function startCreateCategory(chatId: number, userId: number) {
-  const userState = userStates.get(userId.toString())
-  if (!userState || userState.action !== 'add_product_category') {
-    await sendTelegramMessage(chatId, '❌ Ошибка состояния. Начните заново.')
-    return
-  }
-  
-  userState.action = 'create_category_name'
-  userStates.set(userId.toString(), userState)
-  
-  await sendTelegramMessage(chatId, '📝 Введите название новой категории:')
-}
-
-async function handleCreateCategoryName(chatId: number, userId: number, text: string) {
-  if (!text || text.startsWith('/')) {
-    await sendTelegramMessage(chatId, '❌ Введите корректное название категории')
-    return
-  }
-  
-  try {
-    await sendTelegramMessage(chatId, '⏳ Создаю новую категорию...')
-    
-    // Создаем slug из названия
-    const slug = text
-      .toLowerCase()
-      .replace(/[^a-z0-9\s-]/g, '')
-      .replace(/\s+/g, '-')
-      .replace(/-+/g, '-')
-      .trim()
-    
-    // Создаем новую категорию
-    const newCategory = await prisma.category.create({
-      data: {
-        name: text,
-        slug: slug + '-' + Date.now(),
-        isActive: true
-      }
-    })
-    
-    // Обновляем состояние пользователя
-    const userState = userStates.get(userId.toString())
-    userState.productData.categoryId = newCategory.id
-    userState.action = 'add_product_photo'
-    userStates.set(userId.toString(), userState)
-    
-    await sendTelegramMessage(chatId, `✅ Создана новая категория: ${newCategory.name}\n\n📸 Отправьте фото товара:`)
-    
-  } catch (error) {
-    console.error('Error creating category:', error)
-    await sendTelegramMessage(chatId, '❌ Ошибка создания категории. Попробуйте еще раз.')
-  }
-}
 
 async function handleAddProductPhoto(chatId: number, userId: number, photo: any) {
   if (!photo) {
@@ -902,6 +848,11 @@ async function createProductFromBot(chatId: number, userId: number, productData:
       return
     }
     
+    if (!selectedCategory.isActive) {
+      await sendTelegramMessage(chatId, `❌ Категория "${selectedCategory.name}" неактивна. Активируйте категорию перед добавлением товаров.`)
+      return
+    }
+    
     // Создаем товар
     const product = await prisma.product.create({
       data: {
@@ -951,7 +902,7 @@ async function createProductFromBot(chatId: number, userId: number, productData:
     
     await sendTelegramMessage(
       chatId,
-      `✅ *Товар успешно создан!*\n\n📦 Название: ${productData.name}\n💰 Цена: $${productData.price}\n🆔 ID: ${product.id}\n\n🔗 Ссылка: https://vobvorot.com/products/${product.slug}`,
+      `✅ *Товар успешно создан!*\n\n📦 Название: ${productData.name}\n💰 Цена: $${productData.price}\n🏷️ Категория: ${selectedCategory.name}\n📊 Статус: ${product.isActive ? 'Активен ✅' : 'Неактивен ❌'}\n🆔 ID: ${product.id}\n🔑 Slug: ${product.slug}\n\n🔗 Ссылка: https://vobvorot.com/products/${product.slug}\n\n💡 Если товар не виден на сайте, убедитесь что категория активна.`,
       true,
       keyboard
     )

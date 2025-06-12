@@ -23,15 +23,22 @@ interface Product {
 async function getProduct(slug: string): Promise<Product | null> {
   try {
     const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    console.log(`Fetching product from: ${baseUrl}/api/products/${slug}`)
+    
     const res = await fetch(`${baseUrl}/api/products/${slug}`, {
       next: { revalidate: 60 } // Revalidate every minute
     })
     
     if (!res.ok) {
+      console.error(`Product fetch failed: ${res.status} ${res.statusText}`)
+      const errorText = await res.text()
+      console.error('Error response:', errorText)
       return null
     }
     
-    return res.json()
+    const product = await res.json()
+    console.log('Product fetched successfully:', product.id, product.name)
+    return product
   } catch (error) {
     console.error('Error fetching product for metadata:', error)
     return null

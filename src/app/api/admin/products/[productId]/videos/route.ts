@@ -4,10 +4,10 @@ import { prisma } from '@/lib/prisma'
 // Получить все видео для конкретного товара
 export async function GET(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const { productId } = params
+    const { productId } = await params
 
     // Проверяем, что товар существует
     const product = await prisma.product.findUnique({
@@ -84,7 +84,7 @@ export async function GET(
 // Добавить новое видео к товару
 export async function POST(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
     // Проверка авторизации
@@ -95,7 +95,7 @@ export async function POST(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { productId } = params
+    const { productId } = await params
     const { videoUrl } = await request.json()
 
     if (!videoUrl || videoUrl.trim() === '') {
@@ -176,7 +176,7 @@ export async function POST(
 // Удалить видео товара по ID
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { productId: string } }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
     // Проверка авторизации
@@ -187,7 +187,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { productId } = params
+    const { productId } = await params
     const { videoId } = await request.json()
 
     if (!videoId) {

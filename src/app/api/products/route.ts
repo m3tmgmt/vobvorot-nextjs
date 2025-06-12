@@ -58,12 +58,16 @@ async function getProductsHandler(request: NextRequest) {
 
     // Build where clause with enhanced filtering
     const where: any = {
-      isActive: params.active
+      isActive: params.active,
+      category: {
+        isActive: true // Only show products from active categories
+      }
     }
 
     if (sanitizedCategory) {
       where.category = {
-        slug: sanitizedCategory
+        slug: sanitizedCategory,
+        isActive: true // Keep the active filter when filtering by category
       }
     }
 

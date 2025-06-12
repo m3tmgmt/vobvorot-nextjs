@@ -4,11 +4,10 @@ import { prisma } from '@/lib/prisma';
 // Добавление изображения к товару
 export async function POST(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const { id } = await params
-    const productId = id;
+    const { productId } = await params
     const body = await request.json();
 
     const {
@@ -98,11 +97,10 @@ export async function POST(
 // Получение всех изображений товара
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const { id } = await params
-    const productId = id;
+    const { productId } = await params
 
     // Проверяем существование товара
     const product = await prisma.product.findUnique({
@@ -159,11 +157,10 @@ export async function GET(
 // Обновление порядка изображений или других свойств
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const { id } = await params
-    const productId = id;
+    const { productId } = await params
     const body = await request.json();
     const { images } = body; // Массив с id и новыми данными
 
@@ -219,11 +216,10 @@ export async function PUT(
 // Удаление изображения товара
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
-    const { id } = await params
-    const productId = id;
+    const { productId } = await params
     const { searchParams } = new URL(request.url);
     const imageId = searchParams.get('imageId');
 

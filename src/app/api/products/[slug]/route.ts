@@ -21,6 +21,15 @@ export async function GET(
         category: true
       }
     })
+    
+    // Check if category is active
+    if (product && !product.category.isActive) {
+      console.log(`Product ${slug} found but category ${product.category.name} is inactive`)
+      return NextResponse.json(
+        { error: 'Product category is not active' },
+        { status: 404 }
+      )
+    }
 
     if (!product) {
       return NextResponse.json(
