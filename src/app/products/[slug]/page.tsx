@@ -22,7 +22,9 @@ interface Product {
 // Fetch product data for metadata generation
 async function getProduct(slug: string): Promise<Product | null> {
   try {
-    const baseUrl = process.env.NEXTAUTH_URL || 'http://localhost:3000'
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}`
+      : process.env.NEXTAUTH_URL || 'http://localhost:3000'
     console.log(`Fetching product from: ${baseUrl}/api/products/${slug}`)
     
     const res = await fetch(`${baseUrl}/api/products/${slug}`, {
