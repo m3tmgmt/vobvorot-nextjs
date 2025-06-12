@@ -58,7 +58,7 @@ async function getProductsHandler(request: NextRequest) {
 
     // Build where clause with enhanced filtering
     const where: any = {
-      active: params.active
+      isActive: params.active
     }
 
     if (sanitizedCategory) {
@@ -75,9 +75,6 @@ async function getProductsHandler(request: NextRequest) {
       ]
     }
 
-    if (params.active !== undefined) {
-      where.isActive = params.active
-    }
 
     // Price filtering
     if (params.minPrice || params.maxPrice) {

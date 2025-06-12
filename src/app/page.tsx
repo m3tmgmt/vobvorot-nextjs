@@ -27,11 +27,10 @@ export default function HomePage() {
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
   const [activeFilter, setActiveFilter] = useState('all')
   const [availableCategories, setAvailableCategories] = useState<{id: string, name: string, icon: string}[]>([])
+  const [homeVideo, setHomeVideo] = useState<string>('/assets/videos/hero2.mp4')
   const { findPiece, dispatch: puzzleDispatch } = usePuzzle()
   
-  const videos = [
-    '/assets/videos/hero2.mp4'
-  ]
+  const videos = [homeVideo]
 
   const allCategories = [
     { id: 'all', name: 'All Items', icon: '✨' },
@@ -42,6 +41,18 @@ export default function HomePage() {
     { id: 'custom', name: 'Custom', icon: '🎨' },
     { id: 'bags', name: 'Bags', icon: '👜' }
   ]
+
+  // Загружаем видео с API
+  useEffect(() => {
+    fetch('/api/admin/site/home-video')
+      .then(res => res.json())
+      .then(data => {
+        if (data.videoUrl) {
+          setHomeVideo(data.videoUrl)
+        }
+      })
+      .catch(err => console.error('Failed to fetch home video:', err))
+  }, [])
 
   useEffect(() => {
     const interval = setInterval(() => {
