@@ -1004,11 +1004,49 @@ async function getCurrentVideoInfo(chatId: number) {
       
       await sendTelegramMessage(chatId, message, true, keyboard)
     } else {
-      await sendTelegramMessage(chatId, '❌ Видео не установлены\n\nГалерея пуста. Загрузите первое видео!', false, keyboard)
+      // Галерея пуста - инициализируем её дефолтным видео
+      await initializeGalleryWithDefault(chatId)
     }
   } catch (error) {
     console.error('Error getting video info:', error)
     await sendTelegramMessage(chatId, '❌ Ошибка получения информации о видео')
+  }
+}
+
+async function initializeGalleryWithDefault(chatId: number) {
+  try {
+    // Добавляем дефолтное видео прямо в базу данных
+    const defaultVideoUrl = "/assets/videos/hero2.mp4"
+    
+    const addedVideo = await prisma.setting.create({
+      data: {
+        key: `home_video_${Date.now()}`,
+        value: defaultVideoUrl
+      }
+    })
+    
+    await saveDebugLog('gallery_initialized', {
+      video_id: addedVideo.key,
+      video_url: addedVideo.value,
+      message: 'Gallery initialized with default video'
+    })
+    
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '🎬 Обновить галерею', callback_data: 'current_video' }],
+        [{ text: '⬅️ Назад к видео', callback_data: 'back_video' }]
+      ]
+    }
+    
+    await sendTelegramMessage(
+      chatId, 
+      `✅ *Галерея инициализирована!*\n\n🎥 Добавлено дефолтное видео: hero2.mp4\n\nТеперь вы можете загружать новые видео и управлять галереей.`, 
+      true, 
+      keyboard
+    )
+  } catch (error) {
+    console.error('Error initializing gallery:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка инициализации галереи')
   }
 }
 
