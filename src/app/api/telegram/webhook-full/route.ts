@@ -165,6 +165,20 @@ async function handleCallbackQuery(callbackQuery: any) {
         const categoryId = parts[3]
         await updateProductCategory(chatId, userId, productId, categoryId)
       }
+      // Проверяем удаление конкретного видео
+      else if (data.startsWith('delete_video_')) {
+        const videoId = data.replace('delete_video_', '')
+        await confirmVideoDelete(chatId, videoId)
+      }
+      // Проверяем подтверждение удаления видео
+      else if (data.startsWith('confirm_delete_video_')) {
+        const videoId = data.replace('confirm_delete_video_', '')
+        await executeVideoDelete(chatId, videoId)
+      }
+      // Проверяем отмену удаления видео
+      else if (data.startsWith('cancel_delete_video_')) {
+        await deleteHomeVideo(chatId)
+      }
       break
   }
 }
@@ -886,7 +900,7 @@ async function handleUploadHomeVideo(chatId: number, userId: number, video: any)
     })
     
     if (videoUrl) {
-      await updateHomeVideo(videoUrl)
+      await addVideoToGallery(videoUrl)
       
       const keyboard = {
         inline_keyboard: [
@@ -894,7 +908,7 @@ async function handleUploadHomeVideo(chatId: number, userId: number, video: any)
         ]
       }
       
-      await sendTelegramMessage(chatId, `✅ Видео главной страницы обновлено!\n\n🔗 URL: ${videoUrl}\n\nВидео будет автоматически конвертировано в MP4 формат для веб-совместимости.`, false, keyboard)
+      await sendTelegramMessage(chatId, `✅ Видео добавлено в галерею!\n\n🔗 URL: ${videoUrl}\n\nВидео будет автоматически конвертировано в MP4 формат для веб-совместимости.`, false, keyboard)
     } else {
       await sendTelegramMessage(chatId, '❌ Ошибка загрузки видео\n\nВозможные причины:\n• Неподдерживаемый формат\n• Проблемы с сетью\n• Превышен размер файла\n\nПопробуйте загрузить видео в формате MP4, MOV или AVI размером до 20MB.')
     }
@@ -926,24 +940,48 @@ async function handleUploadHomeVideo(chatId: number, userId: number, video: any)
 
 async function deleteHomeVideo(chatId: number) {
   try {
-    await updateHomeVideo('')
+    // Получаем список всех видео
+    const response = await fetch(`https://vobvorot.com/api/admin/site/home-videos`)
+    const data = await response.json()
     
-    const keyboard = {
-      inline_keyboard: [
-        [{ text: '⬅️ Назад к видео', callback_data: 'back_video' }]
-      ]
+    if (!data.videos || data.videos.length === 0) {
+      const keyboard = {
+        inline_keyboard: [
+          [{ text: '⬅️ Назад к видео', callback_data: 'back_video' }]
+        ]
+      }
+      await sendTelegramMessage(chatId, '❌ Нет видео для удаления', false, keyboard)
+      return
     }
     
-    await sendTelegramMessage(chatId, '✅ Видео главной страницы удалено', false, keyboard)
+    // Создаем кнопки для выбора видео для удаления
+    const videoButtons = []
+    for (const video of data.videos) {
+      const videoName = video.url.split('/').pop()?.split('.')[0] || 'video'
+      const shortName = videoName.length > 20 ? videoName.substring(0, 20) + '...' : videoName
+      videoButtons.push([{
+        text: `🗑️ ${shortName}`,
+        callback_data: `delete_video_${video.id}`
+      }])
+    }
+    
+    // Добавляем кнопку "Назад"
+    videoButtons.push([{ text: '⬅️ Назад к видео', callback_data: 'back_video' }])
+    
+    const keyboard = {
+      inline_keyboard: videoButtons
+    }
+    
+    await sendTelegramMessage(chatId, `🗑️ *Выберите видео для удаления:*\n\nВсего видео: ${data.videos.length}`, true, keyboard)
   } catch (error) {
-    console.error('Error deleting video:', error)
-    await sendTelegramMessage(chatId, '❌ Ошибка удаления видео')
+    console.error('Error showing delete video menu:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка получения списка видео')
   }
 }
 
 async function getCurrentVideoInfo(chatId: number) {
   try {
-    const response = await fetch(`https://vobvorot.com/api/admin/site/home-video`)
+    const response = await fetch(`https://vobvorot.com/api/admin/site/home-videos`)
     const data = await response.json()
     
     const keyboard = {
@@ -952,15 +990,21 @@ async function getCurrentVideoInfo(chatId: number) {
       ]
     }
     
-    if (data.videoUrl) {
-      await sendTelegramMessage(
-        chatId,
-        `🎬 *Текущее видео:*\n\n${data.videoUrl}\n\n📅 Обновлено: ${new Date(data.updatedAt).toLocaleString('ru-RU')}`,
-        true,
-        keyboard
-      )
+    if (data.videos && data.videos.length > 0) {
+      let message = `🎬 *Галерея видео главной страницы:*\n\n📊 Всего видео: ${data.videos.length}\n\n`
+      
+      data.videos.forEach((video: any, index: number) => {
+        const videoName = video.url.split('/').pop()?.split('.')[0] || 'video'
+        const shortName = videoName.length > 30 ? videoName.substring(0, 30) + '...' : videoName
+        const createdDate = new Date(video.createdAt).toLocaleString('ru-RU')
+        message += `${index + 1}. 🎥 ${shortName}\n`
+        message += `   📅 ${createdDate}\n`
+        message += `   🔗 ${video.url.length > 50 ? video.url.substring(0, 50) + '...' : video.url}\n\n`
+      })
+      
+      await sendTelegramMessage(chatId, message, true, keyboard)
     } else {
-      await sendTelegramMessage(chatId, '❌ Видео не установлено', false, keyboard)
+      await sendTelegramMessage(chatId, '❌ Видео не установлены\n\nГалерея пуста. Загрузите первое видео!', false, keyboard)
     }
   } catch (error) {
     console.error('Error getting video info:', error)
@@ -1681,6 +1725,139 @@ async function updateHomeVideo(videoUrl: string): Promise<void> {
   } catch (error) {
     console.error('Error updating home video:', error)
     await saveDebugLog('update_home_video_error', {
+      error_type: error instanceof Error ? error.name : typeof error,
+      error_message: error instanceof Error ? error.message : String(error)
+    })
+    throw error
+  }
+}
+
+// Функции для подтверждения удаления видео
+async function confirmVideoDelete(chatId: number, videoId: string) {
+  try {
+    // Получаем информацию о видео
+    const response = await fetch(`https://vobvorot.com/api/admin/site/home-videos`)
+    const data = await response.json()
+    
+    const video = data.videos?.find((v: any) => v.id === videoId)
+    if (!video) {
+      await sendTelegramMessage(chatId, '❌ Видео не найдено')
+      return
+    }
+    
+    const videoName = video.url.split('/').pop()?.split('.')[0] || 'video'
+    const shortName = videoName.length > 30 ? videoName.substring(0, 30) + '...' : videoName
+    
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '✅ Да, удалить', callback_data: `confirm_delete_video_${videoId}` },
+          { text: '❌ Отмена', callback_data: `cancel_delete_video_${videoId}` }
+        ]
+      ]
+    }
+    
+    await sendTelegramMessage(
+      chatId, 
+      `🗑️ *Подтверждение удаления*\n\n🎥 Видео: ${shortName}\n🔗 URL: ${video.url.length > 50 ? video.url.substring(0, 50) + '...' : video.url}\n\n❗ Это действие нельзя отменить!`, 
+      true, 
+      keyboard
+    )
+  } catch (error) {
+    console.error('Error confirming video delete:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка получения информации о видео')
+  }
+}
+
+async function executeVideoDelete(chatId: number, videoId: string) {
+  try {
+    await deleteVideoFromGallery(videoId)
+    
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '⬅️ Назад к видео', callback_data: 'back_video' }]
+      ]
+    }
+    
+    await sendTelegramMessage(chatId, '✅ Видео успешно удалено из галереи!', false, keyboard)
+  } catch (error) {
+    console.error('Error executing video delete:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка удаления видео')
+  }
+}
+
+// Новые функции для работы с галереей видео
+async function addVideoToGallery(videoUrl: string): Promise<void> {
+  try {
+    await saveDebugLog('add_video_to_gallery_start', {
+      videoUrl: videoUrl,
+      method: 'new_gallery_api'
+    })
+    
+    const response = await fetch(`https://vobvorot.com/api/admin/site/home-videos`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${ADMIN_API_KEY}`
+      },
+      body: JSON.stringify({ videoUrl })
+    })
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    
+    await saveDebugLog('add_video_to_gallery_success', {
+      videoUrl: videoUrl,
+      totalVideos: data.count,
+      message: 'Added to gallery successfully'
+    })
+    
+    console.log('Video added to gallery:', videoUrl, 'Total videos:', data.count)
+  } catch (error) {
+    console.error('Error adding video to gallery:', error)
+    await saveDebugLog('add_video_to_gallery_error', {
+      error_type: error instanceof Error ? error.name : typeof error,
+      error_message: error instanceof Error ? error.message : String(error)
+    })
+    throw error
+  }
+}
+
+async function deleteVideoFromGallery(videoId: string): Promise<void> {
+  try {
+    await saveDebugLog('delete_video_from_gallery_start', {
+      videoId: videoId,
+      method: 'new_gallery_api'
+    })
+    
+    const response = await fetch(`https://vobvorot.com/api/admin/site/home-videos`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${ADMIN_API_KEY}`
+      },
+      body: JSON.stringify({ videoId })
+    })
+    
+    if (!response.ok) {
+      throw new Error(`API error: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    
+    await saveDebugLog('delete_video_from_gallery_success', {
+      videoId: videoId,
+      remainingVideos: data.count,
+      message: 'Deleted from gallery successfully'
+    })
+    
+    console.log('Video deleted from gallery:', videoId, 'Remaining videos:', data.count)
+  } catch (error) {
+    console.error('Error deleting video from gallery:', error)
+    await saveDebugLog('delete_video_from_gallery_error', {
       error_type: error instanceof Error ? error.name : typeof error,
       error_message: error instanceof Error ? error.message : String(error)
     })

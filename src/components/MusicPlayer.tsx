@@ -289,14 +289,14 @@ export function MusicPlayer() {
         onClick={() => setIsExpanded(!isExpanded)}
         style={{
           position: isExpanded ? 'absolute' : 'static',
-          top: isExpanded ? '10px' : '50%',
-          right: isExpanded ? '10px' : '50%',
-          transform: isExpanded ? 'none' : 'translate(50%, -50%)',
-          width: isExpanded ? '40px' : '40px',
-          height: isExpanded ? '40px' : '40px',
-          background: 'linear-gradient(45deg, var(--green-neon), #32cd32)',
+          top: isExpanded ? '10px' : '0',
+          right: isExpanded ? '10px' : '0',
+          transform: isExpanded ? 'none' : 'none',
+          width: isExpanded ? '40px' : '60px',
+          height: isExpanded ? '40px' : '60px',
+          background: 'transparent',
           border: 'none',
-          borderRadius: '50%',
+          borderRadius: isExpanded ? '50%' : '15px',
           color: 'white',
           fontSize: isExpanded ? '1.2rem' : '1.5rem',
           cursor: 'pointer',
@@ -304,19 +304,31 @@ export function MusicPlayer() {
           alignItems: 'center',
           justifyContent: 'center',
           transition: 'all 0.3s ease',
-          boxShadow: isExpanded ? 'none' : '0 0 15px rgba(57,255,20,0.6)',
+          boxShadow: 'none',
           animation: isExpanded ? 'none' : 'pulse 2s infinite'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.transform = isExpanded ? 'scale(1.1)' : 'translate(50%, -50%) scale(1.1)'
+          e.currentTarget.style.transform = isExpanded ? 'scale(1.1)' : 'scale(1.1)'
           e.currentTarget.style.boxShadow = '0 0 20px var(--green-neon)'
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.transform = isExpanded ? 'scale(1)' : 'translate(50%, -50%) scale(1)'
+          e.currentTarget.style.transform = isExpanded ? 'scale(1)' : 'scale(1)'
           e.currentTarget.style.boxShadow = 'none'
         }}
       >
-        🎵
+        <span style={{
+          display: 'inline-flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          width: isExpanded ? '40px' : '40px',
+          height: isExpanded ? '40px' : '40px',
+          background: 'linear-gradient(45deg, var(--green-neon), #32cd32)',
+          borderRadius: '50%',
+          fontSize: isExpanded ? '1.2rem' : '1.5rem',
+          boxShadow: isExpanded ? 'none' : '0 0 15px rgba(57,255,20,0.6)'
+        }}>
+          🎵
+        </span>
       </button>
 
       {isExpanded && (

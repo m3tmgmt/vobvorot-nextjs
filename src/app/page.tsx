@@ -28,9 +28,10 @@ export default function HomePage() {
   const [activeFilter, setActiveFilter] = useState('all')
   const [availableCategories, setAvailableCategories] = useState<{id: string, name: string, icon: string}[]>([])
   const [homeVideo, setHomeVideo] = useState<string>('/assets/videos/hero2.mp4')
+  const [allVideos, setAllVideos] = useState<string[]>(['/assets/videos/hero2.mp4'])
   const { findPiece, dispatch: puzzleDispatch } = usePuzzle()
   
-  const videos = useMemo(() => [homeVideo], [homeVideo])
+  const videos = useMemo(() => allVideos, [allVideos])
 
   const allCategories = [
     { id: 'all', name: 'All Items', icon: '✨' },
@@ -42,25 +43,28 @@ export default function HomePage() {
     { id: 'bags', name: 'Bags', icon: '👜' }
   ]
 
-  // Загружаем видео с API
+  // Загружаем галерею видео с API
   useEffect(() => {
-    console.log('Fetching home video from API...')
-    fetch('/api/admin/site/home-video')
+    console.log('Fetching home videos gallery from API...')
+    fetch('/api/admin/site/home-videos')
       .then(res => {
-        console.log('Home video API response status:', res.status)
+        console.log('Home videos API response status:', res.status)
         return res.json()
       })
       .then(data => {
-        console.log('Home video API data:', data)
-        if (data.videoUrl) {
-          console.log('Setting home video to:', data.videoUrl)
-          setHomeVideo(data.videoUrl)
-          console.log('Home video state updated. New videos array will be:', [data.videoUrl])
+        console.log('Home videos API data:', data)
+        if (data.videos && data.videos.length > 0) {
+          const videoUrls = data.videos.map((video: any) => video.url)
+          console.log('Setting home videos to:', videoUrls)
+          setHomeVideo(videoUrls[0]) // Устанавливаем первое видео как текущее
+          setAllVideos(videoUrls) // Обновляем массив всех видео
+          console.log('Home videos gallery loaded. Total videos:', videoUrls.length)
         } else {
-          console.log('No videoUrl in response, using default')
+          console.log('No videos in gallery, using default')
+          setAllVideos(['/assets/videos/hero2.mp4']) // Fallback к дефолтному видео
         }
       })
-      .catch(err => console.error('Failed to fetch home video:', err))
+      .catch(err => console.error('Failed to fetch home videos:', err))
   }, [])
 
   useEffect(() => {
