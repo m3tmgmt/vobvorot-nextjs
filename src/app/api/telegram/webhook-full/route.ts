@@ -11,6 +11,20 @@ const ADMIN_API_KEY = process.env.ADMIN_API_KEY
 // Простое хранилище состояний пользователей (в production лучше использовать Redis)
 const userStates = new Map<string, any>()
 
+// Функция для сохранения отладочных логов в БД
+async function saveDebugLog(action: string, data: any) {
+  try {
+    await prisma.setting.create({
+      data: {
+        key: `debug_log_${action}_${Date.now()}`,
+        value: JSON.stringify(data)
+      }
+    })
+  } catch (error) {
+    console.error('Failed to save debug log:', error)
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const update = await request.json()
@@ -845,14 +859,31 @@ async function handleUploadHomeVideo(chatId: number, userId: number, video: any)
   await sendTelegramMessage(chatId, '⏳ Загружаю видео...')
   
   try {
+    await saveDebugLog('handle_upload_start', {
+      chatId: chatId,
+      userId: userId,
+      video_file_id: video.file_id,
+      video_file_size: video.file_size,
+      video_duration: video.duration
+    })
+    
     // Проверяем размер файла заранее
     if (video.file_size && video.file_size > 20 * 1024 * 1024) {
+      await saveDebugLog('file_size_error', {
+        file_size: video.file_size,
+        max_size: 20 * 1024 * 1024
+      })
       await sendTelegramMessage(chatId, '❌ Файл слишком большой. Максимальный размер: 20MB\n\nПопробуйте сжать видео или выберите файл меньшего размера.')
       userStates.delete(userId.toString())
       return
     }
     
     const videoUrl = await uploadVideoToCloudinary(video)
+    
+    await saveDebugLog('upload_result', {
+      videoUrl: videoUrl,
+      success: !!videoUrl
+    })
     
     if (videoUrl) {
       await updateHomeVideo(videoUrl)
@@ -869,6 +900,11 @@ async function handleUploadHomeVideo(chatId: number, userId: number, video: any)
     }
   } catch (error) {
     console.error('Error uploading video:', error)
+    
+    await saveDebugLog('handle_upload_error', {
+      error_type: error instanceof Error ? error.name : typeof error,
+      error_message: error instanceof Error ? error.message : String(error)
+    })
     
     let errorMessage = '❌ Ошибка загрузки видео'
     
@@ -1399,13 +1435,28 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
     console.log('Starting video upload for file_id:', video.file_id)
     console.log('Video object:', JSON.stringify(video, null, 2))
     
+    // Сохраняем лог в БД для отладки
+    await saveDebugLog('video_upload_start', {
+      file_id: video.file_id,
+      video: video,
+      timestamp: new Date().toISOString()
+    })
+    
     const fileResponse = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/getFile?file_id=${video.file_id}`)
     const fileData = await fileResponse.json()
     
     console.log('Telegram getFile response:', JSON.stringify(fileData, null, 2))
     
+    await saveDebugLog('telegram_file_response', {
+      ok: fileData.ok,
+      result: fileData.result,
+      error: fileData.error_code,
+      description: fileData.description
+    })
+    
     if (!fileData.ok) {
       console.error('Failed to get file from Telegram:', fileData)
+      await saveDebugLog('telegram_file_error', fileData)
       return null
     }
     
@@ -1452,11 +1503,29 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
     let result
     try {
       // Первый подход: прямая загрузка через cloudinary API
+      await saveDebugLog('cloudinary_upload_start', {
+        approach: 'direct_api',
+        fileUrl: fileUrl,
+        uploadOptions: uploadOptions
+      })
+      
       const { cloudinary } = await import('@/lib/cloudinary')
       result = await cloudinary.uploader.upload(fileUrl, uploadOptions)
       console.log('Video uploaded successfully with transformations:', result.secure_url)
+      
+      await saveDebugLog('cloudinary_upload_success', {
+        approach: 'direct_api',
+        secure_url: result.secure_url,
+        public_id: result.public_id
+      })
     } catch (transformError) {
       console.warn('Upload with transformations failed, trying basic upload:', transformError)
+      
+      await saveDebugLog('cloudinary_upload_error', {
+        approach: 'direct_api',
+        error: transformError instanceof Error ? transformError.message : String(transformError),
+        error_stack: transformError instanceof Error ? transformError.stack : null
+      })
       
       // Второй подход: базовая загрузка без трансформаций
       const basicOptions: any = {
@@ -1467,15 +1536,39 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
       }
       
       try {
+        await saveDebugLog('cloudinary_upload_start', {
+          approach: 'basic_upload',
+          fileUrl: fileUrl,
+          uploadOptions: basicOptions
+        })
+        
         const { cloudinary } = await import('@/lib/cloudinary')
         result = await cloudinary.uploader.upload(fileUrl, basicOptions)
         console.log('Video uploaded successfully with basic options:', result.secure_url)
+        
+        await saveDebugLog('cloudinary_upload_success', {
+          approach: 'basic_upload',
+          secure_url: result.secure_url,
+          public_id: result.public_id
+        })
       } catch (basicError) {
         console.warn('Basic URL upload also failed, trying buffer upload:', basicError)
+        
+        await saveDebugLog('cloudinary_upload_error', {
+          approach: 'basic_upload',
+          error: basicError instanceof Error ? basicError.message : String(basicError),
+          error_stack: basicError instanceof Error ? basicError.stack : null
+        })
         
         // Третий подход: загрузка через буфер
         try {
           console.log('Fetching video data as buffer...')
+          
+          await saveDebugLog('cloudinary_upload_start', {
+            approach: 'buffer_upload',
+            fileUrl: fileUrl
+          })
+          
           const videoResponse = await fetch(fileUrl)
           
           if (!videoResponse.ok) {
@@ -1485,6 +1578,11 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
           const videoBuffer = Buffer.from(await videoResponse.arrayBuffer())
           console.log('Video buffer size:', videoBuffer.length)
           
+          await saveDebugLog('buffer_fetch_success', {
+            buffer_size: videoBuffer.length,
+            response_status: videoResponse.status
+          })
+          
           result = await cloudinaryService.uploadFromBuffer(videoBuffer, {
             folder: 'vobvorot-videos',
             resource_type: 'video',
@@ -1492,8 +1590,21 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
             unique_filename: true
           })
           console.log('Video uploaded successfully via buffer:', result.secure_url)
+          
+          await saveDebugLog('cloudinary_upload_success', {
+            approach: 'buffer_upload',
+            secure_url: result.secure_url,
+            public_id: result.public_id
+          })
         } catch (bufferError) {
           console.error('Buffer upload also failed:', bufferError)
+          
+          await saveDebugLog('cloudinary_upload_error', {
+            approach: 'buffer_upload',
+            error: bufferError instanceof Error ? bufferError.message : String(bufferError),
+            error_stack: bufferError instanceof Error ? bufferError.stack : null
+          })
+          
           throw bufferError
         }
       }
@@ -1506,6 +1617,14 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
     return result.secure_url
   } catch (error) {
     console.error('Error uploading video:', error)
+    
+    // Сохраняем детальную информацию об ошибке в БД
+    const errorInfo: any = {
+      error_type: error instanceof Error ? error.name : typeof error,
+      error_message: error instanceof Error ? error.message : String(error),
+      error_stack: error instanceof Error ? error.stack : null,
+      timestamp: new Date().toISOString()
+    }
     
     // Более детальное логирование ошибки
     if (error instanceof Error) {
@@ -1520,11 +1639,17 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
       if ('http_code' in error) {
         console.error('Cloudinary HTTP code:', (error as any).http_code)
         console.error('Cloudinary error details:', (error as any).error)
+        errorInfo['cloudinary_http_code'] = (error as any).http_code
+        errorInfo['cloudinary_error'] = (error as any).error
       }
       if ('response' in error) {
         console.error('HTTP response:', (error as any).response)
+        errorInfo['http_response'] = (error as any).response
       }
     }
+    
+    // Сохраняем ошибку в БД
+    await saveDebugLog('video_upload_final_error', errorInfo)
     
     return null
   }
