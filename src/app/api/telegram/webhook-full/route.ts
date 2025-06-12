@@ -887,7 +887,7 @@ async function deleteHomeVideo(chatId: number) {
 
 async function getCurrentVideoInfo(chatId: number) {
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'https://vobvorot.com'}/api/admin/site/home-video`)
+    const response = await fetch(`https://vobvorot.com/api/admin/site/home-video`)
     const data = await response.json()
     
     const keyboard = {
@@ -1397,7 +1397,7 @@ async function uploadVideoToCloudinary(video: any): Promise<string | null> {
 
 async function updateHomeVideo(videoUrl: string): Promise<void> {
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'https://vobvorot.com'}/api/admin/site/home-video`, {
+    const response = await fetch(`https://vobvorot.com/api/admin/site/home-video`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',

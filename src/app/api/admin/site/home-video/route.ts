@@ -3,13 +3,13 @@ import { prisma } from '@/lib/prisma'
 
 export async function PUT(request: NextRequest) {
   try {
-    // Временно отключаем авторизацию для тестирования
-    // const authHeader = request.headers.get('authorization')
-    // const expectedToken = `Bearer ${process.env.ADMIN_API_KEY}`
+    // Проверка авторизации для изменений
+    const authHeader = request.headers.get('authorization')
+    const expectedToken = `Bearer ${process.env.ADMIN_API_KEY}`
     
-    // if (authHeader !== expectedToken) {
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    // }
+    if (authHeader !== expectedToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     const { videoUrl } = await request.json()
 
