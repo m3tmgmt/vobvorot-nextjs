@@ -364,12 +364,16 @@ class WesternBidAPI {
     const hashString = merchantId + secretKey + amount + invoice
     const wb_hash = createHash('md5').update(hashString).digest('hex')
     
+    // Extract customer address from metadata if available
+    const customerAddress = request.metadata?.customerAddress || {}
+    
     this.logger.info('Generating WesternBid form data', {
       configMerchantId: this.config.merchantId,
       usedMerchantId: merchantId,
       environment: this.config.environment,
       hashString: hashString,
-      wb_hash: wb_hash
+      wb_hash: wb_hash,
+      customerAddress: customerAddress
     })
     
     const formData = {
@@ -379,11 +383,17 @@ class WesternBidAPI {
       wb_hash: wb_hash,
       invoice: invoice,
       email: request.customerEmail,
-      phone: request.customerPhone || '',
+      phone: (request.customerPhone || '').trim(), // Remove extra spaces
       
-      // Customer info (recommended fields)
+      // Customer info (REQUIRED fields according to documentation)
       first_name: request.customerName.split(' ')[0] || '',
       last_name: request.customerName.split(' ').slice(1).join(' ') || '',
+      address1: customerAddress.address || '',
+      address2: customerAddress.address2 || '',
+      city: customerAddress.city || '',
+      state: customerAddress.state || '',
+      zip: customerAddress.postalCode || '',
+      country: customerAddress.country || '',
       
       // Order info
       item_name: request.description,

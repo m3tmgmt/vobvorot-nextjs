@@ -59,7 +59,14 @@ export async function GET(request: NextRequest) {
       metadata: {
         sessionId,
         orderItems: order.items.length,
-        shippingMethod: 'standard'
+        shippingMethod: 'standard',
+        customerAddress: {
+          address: order.shippingAddress || '',
+          city: order.shippingCity || '',
+          state: order.shippingState || '',
+          postalCode: order.shippingPostalCode || '',
+          country: order.shippingCountry || ''
+        }
       }
     }
 
@@ -140,7 +147,7 @@ export async function GET(request: NextRequest) {
                 </details>
             </div>
             
-            <form id="westernbid-form" action="https://shop.westernbid.info" method="post" style="display: none;">
+            <form id="westernbid-form" action="https://shop.westernbid.info" method="post" target="_self" style="display: none;">
                 ${Object.entries(formData)
                   .map(([key, value]) => `<input type="hidden" name="${key}" value="${value.replace(/"/g, '&quot;')}" />`)
                   .join('\n                ')}
@@ -250,6 +257,23 @@ export async function GET(request: NextRequest) {
                         }
                     };
                     document.querySelector('.container').appendChild(showFormButton);
+                    
+                    // Add button to submit form in new window
+                    const newWindowButton = document.createElement('button');
+                    newWindowButton.textContent = 'Submit in New Window';
+                    newWindowButton.style.cssText = 'padding: 10px 20px; margin: 10px; background: #9b59b6; color: white; border: none; border-radius: 5px; cursor: pointer;';
+                    newWindowButton.onclick = function() {
+                        console.log('Opening form in new window...');
+                        try {
+                            // Change target to _blank and submit
+                            form.target = '_blank';
+                            form.submit();
+                            console.log('Form submitted in new window');
+                        } catch (error) {
+                            console.error('New window submission failed:', error);
+                        }
+                    };
+                    document.querySelector('.container').appendChild(newWindowButton);
                     
                     // Also try automatic submission
                     setTimeout(function() {
