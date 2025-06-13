@@ -106,10 +106,19 @@ export default function CheckoutPage() {
       const orderData = {
         shippingInfo,
         paymentInfo: {
-          method: paymentInfo.method?.id || 'westernbid',
-          gateway: paymentInfo.method?.name || 'WesternBid Gateway'
+          method: paymentInfo.method?.id || 'westernbid'
         },
-        items: state.items,
+        items: state.items.map(item => ({
+          product: {
+            id: item.productId,
+            name: item.productName,
+            price: item.price,
+            images: item.image ? [{ url: item.image, alt: item.productName }] : []
+          },
+          quantity: item.quantity,
+          selectedSize: item.size,
+          selectedColor: item.color
+        })),
         subtotal: state.total,
         shippingCost,
         tax,
@@ -317,99 +326,65 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '1rem',
-                  marginBottom: '1rem'
-                }}>
-                  <div>
-                    <label style={{
-                      display: 'block',
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{
+                    display: 'block',
+                    color: 'var(--white)',
+                    marginBottom: '0.5rem'
+                  }}>
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={shippingInfo.email}
+                    onChange={(e) => setShippingInfo({...shippingInfo, email: e.target.value})}
+                    style={{
+                      width: '100%',
+                      padding: '1rem',
+                      background: 'rgba(255,255,255,0.1)',
+                      border: '1px solid var(--cyan-accent)',
+                      borderRadius: '8px',
                       color: 'var(--white)',
-                      marginBottom: '0.5rem'
-                    }}>
-                      Email *
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={shippingInfo.email}
-                      onChange={(e) => setShippingInfo({...shippingInfo, email: e.target.value})}
-                      style={{
-                        width: '100%',
-                        padding: '1rem',
-                        background: 'rgba(255,255,255,0.1)',
-                        border: '1px solid var(--cyan-accent)',
-                        borderRadius: '8px',
-                        color: 'var(--white)',
-                        fontSize: '1rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{
-                      display: 'block',
+                      fontSize: '1rem'
+                    }}
+                  />
+                </div>
+
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{
+                    display: 'block',
+                    color: 'var(--white)',
+                    marginBottom: '0.5rem'
+                  }}>
+                    Phone *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={shippingInfo.phone}
+                    onChange={(e) => {
+                      const value = e.target.value
+                      setShippingInfo({...shippingInfo, phone: value})
+                    }}
+                    placeholder="+1 (555) 123-4567"
+                    style={{
+                      width: '100%',
+                      padding: '1rem',
+                      background: 'rgba(255,255,255,0.1)',
+                      border: '1px solid var(--cyan-accent)',
+                      borderRadius: '8px',
                       color: 'var(--white)',
-                      marginBottom: '0.5rem'
-                    }}>
-                      Phone *
-                    </label>
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <select
-                        value={shippingInfo.country === 'US' ? '+1' : 
-                               shippingInfo.country === 'GB' ? '+44' :
-                               shippingInfo.country === 'FR' ? '+33' :
-                               shippingInfo.country === 'DE' ? '+49' :
-                               shippingInfo.country === 'IT' ? '+39' :
-                               shippingInfo.country === 'ES' ? '+34' :
-                               shippingInfo.country === 'CA' ? '+1' :
-                               shippingInfo.country === 'AU' ? '+61' :
-                               shippingInfo.country === 'JP' ? '+81' :
-                               shippingInfo.country === 'MX' ? '+52' : '+1'}
-                        onChange={(e) => {/* Handle code change if needed */}}
-                        style={{
-                          width: '120px',
-                          padding: '1rem',
-                          background: 'rgba(255,255,255,0.1)',
-                          border: '1px solid var(--cyan-accent)',
-                          borderRadius: '8px',
-                          color: 'var(--white)',
-                          fontSize: '1rem'
-                        }}
-                      >
-                        <option value="+1">🇺🇸 +1</option>
-                        <option value="+44">🇬🇧 +44</option>
-                        <option value="+33">🇫🇷 +33</option>
-                        <option value="+49">🇩🇪 +49</option>
-                        <option value="+39">🇮🇹 +39</option>
-                        <option value="+34">🇪🇸 +34</option>
-                        <option value="+61">🇦🇺 +61</option>
-                        <option value="+81">🇯🇵 +81</option>
-                        <option value="+52">🇲🇽 +52</option>
-                        <option value="+380">🇺🇦 +380</option>
-                        <option value="+7">🇷🇺 +7</option>
-                        <option value="+86">🇨🇳 +86</option>
-                        <option value="+91">🇮🇳 +91</option>
-                      </select>
-                      <input
-                        type="tel"
-                        required
-                        value={shippingInfo.phone}
-                        onChange={(e) => setShippingInfo({...shippingInfo, phone: e.target.value})}
-                        placeholder="123 456 7890"
-                        style={{
-                          flex: 1,
-                          padding: '1rem',
-                          background: 'rgba(255,255,255,0.1)',
-                          border: '1px solid var(--cyan-accent)',
-                          borderRadius: '8px',
-                          color: 'var(--white)',
-                          fontSize: '1rem'
-                        }}
-                      />
-                    </div>
-                  </div>
+                      fontSize: '1rem'
+                    }}
+                  />
+                  <p style={{
+                    color: 'rgba(255,255,255,0.6)',
+                    fontSize: '0.8rem',
+                    marginTop: '0.25rem'
+                  }}>
+                    Include country code (e.g., +1 for US, +44 for UK, +380 for Ukraine)
+                  </p>
                 </div>
 
                 <div style={{ marginBottom: '1rem' }}>
@@ -564,10 +539,16 @@ export default function CheckoutPage() {
                 <div style={{ marginBottom: '2rem' }}>
                   {[
                     { 
-                      id: 'westernbid', 
-                      name: 'WesternBid (Stripe & PayPal)', 
-                      description: 'Pay with Credit Card or PayPal',
+                      id: 'stripe', 
+                      name: 'Credit/Debit Card', 
+                      description: 'Pay securely with Stripe',
                       icon: '💳'
+                    },
+                    { 
+                      id: 'paypal', 
+                      name: 'PayPal', 
+                      description: 'Pay with PayPal account',
+                      icon: '💰'
                     }
                   ].map((method) => (
                     <div
@@ -702,9 +683,9 @@ export default function CheckoutPage() {
                   </h3>
                   <div style={{ color: 'rgba(255,255,255,0.8)' }}>
                     {paymentInfo.method ? (
-                      `💳 ${paymentInfo.method.name} - ${paymentInfo.method.description}`
+                      `${paymentInfo.method.icon} ${paymentInfo.method.name} - ${paymentInfo.method.description}`
                     ) : (
-                      '💳 WesternBid Payment (PayPal & Stripe)'
+                      '💳 Payment method not selected'
                     )}
                   </div>
                 </div>
@@ -747,7 +728,7 @@ export default function CheckoutPage() {
                       opacity: loading ? 0.7 : 1
                     }}
                   >
-                    {loading ? 'Processing...' : 'Proceed to Payment'}
+                    {loading ? 'Creating Order...' : 'Complete Order'}
                   </button>
                 </div>
               </div>

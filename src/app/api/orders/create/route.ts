@@ -33,7 +33,7 @@ interface ShippingInfo {
 }
 
 interface PaymentInfo {
-  method: 'westernbid'
+  method: 'stripe' | 'paypal' | 'westernbid'
 }
 
 interface OrderData {
@@ -225,12 +225,13 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Process payment with WesternBid
+    // Process payment with WesternBid (handles Stripe & PayPal)
     logger.info('Creating WesternBid payment', {
       orderNumber,
       amount: orderData.total,
       userId: session?.user?.id || 'guest',
-      customerEmail: orderData.shippingInfo.email
+      customerEmail: orderData.shippingInfo.email,
+      requestedMethod: orderData.paymentInfo.method
     })
     
     const startTime = Date.now()
@@ -239,7 +240,7 @@ export async function POST(request: NextRequest) {
       orderId: orderNumber,
       amount: orderData.total,
       currency: 'USD',
-      description: `Order ${orderNumber} - ${orderData.items.length} items`,
+      description: `Order ${orderNumber} - ${orderData.items.length} items (${orderData.paymentInfo.method.toUpperCase()})`,
       customerEmail: orderData.shippingInfo.email,
       customerName: `${orderData.shippingInfo.firstName} ${orderData.shippingInfo.lastName}`,
       customerPhone: orderData.shippingInfo.phone,
@@ -251,7 +252,8 @@ export async function POST(request: NextRequest) {
         userId: session?.user?.id || 'guest',
         userEmail: session?.user?.email || orderData.shippingInfo.email,
         itemCount: orderData.items.length,
-        shippingCountry: orderData.shippingInfo.country
+        shippingCountry: orderData.shippingInfo.country,
+        preferredPaymentMethod: orderData.paymentInfo.method
       }
     }
 
