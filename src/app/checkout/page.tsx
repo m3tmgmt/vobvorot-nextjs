@@ -503,6 +503,7 @@ export default function CheckoutPage() {
                       }}
                     >
                       {/* Популярные страны первыми */}
+                      <option value="UA">Ukraine</option>
                       <option value="US">United States</option>
                       <option value="CA">Canada</option>
                       <option value="GB">United Kingdom</option>

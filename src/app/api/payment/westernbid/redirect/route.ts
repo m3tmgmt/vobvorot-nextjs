@@ -166,21 +166,34 @@ export async function GET(request: NextRequest) {
                         console.log(key + ':', value);
                     }
                     
-                    // Try to submit form
-                    setTimeout(function() {
-                        console.log('Submitting form to WesternBid...');
+                    // Add manual submit button for testing
+                    const submitButton = document.createElement('button');
+                    submitButton.textContent = 'Manual Submit to WesternBid';
+                    submitButton.style.cssText = 'padding: 10px 20px; margin: 10px; background: #4ecdc4; color: white; border: none; border-radius: 5px; cursor: pointer;';
+                    submitButton.onclick = function() {
+                        console.log('Manual form submission triggered');
                         try {
                             form.submit();
-                            console.log('Form submitted successfully');
                         } catch (error) {
-                            console.error('Form submission failed:', error);
-                            // Show error message
-                            document.querySelector('.container').innerHTML = 
-                                '<div class="logo">VobVorot</div>' +
-                                '<p style="color: #ff6b6b;">Payment form submission failed: ' + error.message + '</p>' +
-                                '<a href="/checkout" style="color: #4ecdc4; text-decoration: none;">← Back to Checkout</a>';
+                            console.error('Manual submission failed:', error);
+                            alert('Manual submission failed: ' + error.message);
                         }
-                    }, 2000);
+                    };
+                    document.querySelector('.container').appendChild(submitButton);
+                    
+                    // Also try automatic submission
+                    setTimeout(function() {
+                        console.log('Automatic form submission in 3 seconds...');
+                        try {
+                            form.submit();
+                            console.log('Automatic form submitted');
+                        } catch (error) {
+                            console.error('Automatic form submission failed:', error);
+                            document.querySelector('.container').innerHTML += 
+                                '<p style="color: #ff6b6b; margin-top: 1rem;">Automatic submission failed: ' + error.message + '</p>' +
+                                '<p style="color: #fff;">Try the manual submit button above or <a href="/checkout" style="color: #4ecdc4;">go back to checkout</a></p>';
+                        }
+                    }, 3000);
                     
                 } else {
                     console.error('Form not found!');
