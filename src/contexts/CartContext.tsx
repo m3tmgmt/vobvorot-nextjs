@@ -133,13 +133,25 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Load cart from localStorage on mount
   useEffect(() => {
     setMounted(true)
-    const savedCart = localStorage.getItem('vobvorot-cart')
-    if (savedCart) {
+    try {
+      // Check if localStorage is available (may not work in incognito mode)
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const savedCart = localStorage.getItem('vobvorot-cart')
+        if (savedCart) {
+          const cartData = JSON.parse(savedCart)
+          // Only load if cart has items to prevent showing old data
+          if (cartData && cartData.items && cartData.items.length > 0) {
+            dispatch({ type: 'LOAD_CART', payload: cartData })
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load cart from localStorage:', error)
+      // Clear any corrupted data
       try {
-        const cartData = JSON.parse(savedCart)
-        dispatch({ type: 'LOAD_CART', payload: cartData })
-      } catch (error) {
-        console.error('Failed to load cart from localStorage:', error)
+        localStorage.removeItem('vobvorot-cart')
+      } catch (e) {
+        // Ignore cleanup errors
       }
     }
   }, [])
@@ -147,7 +159,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Save to localStorage whenever cart changes
   useEffect(() => {
     if (!mounted) return
-    localStorage.setItem('vobvorot-cart', JSON.stringify(state))
+    try {
+      // Only save if localStorage is available
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('vobvorot-cart', JSON.stringify(state))
+      }
+    } catch (error) {
+      console.error('Failed to save cart to localStorage:', error)
+    }
   }, [state, mounted])
 
 
