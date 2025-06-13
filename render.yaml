@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: vobvorot-nextjs
+    runtime: docker
+    plan: free
+    buildCommand: docker build -t vobvorot-nextjs .
+    startCommand: docker run -p 10000:3000 vobvorot-nextjs
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://vobvorot.com
+      - key: DATABASE_URL
+        value: file:./prisma/prod.db
+      - key: NEXTAUTH_SECRET
+        value: af15d8b63d97bb34186432741dfec30a4c5ba201fd95dac5c1f90e92019c1631
+      - key: NEXTAUTH_URL
+        value: https://vobvorot.com
+      - key: WESTERNBID_MERCHANT_ID
+        value: "159008"
+      - key: WESTERNBID_SECRET_KEY
+        value: oVsVCgu
+      - key: WESTERNBID_API_URL
+        value: https://shop.westernbid.info
+      - key: WESTERNBID_ENVIRONMENT
+        value: production
