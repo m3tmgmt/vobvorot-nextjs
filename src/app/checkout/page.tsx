@@ -374,6 +374,10 @@ export default function CheckoutPage() {
                       if (value.length === 1 && /^\d$/.test(value)) {
                         value = '+' + value
                       }
+                      // Don't allow removing + if it's the first character
+                      if (shippingInfo.phone.startsWith('+') && !value.startsWith('+') && value.length > 0) {
+                        value = '+' + value
+                      }
                       setShippingInfo({...shippingInfo, phone: value})
                     }}
                     placeholder="+1 (555) 123-4567"
@@ -547,7 +551,6 @@ export default function CheckoutPage() {
                       <option value="CL">Chile</option>
                       <option value="CO">Colombia</option>
                       <option value="ZA">South Africa</option>
-                      <option value="OTHER">Other</option>
                     </select>
                   </div>
                 </div>

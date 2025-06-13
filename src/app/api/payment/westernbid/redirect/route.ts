@@ -128,8 +128,19 @@ export async function GET(request: NextRequest) {
             <div class="spinner"></div>
             <p>Redirecting to secure payment...</p>
             <p class="message">You will be redirected to WesternBid payment gateway</p>
+            <div id="debug-info" style="margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.8rem; text-align: left;">
+                <strong>Debug Info:</strong><br>
+                Payment ID: ${paymentId}<br>
+                Order ID: ${orderId}<br>
+                Amount: $${Number(order.total).toFixed(2)}<br>
+                Target URL: https://shop.westernbid.info/payment<br>
+                <details style="margin-top: 0.5rem;">
+                    <summary>Form Data</summary>
+                    <pre style="font-size: 0.7rem; margin-top: 0.5rem;">${JSON.stringify(formData, null, 2)}</pre>
+                </details>
+            </div>
             
-            <form id="westernbid-form" action="https://shop.westernbid.info" method="post" style="display: none;">
+            <form id="westernbid-form" action="https://shop.westernbid.info/payment" method="post" style="display: none;">
                 ${Object.entries(formData)
                   .map(([key, value]) => `<input type="hidden" name="${key}" value="${value.replace(/"/g, '&quot;')}" />`)
                   .join('\n                ')}
@@ -137,10 +148,29 @@ export async function GET(request: NextRequest) {
         </div>
 
         <script>
-            // Auto-submit form after 2 seconds
-            setTimeout(function() {
-                document.getElementById('westernbid-form').submit();
-            }, 2000);
+            console.log('Payment redirect page loaded');
+            console.log('Form action:', document.getElementById('westernbid-form').action);
+            console.log('Form data:', new FormData(document.getElementById('westernbid-form')));
+            
+            // Try to submit immediately, then with delay as fallback
+            try {
+                setTimeout(function() {
+                    console.log('Attempting to submit form to WesternBid...');
+                    const form = document.getElementById('westernbid-form');
+                    if (form) {
+                        form.submit();
+                    } else {
+                        console.error('Form not found!');
+                        // Fallback: show error message
+                        document.querySelector('.container').innerHTML = 
+                            '<div class="logo">VobVorot</div>' +
+                            '<p style="color: #ff6b6b;">Payment initialization failed. Please try again.</p>' +
+                            '<a href="/checkout" style="color: #4ecdc4; text-decoration: none;">← Back to Checkout</a>';
+                    }
+                }, 1000);
+            } catch (error) {
+                console.error('Form submission error:', error);
+            }
         </script>
     </body>
     </html>
