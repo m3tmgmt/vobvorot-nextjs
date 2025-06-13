@@ -367,13 +367,21 @@ class WesternBidAPI {
     // Extract customer address from metadata if available
     const customerAddress = request.metadata?.customerAddress || {}
     
+    // Ensure required address fields have default values if missing
+    const address1 = customerAddress.address || 'Not specified'
+    const city = customerAddress.city || 'Not specified'
+    const state = customerAddress.state || 'Not specified'
+    const zip = customerAddress.postalCode || '00000'
+    const country = customerAddress.country || 'UA'
+    
     this.logger.info('Generating WesternBid form data', {
       configMerchantId: this.config.merchantId,
       usedMerchantId: merchantId,
       environment: this.config.environment,
       hashString: hashString,
       wb_hash: wb_hash,
-      customerAddress: customerAddress
+      customerAddress: customerAddress,
+      finalAddress: { address1, city, state, zip, country }
     })
     
     const formData = {
@@ -386,14 +394,14 @@ class WesternBidAPI {
       phone: (request.customerPhone || '').trim(), // Remove extra spaces
       
       // Customer info (REQUIRED fields according to documentation)
-      first_name: request.customerName.split(' ')[0] || '',
-      last_name: request.customerName.split(' ').slice(1).join(' ') || '',
-      address1: customerAddress.address || '',
+      first_name: request.customerName.split(' ')[0] || 'Customer',
+      last_name: request.customerName.split(' ').slice(1).join(' ') || 'Name',
+      address1: address1,
       address2: customerAddress.address2 || '',
-      city: customerAddress.city || '',
-      state: customerAddress.state || '',
-      zip: customerAddress.postalCode || '',
-      country: customerAddress.country || '',
+      city: city,
+      state: state,
+      zip: zip,
+      country: country,
       
       // Order info
       item_name: request.description,

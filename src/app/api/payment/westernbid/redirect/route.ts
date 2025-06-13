@@ -61,11 +61,11 @@ export async function GET(request: NextRequest) {
         orderItems: order.items.length,
         shippingMethod: 'standard',
         customerAddress: {
-          address: order.shippingAddress || '',
-          city: order.shippingCity || '',
-          state: '', // No state field in Order model
-          postalCode: order.shippingZip || '',
-          country: order.shippingCountry || ''
+          address: order.shippingAddress || 'Address not provided',
+          city: order.shippingCity || 'City not provided',
+          state: order.shippingCountry === 'UA' ? 'Ukraine' : 'State not provided',
+          postalCode: order.shippingZip || '00000',
+          country: order.shippingCountry || 'UA'
         }
       }
     }
@@ -233,27 +233,6 @@ export async function GET(request: NextRequest) {
                         }
                     };
                     document.querySelector('.container').appendChild(submitButton);
-                    
-                    // Add missing required fields to form
-                    const missingFields = {
-                        'address1': '${order.shippingAddress || 'Test Address 123'}',
-                        'city': '${order.shippingCity || 'Test City'}',
-                        'country': '${order.shippingCountry || 'UA'}',
-                        'state': 'Test State',
-                        'zip': '${order.shippingZip || '01001'}'
-                    };
-                    
-                    Object.entries(missingFields).forEach(([name, value]) => {
-                        // Check if field already exists
-                        if (!form.querySelector('input[name="' + name + '"]')) {
-                            const input = document.createElement('input');
-                            input.type = 'hidden';
-                            input.name = name;
-                            input.value = value;
-                            form.appendChild(input);
-                            console.log('Added missing field:', name, '=', value);
-                        }
-                    });
                     
                     // Fix phone field - remove extra spaces
                     const phoneInput = form.querySelector('input[name="phone"]');

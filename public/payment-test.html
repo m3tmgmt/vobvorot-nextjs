@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Test - Fixed</title>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        button {
+            padding: 15px 30px;
+            margin: 10px;
+            background: #4ecdc4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45b7aa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">VobVorot Payment Test</div>
+        <p>Fixed WesternBid Integration Test</p>
+        
+        <form id="testForm" action="https://shop.westernbid.info" method="post" target="_self">
+            <input type="hidden" name="charset" value="utf-8">
+            <input type="hidden" name="wb_login" value="159008">
+            <input type="hidden" name="wb_hash" value="8d3040b2f0118b327462923010dc8a38">
+            <input type="hidden" name="invoice" value="TEST_FIXED_123">
+            <input type="hidden" name="email" value="test@vobvorot.com">
+            <input type="hidden" name="phone" value="+380990007099">
+            <input type="hidden" name="first_name" value="Test">
+            <input type="hidden" name="last_name" value="User">
+            <input type="hidden" name="address1" value="Test Address">
+            <input type="hidden" name="city" value="Kyiv">
+            <input type="hidden" name="country" value="UA">
+            <input type="hidden" name="state" value="Kyiv">
+            <input type="hidden" name="zip" value="01001">
+            <input type="hidden" name="item_name" value="Test Product">
+            <input type="hidden" name="amount" value="17.28">
+            <input type="hidden" name="currency_code" value="USD">
+            <input type="hidden" name="item_name_1" value="Test Product">
+            <input type="hidden" name="item_number_1" value="TEST001">
+            <input type="hidden" name="amount_1" value="17.28">
+            <input type="hidden" name="quantity_1" value="1">
+            <input type="hidden" name="url_1" value="https://vobvorot.com/products">
+            <input type="hidden" name="description_1" value="Test product description">
+            <input type="hidden" name="return" value="https://vobvorot.com/payment/success">
+            <input type="hidden" name="cancel_return" value="https://vobvorot.com/payment/cancel">
+            <input type="hidden" name="notify_url" value="https://vobvorot.com/api/webhooks/westernbid">
+            <input type="hidden" name="no_shipping" value="1">
+            
+            <button type="submit">Test Payment (Fixed)</button>
+        </form>
+        
+        <p style="color: #b0b0b0; font-size: 0.9rem; margin-top: 1rem;">
+            This should redirect to PayPal instead of showing blank page
+        </p>
+        
+        <script>
+            console.log('Fixed payment test loaded');
+            console.log('Form target:', document.getElementById('testForm').target);
+        </script>
+    </div>
+</body>
+</html>
