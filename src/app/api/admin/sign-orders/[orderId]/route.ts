@@ -6,7 +6,7 @@ import { logger } from '@/lib/logger'
 // PATCH - Update sign order (upload photo, update status)
 export async function PATCH(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  context: { params: Promise<{ orderId: string }> }
 ) {
   try {
     // Check admin authorization
@@ -20,7 +20,7 @@ export async function PATCH(
       )
     }
 
-    const { orderId } = params
+    const { orderId } = await context.params
     const body = await request.json()
     const { action, photoUrl, status } = body
 
@@ -264,7 +264,7 @@ EXVICPMOUR - Your Name, My Pic
 
   } catch (error) {
     logger.error('Sign order update error', {
-      orderId: params.orderId,
+      orderId: (await context.params).orderId,
       error: error instanceof Error ? error.message : String(error)
     })
 
@@ -278,10 +278,10 @@ EXVICPMOUR - Your Name, My Pic
 // GET - Get sign order details
 export async function GET(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  context: { params: Promise<{ orderId: string }> }
 ) {
   try {
-    const { orderId } = params
+    const { orderId } = await context.params
 
     const order = await prisma.order.findFirst({
       where: {
@@ -314,7 +314,7 @@ export async function GET(
 
   } catch (error) {
     logger.error('Sign order fetch error', {
-      orderId: params.orderId,
+      orderId: (await context.params).orderId,
       error: error instanceof Error ? error.message : String(error)
     })
 

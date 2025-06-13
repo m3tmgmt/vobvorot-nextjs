@@ -151,7 +151,7 @@ export async function refundOrder(request: RefundOrderRequest): Promise<RefundOr
             refundAmount: refundAmount,
             reason: request.reason,
             adminId: request.adminId,
-            westernbidResult: refundResult,
+            westernbidResult: refundResult ? JSON.parse(JSON.stringify(refundResult)) : null,
             isManualRefund: !refundResult?.success,
             processedAt: new Date().toISOString()
           },

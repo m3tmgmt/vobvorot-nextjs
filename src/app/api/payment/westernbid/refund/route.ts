@@ -81,7 +81,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Process refund through WesternBid
-    const refundAmount = amount || order.total
+    const refundAmount = amount || Number(order.total)
     const refundResult = await westernbid.refundPayment({
       paymentId: order.payment.paymentId,
       amount: refundAmount,
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
         adminId: adminId,
         originalAmount: order.total,
         refundDate: new Date().toISOString(),
-        customerEmail: order.user?.email || order.customerEmail
+        customerEmail: order.user?.email || order.shippingEmail
       }
     })
 
@@ -148,7 +148,7 @@ export async function POST(request: NextRequest) {
             refundAmount: refundAmount,
             reason: reason,
             adminId: adminId,
-            westernbidResponse: refundResult
+            westernbidResponse: JSON.parse(JSON.stringify(refundResult))
           },
           userId: adminId
         }
