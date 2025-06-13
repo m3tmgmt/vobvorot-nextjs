@@ -303,12 +303,17 @@ export async function GET(request: NextRequest) {
                     };
                     document.querySelector('.container').appendChild(newWindowButton);
                     
+                    // Change form target to prevent blank page issue
+                    form.target = '_self';
+                    
                     // Also try automatic submission
                     setTimeout(function() {
                         console.log('Automatic form submission in 3 seconds...');
                         try {
+                            // Change form action to handle the response properly
+                            console.log('Submitting form to WesternBid...');
                             form.submit();
-                            console.log('Automatic form submitted');
+                            console.log('Form submitted - should redirect to PayPal');
                         } catch (error) {
                             console.error('Automatic form submission failed:', error);
                             document.querySelector('.container').innerHTML += 
