@@ -7,6 +7,7 @@ export interface Product {
   brand: string
   price: number
   stock: number
+  weight?: number // Вес в килограммах для расчета доставки
   category: {
     name: string
     slug: string

@@ -63,8 +63,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Generate WesternBid form data
-    const formData = westernbid.generatePaymentFormData(paymentRequest, paymentId)
+    // Generate WesternBid form data with preferred payment method
+    const preferredGate = order.paymentMethod || 'paypal' // 'stripe', 'paypal', or 'westernbid'
+    const formData = westernbid.generatePaymentFormData(paymentRequest, paymentId, preferredGate)
 
     // Create HTML form for manual submission to WesternBid (no auto-submit)
     const html = `
@@ -204,7 +205,7 @@ export async function GET(request: NextRequest) {
                 </div>
             </div>
             
-            <form id="westernbid-form" action="https://shop.westernbid.info" method="post">
+            <form id="westernbid-form" action="https://shop.westernbid.info" method="POST">
                 ${Object.entries(formData)
                   .map(([key, value]) => `<input type="hidden" name="${key}" value="${value.replace(/"/g, '&quot;')}" />`)
                   .join('\n                ')}
@@ -244,83 +245,28 @@ ${Object.entries(formData)
             console.log('Amount:', '$${Number(order.total).toFixed(2)}');
             console.log('Payment ID:', '${paymentId}');
             
+            // Auto-submit form after short delay
             document.addEventListener('DOMContentLoaded', function() {
                 const form = document.getElementById('westernbid-form');
                 const button = document.getElementById('payment-btn');
                 
                 if (form && button) {
-                    button.addEventListener('click', function(e) {
-                        e.preventDefault(); // Prevent default form submission
-                        console.log('Payment button clicked - submitting to WesternBid');
-                        console.log('Form action:', form.action);
-                        console.log('Form method:', form.method);
-                        
-                        // Add loading state
-                        button.innerHTML = '⏳ Redirecting to Payment Gateway...';
-                        button.disabled = true;
-                        
-                        // Try multiple submission methods
-                        setTimeout(function() {
-                            console.log('Attempting form submission...');
-                            
-                            try {
-                                // Method 1: Direct form submit
-                                console.log('Method 1: form.submit()');
-                                form.submit();
-                                console.log('Form submit called successfully');
-                            } catch (error) {
-                                console.error('Method 1 failed:', error);
-                                
-                                // Method 2: Create new form and submit
-                                try {
-                                    console.log('Method 2: Creating new form');
-                                    const newForm = document.createElement('form');
-                                    newForm.method = 'POST';
-                                    newForm.action = 'https://shop.westernbid.info';
-                                    newForm.target = '_self';
-                                    
-                                    // Copy all hidden inputs
-                                    const inputs = form.querySelectorAll('input[type="hidden"]');
-                                    inputs.forEach(input => {
-                                        const newInput = document.createElement('input');
-                                        newInput.type = 'hidden';
-                                        newInput.name = input.name;
-                                        newInput.value = input.value;
-                                        newForm.appendChild(newInput);
-                                    });
-                                    
-                                    document.body.appendChild(newForm);
-                                    newForm.submit();
-                                    console.log('New form submitted');
-                                } catch (error2) {
-                                    console.error('Method 2 failed:', error2);
-                                    
-                                    // Method 3: Manual redirect with POST data
-                                    console.log('Method 3: Manual redirect');
-                                    const formData = new FormData(form);
-                                    const params = new URLSearchParams();
-                                    for (let [key, value] of formData.entries()) {
-                                        params.append(key, value);
-                                    }
-                                    
-                                    // Show form data for debugging
-                                    console.log('Form data to send:', Object.fromEntries(formData));
-                                    
-                                    button.innerHTML = '❌ Submission failed - Please try again';
-                                    button.disabled = false;
-                                }
-                            }
-                        }, 500);
-                    });
+                    // Show countdown and auto-submit
+                    let countdown = 3;
+                    const originalText = button.innerHTML;
                     
-                    console.log('✅ WesternBid form ready for manual submission');
-                    console.log('Form details:', {
-                        action: form.action,
-                        method: form.method,
-                        inputs: form.querySelectorAll('input').length
-                    });
-                } else {
-                    console.error('❌ Form or button not found');
+                    const updateButton = () => {
+                        if (countdown > 0) {
+                            button.innerHTML = \`⏳ Redirecting in \${countdown} seconds... (Click to proceed now)\`;
+                            countdown--;
+                            setTimeout(updateButton, 1000);
+                        } else {
+                            button.innerHTML = '⏳ Redirecting to Payment Gateway...';
+                            form.submit();
+                        }
+                    };
+                    
+                    updateButton();
                 }
             });
         </script>

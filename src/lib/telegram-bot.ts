@@ -168,6 +168,11 @@ async function addProduct(conversation: any, ctx: MyContext) {
   const stockResponse = await conversation.wait()
   productData.stock = parseInt(stockResponse.message?.text || '0')
   
+  // Вес товара (для расчета доставки)
+  await ctx.reply('⚖️ Введите вес товара в килограммах (например: 0.5 или 1.2):\n\n💡 *Это нужно для автоматического расчета стоимости доставки по тарифам Meest*', { parse_mode: 'Markdown' })
+  const weightResponse = await conversation.wait()
+  productData.weight = parseFloat(weightResponse.message?.text || '0.5')
+  
   // Размеры (опционально)
   await ctx.reply('Введите доступные размеры через запятую (или пропустите, отправив "-"):')
   const sizesResponse = await conversation.wait()
@@ -176,7 +181,7 @@ async function addProduct(conversation: any, ctx: MyContext) {
   // Сохранение товара
   try {
     const newProduct = await createProduct(productData)
-    await ctx.reply(`✅ Товар успешно добавлен!\n\n📦 *${newProduct.name}*\n💰 $${newProduct.price}\n📦 Количество: ${newProduct.stock}`, { parse_mode: 'Markdown' })
+    await ctx.reply(`✅ Товар успешно добавлен!\n\n📦 *${newProduct.name}*\n💰 $${newProduct.price}\n📦 Количество: ${newProduct.stock}\n⚖️ Вес: ${newProduct.weight || 0.5} кг`, { parse_mode: 'Markdown' })
     
     // Предложение загрузить видео для фона
     await ctx.reply('🎬 Хотите загрузить видео для фона карточки товара? Отправьте видео или нажмите /skip')

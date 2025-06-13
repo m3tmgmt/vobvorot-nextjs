@@ -234,8 +234,17 @@ export default function HomePage() {
               className="filter-btn"
               onClick={() => handleFilter('all')}
             >
-              View All Items
+              Show All Categories
             </button>
+          </div>
+        )}
+        
+        {/* View All Items Button */}
+        {filteredProducts.length > 0 && (
+          <div style={{ textAlign: 'center', marginTop: '3rem' }}>
+            <Link href="/products" className="hero-button">
+              View All Items
+            </Link>
           </div>
         )}
       </LazySection>

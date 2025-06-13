@@ -17,6 +17,8 @@ export interface Customer {
 
 export interface Order {
   id: string;
+  order_number?: string;
+  order_type?: 'PRODUCT' | 'SIGN_PHOTO';
   customer_id: string;
   items: OrderItem[];
   total: number;
@@ -27,7 +29,7 @@ export interface Order {
   created_at: Date;
   updated_at: Date;
   tracking_number?: string;
-  notes: string[];
+  notes: Array<{ text: string; created_at: Date }>;
 }
 
 export interface OrderItem {
@@ -100,30 +102,50 @@ class TelegramCRM {
 
   // Notify about new order
   async notifyNewOrder(order: Order, customer: Customer) {
+    const orderTypeEmoji = order.order_type === 'SIGN_PHOTO' ? '✍️' : '🛍️';
+    const orderTypeText = order.order_type === 'SIGN_PHOTO' ? 'SIGN PHOTO' : 'ТОВАРЫ';
+    
     const message = `
-🆕 <b>НОВЫЙ ЗАКАЗ #${order.id}</b>
+🆕 <b>НОВЫЙ ЗАКАЗ ${order.order_number || order.id}</b>
+${orderTypeEmoji} <b>Тип:</b> ${orderTypeText}
 
 👤 <b>Клиент:</b> ${customer.name || customer.email}
 📧 Email: ${customer.email}
 📱 Телефон: ${customer.phone || 'Не указан'}
 
-🛍️ <b>Товары:</b>
+${orderTypeEmoji} <b>${order.order_type === 'SIGN_PHOTO' ? 'Заказ' : 'Товары'}:</b>
 ${order.items.map(item => 
   `• ${item.name} x${item.quantity} - $${item.price}`
 ).join('\n')}
 
+${order.notes && order.notes.length > 0 ? `📝 <b>Заметки:</b> ${order.notes[0].text}\n` : ''}
+
 💰 <b>Сумма:</b> $${order.total}
 💳 <b>Оплата:</b> ${order.payment_method} (${order.payment_status})
 
-📍 <b>Адрес доставки:</b>
-${order.shipping_address.name}
+📍 <b>${order.order_type === 'SIGN_PHOTO' ? 'Email доставки' : 'Адрес доставки'}:</b>
+${order.order_type === 'SIGN_PHOTO' ? customer.email : `${order.shipping_address.name}
 ${order.shipping_address.address1}
-${order.shipping_address.city}, ${order.shipping_address.country}
+${order.shipping_address.city}, ${order.shipping_address.country}`}
 
 ⏰ ${new Date(order.created_at).toLocaleString('ru-RU')}
     `;
 
-    const keyboard = {
+    const keyboard = order.order_type === 'SIGN_PHOTO' ? {
+      inline_keyboard: [
+        [
+          { text: '✅ Подтвердить', callback_data: `confirm_order_${order.id}` },
+          { text: '📸 Загрузить фото', callback_data: `upload_photo_${order.id}` }
+        ],
+        [
+          { text: '📧 Отправить клиенту', callback_data: `send_photo_${order.id}` },
+          { text: '❌ Отменить', callback_data: `cancel_order_${order.id}` }
+        ],
+        [
+          { text: '👤 Профиль клиента', callback_data: `customer_${customer.id}` }
+        ]
+      ]
+    } : {
       inline_keyboard: [
         [
           { text: '✅ Принять в работу', callback_data: `accept_order_${order.id}` },

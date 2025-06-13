@@ -9,6 +9,7 @@ interface CartItem {
   quantity: number
   productName: string
   price: number
+  weight?: number // Вес единицы товара в кг для расчета доставки
   image?: string
   size?: string
   color?: string

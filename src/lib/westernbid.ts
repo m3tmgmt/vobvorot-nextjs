@@ -352,7 +352,7 @@ class WesternBidAPI {
   }
 
   // Generate WesternBid payment form data according to official documentation
-  public generatePaymentFormData(request: PaymentRequest, paymentId: string): Record<string, string> {
+  public generatePaymentFormData(request: PaymentRequest, paymentId: string, preferredGate?: string): Record<string, string> {
     // Use real merchant ID or fallback for testing - trim whitespace
     const merchantId = (this.config.merchantId || '159008').trim()
     const secretKey = (this.config.secretKey || 'oVsVCgu').trim()
@@ -363,14 +363,16 @@ class WesternBidAPI {
       // Required WesternBid fields
       wb_login: merchantId,
       charset: 'utf-8',
-      wb_order_id: paymentId,
-      wb_amount: amount,
-      wb_description: request.description,
-      wb_currency: request.currency.toUpperCase(),
-      wb_success_url: request.returnUrl,
-      wb_fail_url: request.cancelUrl,
-      wb_result_url: request.webhookUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`,
-      wb_result_method: 'POST',
+      invoice: paymentId, // Correct field name
+      amount: amount, // Correct field name
+      item_name: request.description,
+      currency_code: request.currency.toUpperCase(), // Correct field name
+      return: request.returnUrl, // Correct field name
+      cancel_return: request.cancelUrl, // Correct field name
+      notify_url: request.webhookUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`, // Correct field name
+      
+      // Payment gateway selection
+      gate: preferredGate === 'stripe' ? 'stripe.com' : 'paypal', // paypal is default
       
       // Customer info
       email: request.customerEmail,
@@ -378,16 +380,40 @@ class WesternBidAPI {
       first_name: request.customerName.split(' ')[0] || '',
       last_name: request.customerName.split(' ').slice(1).join(' ') || '',
       
+      // Address info (extracted from metadata)
+      address1: request.metadata?.shippingAddress || '',
+      address2: '',
+      country: request.metadata?.shippingCountry || 'US',
+      city: request.metadata?.shippingCity || '',
+      state: request.metadata?.shippingState || '',
+      zip: request.metadata?.shippingZip || '',
+      
+      // Required item fields (Cart format)
+      item_name_1: request.description,
+      item_number_1: paymentId,
+      amount_1: amount,
+      quantity_1: '1',
+      url_1: request.returnUrl,
+      description_1: request.description,
+      
       // Optional fields
       shipping: '0'
     }
     
+    // Add Florida tax for Stripe payments (7% requirement)
+    if (preferredGate === 'stripe' && (request.metadata?.shippingState === 'FL' || request.metadata?.shippingState === 'Florida')) {
+      const taxAmount = (parseFloat(amount) * 0.07).toFixed(2)
+      formData.sales_tax = taxAmount
+      this.logger.info('Added Florida tax for Stripe payment', { 
+        originalAmount: amount, 
+        taxAmount, 
+        state: request.metadata?.shippingState 
+      })
+    }
+    
     // Generate wb_hash according to WesternBid documentation
-    // Formula: md5(sorted_parameters_string + secret_key)
-    const sortedKeys = Object.keys(formData).sort()
-    const hashString = sortedKeys
-      .map(key => `${key}=${formData[key]}`)
-      .join('&') + `&${secretKey}`
+    // Formula: md5(wb_login + secret_key + amount + invoice)
+    const hashString = merchantId + secretKey + amount + paymentId
     
     const wb_hash = createHash('md5').update(hashString).digest('hex')
     formData.wb_hash = wb_hash

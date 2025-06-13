@@ -193,7 +193,11 @@ export async function POST(request: NextRequest) {
         userEmail: session?.user?.email || orderData.shippingInfo.email,
         itemCount: orderData.items.length,
         shippingCountry: orderData.shippingInfo.country,
-        preferredPaymentMethod: orderData.paymentInfo.method
+        preferredPaymentMethod: orderData.paymentInfo.method,
+        shippingAddress: orderData.shippingInfo.address,
+        shippingCity: orderData.shippingInfo.city,
+        shippingState: orderData.shippingInfo.state,
+        shippingZip: orderData.shippingInfo.postalCode
       }
     }
 
@@ -216,6 +220,9 @@ export async function POST(request: NextRequest) {
     const duration = Date.now() - startTime
     
     if (paymentResult.success && paymentResult.paymentUrl) {
+      // Generate WesternBid form data for direct client submission
+      const preferredGate = orderData.paymentInfo.method
+      const formData = westernbid.generatePaymentFormData(paymentRequest, paymentResult.paymentId || `wb_${Date.now()}_${orderNumber}`, preferredGate)
       // Update order with payment information
       const updatedOrder = await prisma.order.update({
         where: { id: order.id },
@@ -297,6 +304,9 @@ export async function POST(request: NextRequest) {
         paymentUrl: paymentResult.paymentUrl,
         paymentId: paymentResult.paymentId,
         sessionId: paymentResult.sessionId,
+        formData: formData, // WesternBid form data for direct submission
+        paymentGateway: 'westernbid',
+        targetUrl: 'https://shop.westernbid.info',
         message: 'Order created successfully'
       })
     } else {

@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     body = await request.json()
-    const { name, description, brand, category, price, stock, sizes, colors, images, video } = body
+    const { name, description, brand, category, price, stock, weight, sizes, colors, images, video } = body
 
     // Валидация обязательных полей
     if (!name || !price) {
@@ -116,6 +116,7 @@ export async function POST(request: NextRequest) {
       category: categoryData,
       price: parseFloat(price),
       stock: parseInt(stock) || 0,
+      weight: parseFloat(weight) || 0.5, // Default weight 0.5kg for shipping calculations
       sizes: sizes || [],
       colors: colors || [],
       images: images ? [{ url: images[0] || '/products/placeholder.jpg', alt: name, isPrimary: true }] : [{ url: '/products/placeholder.jpg', alt: name, isPrimary: true }],

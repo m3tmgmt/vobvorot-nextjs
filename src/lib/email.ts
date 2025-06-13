@@ -150,7 +150,19 @@ const translations = {
     currentStock: 'Current Stock',
     threshold: 'Minimum Threshold',
     action: 'Immediate action recommended to restock this item.',
-    viewProduct: 'View Product'
+    viewProduct: 'View Product',
+    
+    // Shipping Notification
+    orderShipped: 'Order Shipped',
+    orderShippedMessage: 'Your order has been shipped and is on its way to you!',
+    hello: 'Hello',
+    carrier: 'Carrier',
+    status: 'Status',
+    deliveryInfo: 'Delivery Information',
+    deliveryTime: 'Standard delivery takes 3-7 business days',
+    deliveryInstructions: 'Please ensure someone is available to receive the package',
+    contactSupport: 'Contact support if you have any questions about your delivery',
+    contactUs: 'Contact us'
   },
   ru: {
     // Order Confirmation
@@ -212,7 +224,19 @@ const translations = {
     currentStock: 'Текущий остаток',
     threshold: 'Минимальный порог',
     action: 'Рекомендуется немедленное пополнение запасов.',
-    viewProduct: 'Посмотреть товар'
+    viewProduct: 'Посмотреть товар',
+    
+    // Shipping Notification
+    orderShipped: 'Заказ отправлен',
+    orderShippedMessage: 'Ваш заказ отправлен и уже в пути к вам!',
+    hello: 'Привет',
+    carrier: 'Служба доставки',
+    status: 'Статус',
+    deliveryInfo: 'Информация о доставке',
+    deliveryTime: 'Стандартная доставка занимает 3-7 рабочих дней',
+    deliveryInstructions: 'Пожалуйста, убедитесь, что кто-то будет готов принять посылку',
+    contactSupport: 'Обратитесь в службу поддержки, если у вас есть вопросы о доставке',
+    contactUs: 'Связаться с нами'
   }
 }
 
@@ -1490,6 +1514,194 @@ EXVICPMOUR - Your Name, My Pic
     html,
     text
   }
+}
+
+/**
+ * Send shipping notification with tracking number
+ */
+export async function sendShippingNotification(
+  orderNumber: string,
+  customerEmail: string,
+  customerName: string,
+  trackingNumber: string,
+  carrier?: string,
+  language: 'en' | 'ru' = 'en'
+): Promise<void> {
+  const t = language === 'ru' ? translations.ru : translations.en
+  
+  const carrierName = carrier || 'Carrier'
+  const trackingUrl = getTrackingUrl(trackingNumber, carrier)
+  
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${t.orderShipped}</title>
+      ${getBaseEmailStyles()}
+      <style>
+        .tracking-card {
+          background: linear-gradient(135deg, #ff6b9d 0%, #00f5ff 100%);
+          border-radius: 16px;
+          padding: 24px;
+          text-align: center;
+          margin: 24px 0;
+          color: white;
+        }
+        .tracking-number {
+          font-size: 24px;
+          font-weight: bold;
+          font-family: 'Courier New', monospace;
+          background: rgba(255,255,255,0.2);
+          padding: 12px 16px;
+          border-radius: 8px;
+          margin: 16px 0;
+          letter-spacing: 2px;
+        }
+        .track-button {
+          display: inline-block;
+          background: rgba(255,255,255,0.9);
+          color: #1a1a1a;
+          padding: 12px 24px;
+          border-radius: 25px;
+          text-decoration: none;
+          font-weight: bold;
+          margin: 16px 0;
+          transition: all 0.3s ease;
+        }
+        .track-button:hover {
+          background: white;
+          transform: translateY(-2px);
+        }
+      </style>
+    </head>
+    <body>
+      <div class="email-container">
+        <div class="header">
+          <h1>EXVICPMOUR</h1>
+        </div>
+
+        <div class="card">
+          <h2 style="color: #1a1a1a; margin: 0 0 16px 0; text-align: center;">
+            🚚 ${t.orderShipped}
+          </h2>
+          <p style="color: #6b7280; text-align: center; margin: 0 0 24px 0;">
+            ${t.hello} ${customerName}! ${t.orderShippedMessage}
+          </p>
+        </div>
+
+        <div class="tracking-card">
+          <h3 style="margin: 0 0 8px 0; font-size: 18px;">📦 ${t.trackingNumber}</h3>
+          <div class="tracking-number">${trackingNumber}</div>
+          <p style="margin: 8px 0 16px 0; opacity: 0.9;">
+            ${t.carrier}: ${carrierName}
+          </p>
+          ${trackingUrl ? `
+            <a href="${trackingUrl}" class="track-button" target="_blank">
+              🔍 ${t.trackPackage}
+            </a>
+          ` : ''}
+        </div>
+
+        <div class="card">
+          <h3 style="color: #1a1a1a; margin: 0 0 16px 0;">${t.orderDetails}</h3>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div>
+              <p style="margin: 8px 0; color: #6b7280; font-size: 14px;">${t.orderNumber}</p>
+              <p style="margin: 0; font-weight: 600; color: #1a1a1a;">${orderNumber}</p>
+            </div>
+            <div>
+              <p style="margin: 8px 0; color: #6b7280; font-size: 14px;">${t.status}</p>
+              <p style="margin: 0; font-weight: 600; color: #059669;">📦 ${t.shipped}</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="background: #f0f9ff; border-left: 4px solid #0ea5e9;">
+          <h4 style="color: #0c4a6e; margin: 0 0 12px 0;">ℹ️ ${t.deliveryInfo}</h4>
+          <ul style="color: #6b7280; margin: 0; padding-left: 20px;">
+            <li>${t.deliveryTime}</li>
+            <li>${t.deliveryInstructions}</li>
+            <li>${t.contactSupport}</li>
+          </ul>
+        </div>
+
+        <div class="footer">
+          <p style="color: #6b7280; font-size: 14px; text-align: center; margin: 0;">
+            ${t.questions} <a href="mailto:noreply@vobvorot.com" style="color: var(--cyan-accent);">noreply@vobvorot.com</a>
+          </p>
+          <p style="color: #6b7280; font-size: 12px; text-align: center; margin: 8px 0 0 0;">
+            ${t.copyright}
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+
+  const text = `
+${t.orderShipped}
+
+${t.hello} ${customerName}!
+
+${t.orderShippedMessage}
+
+${t.trackingNumber}: ${trackingNumber}
+${t.carrier}: ${carrierName}
+${t.orderNumber}: ${orderNumber}
+
+${trackingUrl ? t.trackPackage + ': ' + trackingUrl : ''}
+
+${t.deliveryInfo}:
+- ${t.deliveryTime}
+- ${t.deliveryInstructions}
+- ${t.contactSupport}
+
+${t.contactUs}: noreply@vobvorot.com
+
+${t.copyright}
+EXVICPMOUR - Your Name, My Pic
+  `
+
+  const client = getResendClient()
+  
+  await client.emails.send({
+    from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
+    to: customerEmail,
+    subject: language === 'ru' 
+      ? `📦 Ваш заказ ${orderNumber} отправлен!`
+      : `📦 Your order ${orderNumber} has shipped!`,
+    html,
+    text
+  })
+}
+
+/**
+ * Get tracking URL based on carrier
+ */
+function getTrackingUrl(trackingNumber: string, carrier?: string): string | null {
+  if (!carrier) return null
+  
+  const normalizedCarrier = carrier.toLowerCase()
+  
+  const carriers = {
+    'ups': `https://www.ups.com/track?tracknum=${trackingNumber}`,
+    'fedex': `https://www.fedex.com/fedextrack/?tracknumbers=${trackingNumber}`,
+    'usps': `https://tools.usps.com/go/TrackConfirmAction?qtc_tLabels1=${trackingNumber}`,
+    'dhl': `https://www.dhl.com/en/express/tracking.html?AWB=${trackingNumber}`,
+    'nova': `https://tracking.novaposhta.ua/#/uk/search?number=${trackingNumber}`,
+    'ukrposhta': `https://track.ukrposhta.ua/tracking_UA.html?barcode=${trackingNumber}`,
+    'meest': `https://ua.meest-group.com/ua/services/tracking?lang=ua&number=${trackingNumber}`
+  }
+  
+  for (const [name, url] of Object.entries(carriers)) {
+    if (normalizedCarrier.includes(name)) {
+      return url
+    }
+  }
+  
+  return null
 }
 
 /**

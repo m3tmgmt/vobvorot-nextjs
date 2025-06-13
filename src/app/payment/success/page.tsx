@@ -11,21 +11,24 @@ function PaymentSuccessContent() {
   const [verifying, setVerifying] = useState(true)
   const [verified, setVerified] = useState(false)
   const [orderId, setOrderId] = useState('')
+  const [orderType, setOrderType] = useState<string | null>(null)
 
   useEffect(() => {
     const paymentId = searchParams.get('paymentId')
     const orderIdParam = searchParams.get('orderId')
+    const type = searchParams.get('type')
     
     if (paymentId && orderIdParam) {
       setOrderId(orderIdParam)
-      verifyPayment(paymentId, orderIdParam)
+      setOrderType(type)
+      verifyPayment(paymentId, orderIdParam, type)
     } else {
       // Redirect if no payment info
       router.push('/products')
     }
   }, [searchParams, router])
 
-  const verifyPayment = async (paymentId: string, orderId: string) => {
+  const verifyPayment = async (paymentId: string, orderId: string, orderType: string | null) => {
     try {
       const response = await fetch('/api/payment/verify', {
         method: 'POST',
@@ -39,9 +42,14 @@ function PaymentSuccessContent() {
         const result = await response.json()
         if (result.success) {
           setVerified(true)
-          // Auto-redirect to order success page after 3 seconds
+          // Auto-redirect based on order type
           setTimeout(() => {
-            router.push(`/checkout/success?orderId=${orderId}`)
+            if (orderType === 'sign') {
+              // For sign orders, show success message on same page
+              // No redirect needed as we'll show sign-specific success message
+            } else {
+              router.push(`/checkout/success?orderId=${orderId}`)
+            }
           }, 3000)
         } else {
           setVerified(false)
@@ -180,44 +188,79 @@ function PaymentSuccessContent() {
             marginBottom: '1rem',
             textShadow: '0 0 20px var(--green-neon)'
           }}>
-            Payment Successful!
+            {orderType === 'sign' ? 'Thanks, babe. It\'s cooking.' : 'Payment Successful!'}
           </h1>
           <p style={{
             color: 'rgba(255,255,255,0.8)',
             fontSize: '1.1rem',
             marginBottom: '2rem'
           }}>
-            Your payment has been processed successfully through WesternBid.
+            {orderType === 'sign' 
+              ? 'Your custom sign photo will drop in your inbox in 2-7 days. Stay golden, stay chill. ✨'
+              : 'Your payment has been processed successfully through WesternBid.'}
           </p>
-          <div style={{
-            background: 'rgba(0,0,0,0.3)',
-            padding: '1rem',
-            borderRadius: '8px',
-            marginBottom: '2rem'
-          }}>
-            <p style={{
-              color: 'var(--cyan-accent)',
-              fontSize: '0.9rem',
-              marginBottom: '0.5rem'
+          {orderType !== 'sign' && (
+            <div style={{
+              background: 'rgba(0,0,0,0.3)',
+              padding: '1rem',
+              borderRadius: '8px',
+              marginBottom: '2rem'
             }}>
-              Redirecting to order confirmation in 3 seconds...
-            </p>
-            <button
-              onClick={() => router.push(`/checkout/success?orderId=${orderId}`)}
-              style={{
-                padding: '0.75rem 1.5rem',
-                background: 'linear-gradient(45deg, var(--pink-main), var(--cyan-accent))',
-                border: 'none',
-                borderRadius: '6px',
-                color: 'var(--white)',
+              <p style={{
+                color: 'var(--cyan-accent)',
                 fontSize: '0.9rem',
-                fontWeight: '600',
-                cursor: 'pointer'
-              }}
-            >
-              View Order Details Now
-            </button>
-          </div>
+                marginBottom: '0.5rem'
+              }}>
+                Redirecting to order confirmation in 3 seconds...
+              </p>
+              <button
+                onClick={() => router.push(`/checkout/success?orderId=${orderId}`)}
+                style={{
+                  padding: '0.75rem 1.5rem',
+                  background: 'linear-gradient(45deg, var(--pink-main), var(--cyan-accent))',
+                  border: 'none',
+                  borderRadius: '6px',
+                  color: 'var(--white)',
+                  fontSize: '0.9rem',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }}
+              >
+                View Order Details Now
+              </button>
+            </div>
+          )}
+          {orderType === 'sign' && (
+            <div style={{
+              background: 'rgba(255,107,157,0.1)',
+              padding: '2rem',
+              borderRadius: '12px',
+              marginTop: '2rem'
+            }}>
+              <h3 style={{
+                color: 'var(--pink-main)',
+                marginBottom: '1rem'
+              }}>
+                What happens next:
+              </h3>
+              <ul style={{
+                textAlign: 'left',
+                color: 'rgba(255,255,255,0.8)',
+                lineHeight: '1.8'
+              }}>
+                <li>✍️ I'll handwrite your sign with love and style</li>
+                <li>📸 Take a gorgeous photo just for you</li>
+                <li>💌 Send it directly to your email</li>
+              </ul>
+              <p style={{
+                marginTop: '1.5rem',
+                color: 'var(--cyan-accent)',
+                fontSize: '0.9rem'
+              }}>
+                Order #{orderId}
+              </p>
+            </div>
+          )}
         </div>
       </div>
       <Footer />

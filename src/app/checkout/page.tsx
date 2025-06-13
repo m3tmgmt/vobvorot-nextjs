@@ -66,24 +66,49 @@ export default function CheckoutPage() {
 
   // Note: Guest checkout enabled - no session required
 
-  // Calculate shipping cost based on country
+  // Calculate shipping cost using Meest tariffs
   useEffect(() => {
-    const calculateShipping = () => {
-      const baseWeight = state.items.reduce((total, item) => total + (item.quantity * 0.5), 0) // 0.5kg per item
-      
-      if (shippingInfo.country === 'US') {
-        return Math.max(15, baseWeight * 2) // Minimum $15, $2 per kg
-      } else if (['CA', 'MX'].includes(shippingInfo.country)) {
-        return Math.max(25, baseWeight * 3) // North America
-      } else if (['GB', 'FR', 'DE', 'IT', 'ES'].includes(shippingInfo.country)) {
-        return Math.max(35, baseWeight * 4) // Europe
-      } else {
-        return Math.max(45, baseWeight * 5) // Rest of world
+    const calculateShipping = async () => {
+      try {
+        // Import Meest shipping calculator
+        const { calculateShipping: meestCalculateShipping, canShipToCountry } = await import('@/lib/meest-shipping')
+        
+        // Calculate total weight of items in cart
+        const totalWeight = state.items.reduce((total, item) => {
+          // Use product weight if available, otherwise default to 0.5kg per item
+          const itemWeight = item.weight || 0.5
+          return total + (item.quantity * itemWeight)
+        }, 0)
+        
+        // Check if shipping is available to this country
+        const shippingCheck = canShipToCountry(shippingInfo.country, totalWeight)
+        
+        if (!shippingCheck.canShip) {
+          console.warn('Cannot ship to country:', shippingCheck.reason)
+          setShippingCost(0)
+          return
+        }
+        
+        // Calculate shipping cost using Meest tariffs
+        const shippingResult = meestCalculateShipping(
+          shippingInfo.country,
+          'box', // Default to box packaging
+          totalWeight,
+          undefined, // No specific dimensions for now
+          'USD' // Convert to USD for display
+        )
+        
+        setShippingCost(shippingResult.totalCost)
+        
+      } catch (error) {
+        console.error('Shipping calculation error:', error)
+        // Fallback to simple calculation
+        setShippingCost(15) // Default $15 shipping
       }
     }
     
-    setShippingCost(calculateShipping())
-  }, [shippingInfo.country, state.items])
+    calculateShipping()
+  }, [shippingInfo.country, state.items, state.total])
 
   const totalAmount = state.total + shippingCost
   const tax = totalAmount * 0.08 // 8% tax
@@ -142,8 +167,32 @@ export default function CheckoutPage() {
         // Clear cart
         dispatch({ type: 'CLEAR_CART' })
         
-        // If payment URL is provided, redirect to WesternBid payment
-        if (order.paymentUrl) {
+        // If form data is provided, create and submit form directly to WesternBid
+        if (order.formData && order.targetUrl) {
+          console.log('Creating direct payment form for:', order.paymentGateway)
+          console.log('Form data:', order.formData)
+          
+          // Create form element
+          const form = document.createElement('form')
+          form.method = 'POST'
+          form.action = order.targetUrl
+          form.style.display = 'none'
+          
+          // Add all form fields
+          Object.entries(order.formData).forEach(([key, value]) => {
+            const input = document.createElement('input')
+            input.type = 'hidden'
+            input.name = key
+            input.value = String(value)
+            form.appendChild(input)
+          })
+          
+          // Add form to page and submit
+          document.body.appendChild(form)
+          console.log('Submitting form directly to payment gateway...')
+          form.submit()
+          
+        } else if (order.paymentUrl) {
           console.log('Redirecting to payment URL:', order.paymentUrl)
           window.location.href = order.paymentUrl
         } else {

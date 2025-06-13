@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Footer } from '@/components/Footer'
 
 export default function YourNameMyPicPage() {
@@ -11,6 +11,38 @@ export default function YourNameMyPicPage() {
   })
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [videos, setVideos] = useState<string[]>([])
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
+
+  // Загружаем видео при монтировании компонента
+  useEffect(() => {
+    const loadVideos = async () => {
+      try {
+        const response = await fetch('/api/admin/site/sign-videos')
+        const data = await response.json()
+        if (data.videos && data.videos.length > 0) {
+          setVideos(data.videos.map((video: any) => video.url))
+        }
+      } catch (error) {
+        console.error('Failed to load sign page videos:', error)
+      }
+    }
+    
+    loadVideos()
+    // Обновляем видео каждые 30 секунд
+    const interval = setInterval(loadVideos, 30000)
+    return () => clearInterval(interval)
+  }, [])
+
+  // Автопереключение видео каждые 8 секунд
+  useEffect(() => {
+    if (videos.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentVideoIndex((prev) => (prev + 1) % videos.length)
+      }, 8000)
+      return () => clearInterval(interval)
+    }
+  }, [videos.length])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -99,11 +131,47 @@ export default function YourNameMyPicPage() {
 
   return (
     <div style={{ minHeight: '100vh' }}>
-      {/* Hero Section */}
+      {/* Hero Section with Video */}
       <section className="hero-section hero-small">
+        {/* Video Background */}
+        {videos.length > 0 ? (
+          videos.map((video, index) => (
+            <video
+              key={`${video}-${index}`}
+              className={`hero-video-container ${index === currentVideoIndex ? 'active' : ''}`}
+              autoPlay
+              muted
+              loop
+              playsInline
+              style={{
+                position: 'absolute',
+                top: 0,
+                left: 0,
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover',
+                opacity: index === currentVideoIndex ? 1 : 0,
+                transition: 'opacity 1s ease-in-out'
+              }}
+            >
+              <source src={video} type="video/mp4" />
+            </video>
+          ))
+        ) : (
+          // Fallback gradient background when no videos
+          <div className="hero-video-container active" style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            background: 'linear-gradient(135deg, #FF6B9D 0%, #9D4EDD 50%, #00F5FF 100%)'
+          }} />
+        )}
+        
         <div className="hero-overlay" style={{ background: 'linear-gradient(135deg, rgba(255,107,157,0.8), rgba(157,78,221,0.6))' }}></div>
         
-        <div className="hero-content" style={{ textAlign: 'center' }}>
+        <div className="hero-content" style={{ textAlign: 'center', position: 'relative', zIndex: 10 }}>
           <h1 className="hero-title glitch" data-logo style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>
             Your Name, My Pic
           </h1>
@@ -121,6 +189,25 @@ export default function YourNameMyPicPage() {
             Unique vibes only. Rare, personal, one-of-a-kind.
           </p>
         </div>
+        
+        {/* Video Pagination Dots */}
+        {videos.length > 1 && (
+          <div className="hero-pagination">
+            {videos.map((_, index) => (
+              <button
+                key={index}
+                className={`hero-pagination-dot ${index === currentVideoIndex ? 'active' : ''}`}
+                onClick={() => setCurrentVideoIndex(index)}
+                style={{
+                  position: 'absolute',
+                  bottom: '20px',
+                  left: `calc(50% - ${videos.length * 10}px + ${index * 20}px)`,
+                  zIndex: 20
+                }}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Order Form Section */}

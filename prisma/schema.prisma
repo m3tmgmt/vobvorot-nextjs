@@ -197,6 +197,7 @@ model Order {
   discount        Decimal       @default(0) @db.Decimal(10, 2)
   total           Decimal       @db.Decimal(10, 2)
   currency        String        @default("USD")
+  orderType       OrderType     @default(PRODUCT)
   paymentMethod   String?
   paymentStatus   PaymentStatus @default(PENDING)
   paymentId       String?
@@ -208,6 +209,7 @@ model Order {
   refundId        String?
   refundStatus    String?
   refundReason    String?
+  refundedBy      String?       // Admin user ID who processed the refund
   sessionId       String?
   trackingNumber  String?
   notes           String?
@@ -216,6 +218,9 @@ model Order {
   updatedAt       DateTime      @updatedAt
   items           OrderItem[]
   user            User?         @relation(fields: [userId], references: [id])
+  payment         Payment?
+  orderLogs       OrderLog[]
+  signOrder       SignOrder?
 
   @@index([userId])
   @@index([orderNumber])
@@ -241,6 +246,59 @@ model OrderItem {
   @@index([orderId])
   @@index([skuId])
   @@map("order_items")
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  orderId       String        @unique
+  paymentId     String?       // External payment gateway ID
+  amount        Decimal       @db.Decimal(10, 2)
+  currency      String        @default("USD")
+  status        PaymentStatus @default(PENDING)
+  method        String?       // paypal, stripe, etc.
+  gatewayData   Json?         // Store gateway-specific data
+  refundId      String?       // External refund ID
+  refundAmount  Decimal?      @db.Decimal(10, 2)
+  refundReason  String?
+  refundedAt    DateTime?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([status])
+  @@index([refundId])
+  @@map("payments")
+}
+
+model OrderLog {
+  id        String   @id @default(cuid())
+  orderId   String
+  action    String   // REFUND_PROCESSED, STATUS_CHANGED, etc.
+  details   Json?    // Store action-specific data
+  userId    String?  // Admin user who performed the action
+  createdAt DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("order_logs")
+}
+
+model SignOrder {
+  id              String   @id @default(cuid())
+  orderId         String   @unique
+  signName        String   // Текст для написания на табличке
+  extraNotes      String?  // Дополнительные пожелания
+  photoUrl        String?  // URL готового фото
+  deliveredAt     DateTime? // Когда фото было отправлено
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  order           Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("sign_orders")
 }
 
 model Review {
@@ -357,6 +415,11 @@ enum PaymentStatus {
   REFUNDED
   CANCELLED
   PARTIALLY_REFUNDED
+}
+
+enum OrderType {
+  PRODUCT
+  SIGN_PHOTO
 }
 
 model Setting {

@@ -13,6 +13,8 @@ export class CRMIntegration {
   // Notify when new order is created
   async notifyNewOrder(orderData: {
     orderId: string;
+    orderNumber?: string;
+    orderType?: 'PRODUCT' | 'SIGN_PHOTO';
     customerEmail: string;
     customerName?: string;
     customerPhone?: string;
@@ -31,6 +33,7 @@ export class CRMIntegration {
       country: string;
       postalCode: string;
     };
+    notes?: string;
   }) {
     if (!this.telegramCRM) return;
 
@@ -52,6 +55,8 @@ export class CRMIntegration {
       // Create order object
       const order: Order = {
         id: orderData.orderId,
+        order_number: orderData.orderNumber,
+        order_type: orderData.orderType || 'PRODUCT',
         customer_id: orderData.customerEmail,
         items: orderData.items.map(item => ({
           product_id: item.sku,
@@ -72,7 +77,10 @@ export class CRMIntegration {
         },
         created_at: new Date(),
         updated_at: new Date(),
-        notes: []
+        notes: orderData.notes ? [{ 
+          text: orderData.notes, 
+          created_at: new Date() 
+        }] : []
       };
 
       // Send notification to Telegram
