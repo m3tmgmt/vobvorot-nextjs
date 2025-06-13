@@ -367,9 +367,15 @@ export default function CheckoutPage() {
                   <input
                     type="tel"
                     required
+                    maxLength={20}
                     value={shippingInfo.phone}
                     onChange={(e) => {
                       let value = e.target.value
+                      
+                      // Limit to 20 characters maximum
+                      if (value.length > 20) {
+                        value = value.substring(0, 20)
+                      }
                       
                       // Remove any non-digit characters except + and spaces/hyphens/parentheses for formatting
                       value = value.replace(/[^\d\+\s\-\(\)]/g, '')
