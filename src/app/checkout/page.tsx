@@ -136,13 +136,18 @@ export default function CheckoutPage() {
       if (response.ok) {
         const order = await response.json()
         
+        console.log('Order created successfully:', order)
+        console.log('Payment URL:', order.paymentUrl)
+        
         // Clear cart
         dispatch({ type: 'CLEAR_CART' })
         
         // If payment URL is provided, redirect to WesternBid payment
         if (order.paymentUrl) {
+          console.log('Redirecting to payment URL:', order.paymentUrl)
           window.location.href = order.paymentUrl
         } else {
+          console.log('No payment URL provided, redirecting to success page')
           // Fallback to success page
           router.push(`/checkout/success?orderId=${order.id}`)
         }
@@ -364,7 +369,11 @@ export default function CheckoutPage() {
                     required
                     value={shippingInfo.phone}
                     onChange={(e) => {
-                      const value = e.target.value
+                      let value = e.target.value
+                      // Auto-add + if user starts typing a number without it
+                      if (value.length === 1 && /^\d$/.test(value)) {
+                        value = '+' + value
+                      }
                       setShippingInfo({...shippingInfo, phone: value})
                     }}
                     placeholder="+1 (555) 123-4567"
@@ -383,7 +392,7 @@ export default function CheckoutPage() {
                     fontSize: '0.8rem',
                     marginTop: '0.25rem'
                   }}>
-                    Include country code (e.g., +1 for US, +44 for UK, +380 for Ukraine)
+                    Include country code (e.g., +1 for US, +44 for UK)
                   </p>
                 </div>
 
@@ -490,14 +499,54 @@ export default function CheckoutPage() {
                     >
                       <option value="US">United States</option>
                       <option value="CA">Canada</option>
-                      <option value="MX">Mexico</option>
                       <option value="GB">United Kingdom</option>
+                      <option value="AU">Australia</option>
+                      <option value="AT">Austria</option>
+                      <option value="BE">Belgium</option>
+                      <option value="BG">Bulgaria</option>
+                      <option value="HR">Croatia</option>
+                      <option value="CY">Cyprus</option>
+                      <option value="CZ">Czech Republic</option>
+                      <option value="DK">Denmark</option>
+                      <option value="EE">Estonia</option>
+                      <option value="FI">Finland</option>
                       <option value="FR">France</option>
                       <option value="DE">Germany</option>
+                      <option value="GR">Greece</option>
+                      <option value="HU">Hungary</option>
+                      <option value="IE">Ireland</option>
                       <option value="IT">Italy</option>
+                      <option value="LV">Latvia</option>
+                      <option value="LT">Lithuania</option>
+                      <option value="LU">Luxembourg</option>
+                      <option value="MT">Malta</option>
+                      <option value="NL">Netherlands</option>
+                      <option value="PL">Poland</option>
+                      <option value="PT">Portugal</option>
+                      <option value="RO">Romania</option>
+                      <option value="SK">Slovakia</option>
+                      <option value="SI">Slovenia</option>
                       <option value="ES">Spain</option>
-                      <option value="AU">Australia</option>
+                      <option value="SE">Sweden</option>
+                      <option value="CH">Switzerland</option>
+                      <option value="NO">Norway</option>
+                      <option value="IS">Iceland</option>
                       <option value="JP">Japan</option>
+                      <option value="KR">South Korea</option>
+                      <option value="SG">Singapore</option>
+                      <option value="HK">Hong Kong</option>
+                      <option value="TW">Taiwan</option>
+                      <option value="NZ">New Zealand</option>
+                      <option value="IL">Israel</option>
+                      <option value="AE">UAE</option>
+                      <option value="SA">Saudi Arabia</option>
+                      <option value="TR">Turkey</option>
+                      <option value="MX">Mexico</option>
+                      <option value="BR">Brazil</option>
+                      <option value="AR">Argentina</option>
+                      <option value="CL">Chile</option>
+                      <option value="CO">Colombia</option>
+                      <option value="ZA">South Africa</option>
                       <option value="OTHER">Other</option>
                     </select>
                   </div>

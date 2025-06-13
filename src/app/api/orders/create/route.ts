@@ -154,67 +154,7 @@ export async function POST(request: NextRequest) {
       }
     })
 
-    // Send order confirmation email
-    try {
-      logger.info('Sending order confirmation email', {
-        orderNumber,
-        customerEmail: order.shippingEmail,
-        itemCount: order.items.length,
-        total: Number(order.total)
-      })
-      
-      // Prepare email data
-      const emailData: OrderEmailData = {
-        orderNumber: order.orderNumber,
-        customerName: order.shippingName,
-        customerEmail: order.shippingEmail,
-        items: order.items.map(item => ({
-          name: item.sku.product.name,
-          quantity: item.quantity,
-          price: Number(item.price),
-          size: item.sku.size || undefined,
-          color: item.sku.color || undefined,
-          imageUrl: item.sku.product.images[0]?.url
-        })),
-        subtotal: Number(order.subtotal),
-        shippingCost: Number(order.shippingCost),
-        total: Number(order.total),
-        shippingAddress: {
-          name: order.shippingName,
-          address: order.shippingAddress,
-          city: order.shippingCity,
-          country: order.shippingCountry,
-          zip: order.shippingZip
-        }
-      }
-
-      // Send confirmation email to customer
-      await emailService.sendOrderConfirmation(emailData)
-
-      // Send notification email to admin
-      const adminData: AdminNotificationData = {
-        orderNumber: order.orderNumber,
-        customerName: order.shippingName,
-        customerEmail: order.shippingEmail,
-        total: Number(order.total),
-        itemCount: order.items.length,
-        paymentMethod: order.paymentMethod || 'WesternBid',
-        shippingAddress: `${order.shippingAddress}, ${order.shippingCity}, ${order.shippingCountry}`
-      }
-
-      await emailService.sendAdminOrderNotification(adminData)
-      
-      logger.info('Order confirmation emails sent successfully', {
-        orderNumber,
-        customerEmail: order.shippingEmail
-      })
-    } catch (emailError) {
-      logger.error('Failed to send order confirmation emails', {
-        orderNumber,
-        customerEmail: order.shippingEmail
-      }, emailError instanceof Error ? emailError : new Error(String(emailError)))
-      // Don't fail the order creation if email fails
-    }
+    // Note: Emails will be sent AFTER successful payment creation
 
     // Check if payment gateway is enabled
     const westernbidConfig = getWesternBidConfig()
@@ -285,6 +225,68 @@ export async function POST(request: NextRequest) {
           sessionId: paymentResult.sessionId
         }
       })
+
+      // Send order confirmation emails ONLY after successful payment creation
+      try {
+        logger.info('Sending order confirmation email after payment creation', {
+          orderNumber,
+          customerEmail: order.shippingEmail,
+          itemCount: order.items.length,
+          total: Number(order.total)
+        })
+        
+        // Prepare email data
+        const emailData: OrderEmailData = {
+          orderNumber: order.orderNumber,
+          customerName: order.shippingName,
+          customerEmail: order.shippingEmail,
+          items: order.items.map(item => ({
+            name: item.sku.product.name,
+            quantity: item.quantity,
+            price: Number(item.price),
+            size: item.sku.size || undefined,
+            color: item.sku.color || undefined,
+            imageUrl: item.sku.product.images[0]?.url
+          })),
+          subtotal: Number(order.subtotal),
+          shippingCost: Number(order.shippingCost),
+          total: Number(order.total),
+          shippingAddress: {
+            name: order.shippingName,
+            address: order.shippingAddress,
+            city: order.shippingCity,
+            country: order.shippingCountry,
+            zip: order.shippingZip
+          }
+        }
+
+        // Send confirmation email to customer
+        await emailService.sendOrderConfirmation(emailData)
+
+        // Send notification email to admin
+        const adminData: AdminNotificationData = {
+          orderNumber: order.orderNumber,
+          customerName: order.shippingName,
+          customerEmail: order.shippingEmail,
+          total: Number(order.total),
+          itemCount: order.items.length,
+          paymentMethod: order.paymentMethod || 'WesternBid',
+          shippingAddress: `${order.shippingAddress}, ${order.shippingCity}, ${order.shippingCountry}`
+        }
+
+        await emailService.sendAdminOrderNotification(adminData)
+        
+        logger.info('Order confirmation emails sent successfully', {
+          orderNumber,
+          customerEmail: order.shippingEmail
+        })
+      } catch (emailError) {
+        logger.error('Failed to send order confirmation emails', {
+          orderNumber,
+          customerEmail: order.shippingEmail
+        }, emailError instanceof Error ? emailError : new Error(String(emailError)))
+        // Don't fail the order flow if email fails
+      }
 
       return NextResponse.json({
         id: updatedOrder.id,
