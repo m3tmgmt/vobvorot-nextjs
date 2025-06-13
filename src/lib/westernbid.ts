@@ -351,87 +351,66 @@ class WesternBidAPI {
     }
   }
 
-  // Generate WesternBid payment form data
+  // Generate WesternBid payment form data according to official documentation
   public generatePaymentFormData(request: PaymentRequest, paymentId: string): Record<string, string> {
     // Use real merchant ID or fallback for testing - trim whitespace
     const merchantId = (this.config.merchantId || '159008').trim()
+    const secretKey = (this.config.secretKey || 'oVsVCgu').trim()
+    const amount = request.amount.toFixed(2)
+    const invoice = paymentId
+    
+    // Generate wb_hash according to WesternBid documentation
+    // Formula: md5(wb_login + secret_key + amount + invoice)
+    const hashString = merchantId + secretKey + amount + invoice
+    const wb_hash = createHash('md5').update(hashString).digest('hex')
     
     this.logger.info('Generating WesternBid form data', {
       configMerchantId: this.config.merchantId,
       usedMerchantId: merchantId,
-      environment: this.config.environment
+      environment: this.config.environment,
+      hashString: hashString,
+      wb_hash: wb_hash
     })
     
     const formData = {
-      // Required WesternBid fields (using both formats for compatibility)
-      business: merchantId,
+      // Required WesternBid fields according to documentation
+      charset: 'utf-8',
       wb_login: merchantId,
-      item_name: request.description,
-      item_number: request.orderId,
-      amount: request.amount.toFixed(2),
-      currency_code: request.currency.toUpperCase(),
+      wb_hash: wb_hash,
+      invoice: invoice,
+      email: request.customerEmail,
+      phone: request.customerPhone || '',
       
-      // Customer info
+      // Customer info (recommended fields)
       first_name: request.customerName.split(' ')[0] || '',
       last_name: request.customerName.split(' ').slice(1).join(' ') || '',
-      email: request.customerEmail,
+      
+      // Order info
+      item_name: request.description,
+      amount: amount,
+      currency_code: request.currency.toUpperCase(),
+      
+      // For single item, use _1 suffix
+      item_name_1: request.description,
+      item_number_1: request.orderId,
+      amount_1: amount,
+      quantity_1: '1',
+      url_1: `${process.env.NEXT_PUBLIC_SITE_URL}/products`, // Required field
+      description_1: request.description, // Required field
       
       // URLs
       return: request.returnUrl,
       cancel_return: request.cancelUrl,
       notify_url: request.webhookUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`,
       
-      // Transaction info
-      invoice: paymentId,
-      custom: JSON.stringify({
-        orderId: request.orderId,
-        paymentId,
-        metadata: request.metadata || {}
-      }),
-      
-      // Payment options
-      cmd: '_xclick', // Single payment
-      no_note: '1',
-      no_shipping: '1',
-      charset: 'utf-8'
-    }
-
-    // Add signature if secret key is available
-    if (this.config.secretKey) {
-      const signature = this.generateWesternBidSignature(formData)
-      ;(formData as any).verify_sign = signature
+      // Optional shipping (disable PayPal shipping fields)
+      no_shipping: '1'
     }
 
     return formData
   }
 
-  // Generate WesternBid-specific signature
-  private generateWesternBidSignature(formData: Record<string, string>): string {
-    try {
-      // Create query string from form data
-      const sortedKeys = Object.keys(formData).sort()
-      const queryString = sortedKeys
-        .filter(key => formData[key] !== undefined && formData[key] !== null && formData[key] !== '')
-        .map(key => `${key}=${encodeURIComponent(formData[key])}`)
-        .join('&')
-      
-      // Add secret key
-      const signatureString = queryString + this.config.secretKey
-      
-      // Generate MD5 hash (WesternBid uses MD5 for compatibility)
-      const signature = createHash('md5').update(signatureString).digest('hex')
-      
-      this.logger.info('Generated WesternBid signature', { 
-        queryLength: queryString.length,
-        signatureLength: signature.length
-      })
-      
-      return signature
-    } catch (error) {
-      this.logger.error('Failed to generate WesternBid signature', error)
-      throw new WesternBidSignatureError('Failed to generate WesternBid signature')
-    }
-  }
+  // WesternBid signature is now generated inline in generatePaymentFormData method
 
   // Validate payment request
   private validatePaymentRequest(request: PaymentRequest): void {
