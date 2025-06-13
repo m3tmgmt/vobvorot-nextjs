@@ -133,25 +133,43 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   // Load cart from localStorage on mount
   useEffect(() => {
     setMounted(true)
+    
+    // Debug logging for incognito mode
+    console.log('CartProvider: Loading cart from localStorage')
+    
     try {
       // Check if localStorage is available (may not work in incognito mode)
       if (typeof window !== 'undefined' && window.localStorage) {
         const savedCart = localStorage.getItem('vobvorot-cart')
-        if (savedCart) {
+        console.log('CartProvider: Saved cart from localStorage:', savedCart)
+        
+        if (savedCart && savedCart !== 'undefined' && savedCart !== 'null') {
           const cartData = JSON.parse(savedCart)
+          console.log('CartProvider: Parsed cart data:', cartData)
+          
           // Only load if cart has items to prevent showing old data
           if (cartData && cartData.items && cartData.items.length > 0) {
+            console.log('CartProvider: Loading cart with items:', cartData.items.length)
             dispatch({ type: 'LOAD_CART', payload: cartData })
+          } else {
+            console.log('CartProvider: Cart is empty, not loading')
+            // Clear empty or invalid cart data
+            localStorage.removeItem('vobvorot-cart')
           }
+        } else {
+          console.log('CartProvider: No saved cart found')
         }
+      } else {
+        console.log('CartProvider: localStorage not available')
       }
     } catch (error) {
       console.error('Failed to load cart from localStorage:', error)
       // Clear any corrupted data
       try {
         localStorage.removeItem('vobvorot-cart')
+        console.log('CartProvider: Cleared corrupted cart data')
       } catch (e) {
-        // Ignore cleanup errors
+        console.error('CartProvider: Failed to clear corrupted data', e)
       }
     }
   }, [])
