@@ -10,8 +10,8 @@ const nextConfig: NextConfig = {
     ignoreBuildErrors: process.env.NODE_ENV === 'development',
   },
   
-  // Output configuration for production (Vercel optimized)
-  // output: process.env.VERCEL ? undefined : 'standalone',
+  // Output configuration for production
+  output: 'standalone',
   
   // Image optimization for VobVorot
   images: {
