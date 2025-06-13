@@ -238,23 +238,19 @@ const nextConfig: NextConfig = {
   }
 };
 
-export default withSentryConfig(nextConfig, {
-  // For all available options, see:
-  // https://github.com/getsentry/sentry-webpack-plugin#options
+// Temporarily disable Sentry for deployment issues
+export default nextConfig;
 
-  // Suppresses source map uploading logs during build
-  silent: true,
-  org: "vobvorot",
-  project: "nextjs-store",
-
-  // An auth token is required for uploading source maps.
-  authToken: process.env.SENTRY_AUTH_TOKEN,
-
-  // Upload source maps
-  widenClientFileUpload: true,
-  sourcemaps: {
-    disable: false,
-    deleteSourcemapsAfterUpload: true
-  },
-  disableLogger: true,
-});
+// Original Sentry config (commented out for now):
+// export default withSentryConfig(nextConfig, {
+//   silent: true,
+//   org: "vobvorot", 
+//   project: "nextjs-store",
+//   authToken: process.env.SENTRY_AUTH_TOKEN,
+//   widenClientFileUpload: true,
+//   sourcemaps: {
+//     disable: false,
+//     deleteSourcemapsAfterUpload: true
+//   },
+//   disableLogger: true,
+// });
