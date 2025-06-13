@@ -29,6 +29,8 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false)
   const [shippingCost, setShippingCost] = useState(0)
   const [mounted, setMounted] = useState(false)
+
+  console.log('CheckoutPage render - items:', state.items.length, 'mounted:', mounted)
   
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo>({
     firstName: '',
@@ -53,9 +55,12 @@ export default function CheckoutPage() {
 
   // Redirect if cart is empty (only after component is mounted)
   useEffect(() => {
+    console.log('Checkout: useEffect - mounted:', mounted, 'items:', state.items.length)
     if (mounted && state.items.length === 0) {
       console.log('Checkout: Cart is empty, redirecting to products')
       router.push('/products')
+    } else if (mounted && state.items.length > 0) {
+      console.log('Checkout: Cart has items, staying on checkout page')
     }
   }, [mounted, state.items.length, router])
 
