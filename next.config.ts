@@ -258,3 +258,4 @@ export default withSentryConfig(nextConfig, {
   },
   disableLogger: true,
 });
+/* Force rebuild for CSP fix - Fri Jun 13 21:16:03 EEST 2025 */
