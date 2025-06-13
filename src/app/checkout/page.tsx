@@ -501,12 +501,18 @@ export default function CheckoutPage() {
                         fontSize: '1rem'
                       }}
                     >
+                      {/* Популярные страны первыми */}
                       <option value="US">United States</option>
                       <option value="CA">Canada</option>
                       <option value="GB">United Kingdom</option>
+                      <option value="DE">Germany</option>
                       <option value="AU">Australia</option>
+                      
+                      {/* Европа (по алфавиту) */}
+                      <option value="AL">Albania</option>
                       <option value="AT">Austria</option>
                       <option value="BE">Belgium</option>
+                      <option value="BA">Bosnia and Herzegovina</option>
                       <option value="BG">Bulgaria</option>
                       <option value="HR">Croatia</option>
                       <option value="CY">Cyprus</option>
@@ -515,42 +521,70 @@ export default function CheckoutPage() {
                       <option value="EE">Estonia</option>
                       <option value="FI">Finland</option>
                       <option value="FR">France</option>
-                      <option value="DE">Germany</option>
                       <option value="GR">Greece</option>
                       <option value="HU">Hungary</option>
+                      <option value="IS">Iceland</option>
                       <option value="IE">Ireland</option>
                       <option value="IT">Italy</option>
                       <option value="LV">Latvia</option>
                       <option value="LT">Lithuania</option>
                       <option value="LU">Luxembourg</option>
                       <option value="MT">Malta</option>
+                      <option value="MD">Moldova</option>
+                      <option value="ME">Montenegro</option>
                       <option value="NL">Netherlands</option>
+                      <option value="NO">Norway</option>
                       <option value="PL">Poland</option>
                       <option value="PT">Portugal</option>
                       <option value="RO">Romania</option>
+                      <option value="RS">Serbia</option>
                       <option value="SK">Slovakia</option>
                       <option value="SI">Slovenia</option>
                       <option value="ES">Spain</option>
                       <option value="SE">Sweden</option>
                       <option value="CH">Switzerland</option>
-                      <option value="NO">Norway</option>
-                      <option value="IS">Iceland</option>
-                      <option value="JP">Japan</option>
-                      <option value="KR">South Korea</option>
-                      <option value="SG">Singapore</option>
+                      
+                      {/* Азия */}
+                      <option value="AM">Armenia</option>
+                      <option value="AZ">Azerbaijan</option>
+                      <option value="CN">China</option>
+                      <option value="GE">Georgia</option>
                       <option value="HK">Hong Kong</option>
-                      <option value="TW">Taiwan</option>
-                      <option value="NZ">New Zealand</option>
+                      <option value="IN">India</option>
+                      <option value="ID">Indonesia</option>
                       <option value="IL">Israel</option>
-                      <option value="AE">UAE</option>
+                      <option value="JP">Japan</option>
+                      <option value="KZ">Kazakhstan</option>
+                      <option value="KG">Kyrgyzstan</option>
+                      <option value="KW">Kuwait</option>
+                      <option value="PK">Pakistan</option>
+                      <option value="QA">Qatar</option>
                       <option value="SA">Saudi Arabia</option>
+                      <option value="SG">Singapore</option>
+                      <option value="LK">Sri Lanka</option>
                       <option value="TR">Turkey</option>
-                      <option value="MX">Mexico</option>
-                      <option value="BR">Brazil</option>
+                      <option value="AE">UAE</option>
+                      <option value="UZ">Uzbekistan</option>
+                      
+                      {/* Америка */}
                       <option value="AR">Argentina</option>
+                      <option value="BR">Brazil</option>
                       <option value="CL">Chile</option>
                       <option value="CO">Colombia</option>
+                      <option value="CR">Costa Rica</option>
+                      <option value="MX">Mexico</option>
+                      <option value="PE">Peru</option>
+                      
+                      {/* Африка */}
+                      <option value="EG">Egypt</option>
+                      <option value="ET">Ethiopia</option>
+                      <option value="KE">Kenya</option>
+                      <option value="NG">Nigeria</option>
                       <option value="ZA">South Africa</option>
+                      <option value="TZ">Tanzania</option>
+                      
+                      {/* Океания */}
+                      <option value="NZ">New Zealand</option>
                     </select>
                   </div>
                 </div>
