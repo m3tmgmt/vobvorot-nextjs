@@ -87,7 +87,7 @@ const nextConfig: NextConfig = {
               "frame-src 'self' https://js.stripe.com",
               "object-src 'none'",
               "base-uri 'self'",
-              "form-action 'self'"
+              "form-action 'self' https://shop.westernbid.info"
             ].join('; ')
           }
         ],
