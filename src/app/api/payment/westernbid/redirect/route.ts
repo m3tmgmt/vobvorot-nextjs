@@ -63,8 +63,8 @@ export async function GET(request: NextRequest) {
         customerAddress: {
           address: order.shippingAddress || '',
           city: order.shippingCity || '',
-          state: order.shippingState || '',
-          postalCode: order.shippingPostalCode || '',
+          state: '', // No state field in Order model
+          postalCode: order.shippingZip || '',
           country: order.shippingCountry || ''
         }
       }
