@@ -357,55 +357,48 @@ class WesternBidAPI {
     const merchantId = (this.config.merchantId || '159008').trim()
     const secretKey = (this.config.secretKey || 'oVsVCgu').trim()
     const amount = request.amount.toFixed(2)
-    const invoice = paymentId
+    
+    // WesternBid fields according to official documentation
+    const formData = {
+      // Required WesternBid fields
+      wb_login: merchantId,
+      charset: 'utf-8',
+      wb_order_id: paymentId,
+      wb_amount: amount,
+      wb_description: request.description,
+      wb_currency: request.currency.toUpperCase(),
+      wb_success_url: request.returnUrl,
+      wb_fail_url: request.cancelUrl,
+      wb_result_url: request.webhookUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`,
+      wb_result_method: 'POST',
+      
+      // Customer info
+      email: request.customerEmail,
+      phone: request.customerPhone || '',
+      first_name: request.customerName.split(' ')[0] || '',
+      last_name: request.customerName.split(' ').slice(1).join(' ') || '',
+      
+      // Optional fields
+      shipping: '0'
+    }
     
     // Generate wb_hash according to WesternBid documentation
-    // Formula: md5(wb_login + secret_key + amount + invoice)
-    const hashString = merchantId + secretKey + amount + invoice
+    // Formula: md5(sorted_parameters_string + secret_key)
+    const sortedKeys = Object.keys(formData).sort()
+    const hashString = sortedKeys
+      .map(key => `${key}=${formData[key]}`)
+      .join('&') + `&${secretKey}`
+    
     const wb_hash = createHash('md5').update(hashString).digest('hex')
+    formData.wb_hash = wb_hash
     
     this.logger.info('Generating WesternBid form data', {
       configMerchantId: this.config.merchantId,
       usedMerchantId: merchantId,
       environment: this.config.environment,
-      hashString: hashString,
+      hashString: hashString.substring(0, 50) + '...',
       wb_hash: wb_hash
     })
-    
-    const formData = {
-      // Required WesternBid fields according to documentation
-      charset: 'utf-8',
-      wb_login: merchantId,
-      wb_hash: wb_hash,
-      invoice: invoice,
-      email: request.customerEmail,
-      phone: request.customerPhone || '',
-      
-      // Customer info (recommended fields)
-      first_name: request.customerName.split(' ')[0] || '',
-      last_name: request.customerName.split(' ').slice(1).join(' ') || '',
-      
-      // Order info
-      item_name: request.description,
-      amount: amount,
-      currency_code: request.currency.toUpperCase(),
-      
-      // For single item, use _1 suffix
-      item_name_1: request.description,
-      item_number_1: request.orderId,
-      amount_1: amount,
-      quantity_1: '1',
-      url_1: `${process.env.NEXT_PUBLIC_SITE_URL}/products`, // Required field
-      description_1: request.description, // Required field
-      
-      // URLs
-      return: request.returnUrl,
-      cancel_return: request.cancelUrl,
-      notify_url: request.webhookUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`,
-      
-      // Optional shipping (disable PayPal shipping fields)
-      no_shipping: '1'
-    }
 
     return formData
   }

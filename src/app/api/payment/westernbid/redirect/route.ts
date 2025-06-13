@@ -66,12 +66,12 @@ export async function GET(request: NextRequest) {
     // Generate WesternBid form data
     const formData = westernbid.generatePaymentFormData(paymentRequest, paymentId)
 
-    // Create HTML form that auto-submits to WesternBid
+    // Create HTML form for manual submission to WesternBid (no auto-submit)
     const html = `
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Redirecting to Payment...</title>
+        <title>Complete Your Payment</title>
         <meta charset="utf-8">
         <style>
             body {
@@ -83,6 +83,7 @@ export async function GET(request: NextRequest) {
                 align-items: center;
                 min-height: 100vh;
                 margin: 0;
+                padding: 20px;
             }
             .container {
                 text-align: center;
@@ -92,6 +93,8 @@ export async function GET(request: NextRequest) {
                 backdrop-filter: blur(10px);
                 border: 1px solid rgba(255, 255, 255, 0.1);
                 box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+                max-width: 500px;
+                width: 100%;
             }
             .logo {
                 font-size: 2rem;
@@ -102,120 +105,164 @@ export async function GET(request: NextRequest) {
                 -webkit-text-fill-color: transparent;
                 background-clip: text;
             }
-            .spinner {
-                border: 3px solid rgba(255, 255, 255, 0.1);
-                border-top: 3px solid #4ecdc4;
-                border-radius: 50%;
-                width: 40px;
-                height: 40px;
-                animation: spin 1s linear infinite;
-                margin: 1rem auto;
+            .order-info {
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 10px;
+                padding: 1.5rem;
+                margin: 1.5rem 0;
+                text-align: left;
             }
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
+            .info-row {
+                display: flex;
+                justify-content: space-between;
+                margin: 0.5rem 0;
+                padding: 0.3rem 0;
+                border-bottom: 1px solid rgba(255, 255, 255, 0.1);
             }
-            .message {
-                margin-top: 1rem;
+            .info-row:last-child {
+                border-bottom: none;
+                font-weight: bold;
+                font-size: 1.1rem;
+                color: #4ecdc4;
+            }
+            .payment-button {
+                background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+                color: white;
+                border: none;
+                padding: 18px 40px;
+                border-radius: 50px;
+                font-size: 1.2rem;
+                font-weight: bold;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                margin: 1.5rem 0;
+                min-width: 280px;
+                box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+            }
+            .payment-button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 15px 25px rgba(0, 0, 0, 0.4);
+            }
+            .payment-button:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+            }
+            .security-notice {
                 color: #b0b0b0;
                 font-size: 0.9rem;
+                margin-top: 1rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+            }
+            .debug-panel {
+                background: rgba(0, 0, 0, 0.3);
+                border-radius: 8px;
+                padding: 1rem;
+                margin: 1rem 0;
+                font-family: monospace;
+                font-size: 0.8rem;
+                text-align: left;
+            }
+            .debug-panel summary {
+                cursor: pointer;
+                padding: 0.5rem;
+                background: rgba(255, 255, 255, 0.1);
+                border-radius: 4px;
+                margin-bottom: 0.5rem;
+            }
+            .back-link {
+                color: #4ecdc4;
+                text-decoration: none;
+                margin-top: 1rem;
+                display: inline-block;
+            }
+            .back-link:hover {
+                text-decoration: underline;
             }
         </style>
     </head>
     <body>
         <div class="container">
             <div class="logo">VobVorot</div>
-            <div class="spinner"></div>
-            <p>Redirecting to secure payment...</p>
-            <p class="message">You will be redirected to WesternBid payment gateway</p>
-            <div id="debug-info" style="margin-top: 2rem; padding: 1rem; background: rgba(255,255,255,0.1); border-radius: 8px; font-size: 0.8rem; text-align: left;">
-                <strong>Debug Info:</strong><br>
-                Payment ID: ${paymentId}<br>
-                Order ID: ${orderId}<br>
-                Amount: $${Number(order.total).toFixed(2)}<br>
-                Target URL: https://shop.westernbid.info<br>
-                <details style="margin-top: 0.5rem;">
-                    <summary>Form Data</summary>
-                    <pre style="font-size: 0.7rem; margin-top: 0.5rem;">${JSON.stringify(formData, null, 2)}</pre>
-                </details>
+            <h2 style="margin: 1rem 0; color: #fff;">Complete Your Payment</h2>
+            
+            <div class="order-info">
+                <div class="info-row">
+                    <span>Order ID:</span>
+                    <span><strong>${orderId}</strong></span>
+                </div>
+                <div class="info-row">
+                    <span>Amount:</span>
+                    <span><strong>$${Number(order.total).toFixed(2)}</strong></span>
+                </div>
+                <div class="info-row">
+                    <span>Payment Method:</span>
+                    <span><strong>WesternBid</strong></span>
+                </div>
             </div>
             
-            <form id="westernbid-form" action="https://shop.westernbid.info" method="post" style="display: none;">
+            <form id="westernbid-form" action="https://shop.westernbid.info" method="post">
                 ${Object.entries(formData)
                   .map(([key, value]) => `<input type="hidden" name="${key}" value="${value.replace(/"/g, '&quot;')}" />`)
                   .join('\n                ')}
+                
+                <button type="submit" class="payment-button" id="payment-btn">
+                    🔒 Proceed to Secure Payment
+                </button>
             </form>
+            
+            <div class="security-notice">
+                🛡️ You will be redirected to WesternBid secure payment gateway
+            </div>
+            
+            <div class="debug-panel">
+                <details>
+                    <summary>🔧 Technical Details</summary>
+                    <pre style="margin: 0.5rem 0; font-size: 0.7rem; overflow-x: auto;">
+Payment ID: ${paymentId}
+Merchant: ${formData.wb_login}
+Hash: ${formData.wb_hash?.substring(0, 8)}...
+Target: https://shop.westernbid.info
+
+Form Data:
+${Object.entries(formData)
+  .map(([key, value]) => `  ${key}: ${value}`)
+  .join('\n')}
+                    </pre>
+                </details>
+            </div>
+            
+            <a href="/checkout" class="back-link">← Back to Checkout</a>
         </div>
 
         <script>
-            console.log('Payment redirect page loaded');
+            console.log('WesternBid payment page loaded');
+            console.log('Order:', '${orderId}');
+            console.log('Amount:', '$${Number(order.total).toFixed(2)}');
+            console.log('Payment ID:', '${paymentId}');
             
-            // Wait for DOM to be ready
             document.addEventListener('DOMContentLoaded', function() {
                 const form = document.getElementById('westernbid-form');
+                const button = document.getElementById('payment-btn');
                 
-                if (form) {
-                    console.log('Form found:', form);
-                    console.log('Form action:', form.action);
-                    console.log('Form method:', form.method);
-                    
-                    // Log all form fields
-                    const formData = new FormData(form);
-                    console.log('Form fields:');
-                    for (let [key, value] of formData.entries()) {
-                        console.log(key + ':', value);
-                    }
-                    
-                    // Add manual submit button for testing
-                    const submitButton = document.createElement('button');
-                    submitButton.textContent = 'Manual Submit to WesternBid';
-                    submitButton.style.cssText = 'padding: 10px 20px; margin: 10px; background: #4ecdc4; color: white; border: none; border-radius: 5px; cursor: pointer;';
-                    submitButton.onclick = function() {
-                        console.log('Manual form submission triggered');
-                        console.log('Form action before submit:', form.action);
-                        console.log('Form target before submit:', form.target);
+                if (form && button) {
+                    button.addEventListener('click', function(e) {
+                        console.log('Payment button clicked - submitting to WesternBid');
                         
-                        // Try different approaches
-                        try {
-                            console.log('Attempting form.submit()...');
-                            form.submit();
-                            console.log('form.submit() completed');
-                        } catch (error) {
-                            console.error('form.submit() failed:', error);
-                            
-                            // Try alternative: redirect to action URL with POST simulation
-                            try {
-                                console.log('Trying alternative: window.open with form action');
-                                const actionUrl = form.action;
-                                window.open(actionUrl, '_blank');
-                            } catch (altError) {
-                                console.error('Alternative method failed:', altError);
-                                alert('Both submission methods failed. WesternBid integration may need different approach.');
-                            }
-                        }
-                    };
-                    document.querySelector('.container').appendChild(submitButton);
+                        // Add loading state
+                        button.innerHTML = '⏳ Redirecting to Payment Gateway...';
+                        button.disabled = true;
+                        
+                        // Form will submit normally since we're not preventing default
+                        console.log('Form submission proceeding to:', form.action);
+                    });
                     
-                    // Also try automatic submission
-                    setTimeout(function() {
-                        console.log('Automatic form submission in 3 seconds...');
-                        try {
-                            form.submit();
-                            console.log('Automatic form submitted');
-                        } catch (error) {
-                            console.error('Automatic form submission failed:', error);
-                            document.querySelector('.container').innerHTML += 
-                                '<p style="color: #ff6b6b; margin-top: 1rem;">Automatic submission failed: ' + error.message + '</p>' +
-                                '<p style="color: #fff;">Try the manual submit button above or <a href="/checkout" style="color: #4ecdc4;">go back to checkout</a></p>';
-                        }
-                    }, 3000);
-                    
+                    console.log('✅ WesternBid form ready for manual submission');
                 } else {
-                    console.error('Form not found!');
-                    document.querySelector('.container').innerHTML = 
-                        '<div class="logo">VobVorot</div>' +
-                        '<p style="color: #ff6b6b;">Payment form not found. Please try again.</p>' +
-                        '<a href="/checkout" style="color: #4ecdc4; text-decoration: none;">← Back to Checkout</a>';
+                    console.error('❌ Form or button not found');
                 }
             });
         </script>
