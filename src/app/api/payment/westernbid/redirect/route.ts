@@ -133,14 +133,14 @@ export async function GET(request: NextRequest) {
                 Payment ID: ${paymentId}<br>
                 Order ID: ${orderId}<br>
                 Amount: $${Number(order.total).toFixed(2)}<br>
-                Target URL: https://shop.westernbid.info/payment<br>
+                Target URL: https://shop.westernbid.info<br>
                 <details style="margin-top: 0.5rem;">
                     <summary>Form Data</summary>
                     <pre style="font-size: 0.7rem; margin-top: 0.5rem;">${JSON.stringify(formData, null, 2)}</pre>
                 </details>
             </div>
             
-            <form id="westernbid-form" action="https://shop.westernbid.info/payment" method="post" style="display: none;">
+            <form id="westernbid-form" action="https://shop.westernbid.info" method="post" style="display: none;">
                 ${Object.entries(formData)
                   .map(([key, value]) => `<input type="hidden" name="${key}" value="${value.replace(/"/g, '&quot;')}" />`)
                   .join('\n                ')}
@@ -149,28 +149,47 @@ export async function GET(request: NextRequest) {
 
         <script>
             console.log('Payment redirect page loaded');
-            console.log('Form action:', document.getElementById('westernbid-form').action);
-            console.log('Form data:', new FormData(document.getElementById('westernbid-form')));
             
-            // Try to submit immediately, then with delay as fallback
-            try {
-                setTimeout(function() {
-                    console.log('Attempting to submit form to WesternBid...');
-                    const form = document.getElementById('westernbid-form');
-                    if (form) {
-                        form.submit();
-                    } else {
-                        console.error('Form not found!');
-                        // Fallback: show error message
-                        document.querySelector('.container').innerHTML = 
-                            '<div class="logo">VobVorot</div>' +
-                            '<p style="color: #ff6b6b;">Payment initialization failed. Please try again.</p>' +
-                            '<a href="/checkout" style="color: #4ecdc4; text-decoration: none;">← Back to Checkout</a>';
+            // Wait for DOM to be ready
+            document.addEventListener('DOMContentLoaded', function() {
+                const form = document.getElementById('westernbid-form');
+                
+                if (form) {
+                    console.log('Form found:', form);
+                    console.log('Form action:', form.action);
+                    console.log('Form method:', form.method);
+                    
+                    // Log all form fields
+                    const formData = new FormData(form);
+                    console.log('Form fields:');
+                    for (let [key, value] of formData.entries()) {
+                        console.log(key + ':', value);
                     }
-                }, 1000);
-            } catch (error) {
-                console.error('Form submission error:', error);
-            }
+                    
+                    // Try to submit form
+                    setTimeout(function() {
+                        console.log('Submitting form to WesternBid...');
+                        try {
+                            form.submit();
+                            console.log('Form submitted successfully');
+                        } catch (error) {
+                            console.error('Form submission failed:', error);
+                            // Show error message
+                            document.querySelector('.container').innerHTML = 
+                                '<div class="logo">VobVorot</div>' +
+                                '<p style="color: #ff6b6b;">Payment form submission failed: ' + error.message + '</p>' +
+                                '<a href="/checkout" style="color: #4ecdc4; text-decoration: none;">← Back to Checkout</a>';
+                        }
+                    }, 2000);
+                    
+                } else {
+                    console.error('Form not found!');
+                    document.querySelector('.container').innerHTML = 
+                        '<div class="logo">VobVorot</div>' +
+                        '<p style="color: #ff6b6b;">Payment form not found. Please try again.</p>' +
+                        '<a href="/checkout" style="color: #4ecdc4; text-decoration: none;">← Back to Checkout</a>';
+                }
+            });
         </script>
     </body>
     </html>
