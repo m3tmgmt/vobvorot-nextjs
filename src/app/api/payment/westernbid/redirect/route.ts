@@ -234,6 +234,26 @@ export async function GET(request: NextRequest) {
                     };
                     document.querySelector('.container').appendChild(submitButton);
                     
+                    // Add missing required fields immediately
+                    const requiredFields = {
+                        'address1': 'Test Address',
+                        'city': 'Kyiv', 
+                        'state': 'Ukraine',
+                        'zip': '01001',
+                        'country': 'UA'
+                    };
+                    
+                    Object.entries(requiredFields).forEach(([name, value]) => {
+                        if (!form.querySelector('input[name="' + name + '"]')) {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = name;
+                            input.value = value;
+                            form.appendChild(input);
+                            console.log('Added required field:', name, '=', value);
+                        }
+                    });
+                    
                     // Fix phone field - remove extra spaces
                     const phoneInput = form.querySelector('input[name="phone"]');
                     if (phoneInput && phoneInput.value) {
