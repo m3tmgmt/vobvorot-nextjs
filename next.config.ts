@@ -11,7 +11,7 @@ const nextConfig: NextConfig = {
   },
   
   // Output configuration for production (Vercel optimized)
-  output: process.env.VERCEL ? undefined : 'standalone',
+  // output: process.env.VERCEL ? undefined : 'standalone',
   
   // Image optimization for VobVorot
   images: {

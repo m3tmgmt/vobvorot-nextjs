@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "npm run patch:lodash && prisma generate && next build",
-    "postinstall": "npm run patch:lodash",
+    "build": "prisma generate && next build",
+    "build:railway": "npm ci && npx prisma generate && npx next build",
+    "build:vercel": "npx prisma generate && npx next build --no-lint",
     "patch:lodash": "node patch-lodash.js",
     "start": "next start",
     "lint": "next lint",

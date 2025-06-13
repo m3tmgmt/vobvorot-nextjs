@@ -353,7 +353,7 @@ class WesternBidAPI {
 
   // Generate WesternBid payment form data according to official documentation
   public generatePaymentFormData(request: PaymentRequest, paymentId: string): Record<string, string> {
-    // Use real merchant ID or fallback for testing - trim whitespace
+    // Use real merchant ID from env vars or fallback for testing
     const merchantId = (this.config.merchantId || '159008').trim()
     const secretKey = (this.config.secretKey || 'oVsVCgu').trim()
     const amount = request.amount.toFixed(2)
@@ -367,21 +367,28 @@ class WesternBidAPI {
     // Extract customer address from metadata if available
     const customerAddress = request.metadata?.customerAddress || {}
     
-    // Ensure required address fields have default values if missing
-    const address1 = customerAddress.address || 'Not specified'
-    const city = customerAddress.city || 'Not specified'
-    const state = customerAddress.state || 'Not specified'
+    // Parse customer name properly
+    const nameParts = request.customerName.trim().split(' ')
+    const firstName = nameParts[0] || 'Customer'
+    const lastName = nameParts.slice(1).join(' ') || 'Name'
+    
+    // Clean phone number - WesternBid expects proper format
+    const cleanPhone = (request.customerPhone || '').replace(/[^\d+]/g, '')
+    
+    // Ensure required address fields with proper defaults
+    const address1 = customerAddress.address || 'Address not provided'
+    const city = customerAddress.city || 'City not provided'
+    const state = customerAddress.state || 'State not provided'  
     const zip = customerAddress.postalCode || '00000'
-    const country = customerAddress.country || 'UA'
+    const country = customerAddress.country || 'US' // Default to US as per documentation
     
     this.logger.info('Generating WesternBid form data', {
-      configMerchantId: this.config.merchantId,
-      usedMerchantId: merchantId,
-      environment: this.config.environment,
-      hashString: hashString,
-      wb_hash: wb_hash,
-      customerAddress: customerAddress,
-      finalAddress: { address1, city, state, zip, country }
+      merchantId: `${merchantId.substring(0, 3)}***`,
+      hashString: `${hashString.substring(0, 10)}...`,
+      wb_hash: `${wb_hash.substring(0, 8)}...`,
+      customerName: `${firstName} ${lastName}`,
+      phone: cleanPhone,
+      address: { address1, city, state, zip, country }
     })
     
     const formData = {
@@ -391,11 +398,11 @@ class WesternBidAPI {
       wb_hash: wb_hash,
       invoice: invoice,
       email: request.customerEmail,
-      phone: (request.customerPhone || '').trim(), // Remove extra spaces
+      phone: cleanPhone,
       
-      // Customer info (REQUIRED fields according to documentation)
-      first_name: request.customerName.split(' ')[0] || 'Customer',
-      last_name: request.customerName.split(' ').slice(1).join(' ') || 'Name',
+      // Customer info (strongly recommended according to docs)
+      first_name: firstName,
+      last_name: lastName,
       address1: address1,
       address2: customerAddress.address2 || '',
       city: city,
@@ -403,26 +410,26 @@ class WesternBidAPI {
       zip: zip,
       country: country,
       
-      // Order info
+      // Order info - main item
       item_name: request.description,
       amount: amount,
       currency_code: request.currency.toUpperCase(),
       
-      // For single item, use _1 suffix
+      // Individual item details (required fields per documentation)
       item_name_1: request.description,
       item_number_1: request.orderId,
       amount_1: amount,
       quantity_1: '1',
-      url_1: `${process.env.NEXT_PUBLIC_SITE_URL}/products`, // Required field
-      description_1: request.description, // Required field
+      url_1: `${process.env.NEXT_PUBLIC_SITE_URL}/products`,
+      description_1: request.description,
       
-      // URLs
+      // Return URLs (required)
       return: request.returnUrl,
       cancel_return: request.cancelUrl,
       notify_url: request.webhookUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`,
       
-      // Optional shipping (disable PayPal shipping fields)
-      no_shipping: '1'
+      // Optional settings
+      no_shipping: '1' // Disable PayPal shipping fields
     }
 
     return formData
