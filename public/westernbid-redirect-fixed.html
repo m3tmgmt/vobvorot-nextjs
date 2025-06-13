@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Redirecting to Payment...</title>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid #4ecdc4;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .message {
+            margin-top: 1rem;
+            color: #b0b0b0;
+            font-size: 0.9rem;
+        }
+        .manual-button {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 1rem;
+            transition: transform 0.2s;
+        }
+        .manual-button:hover {
+            transform: scale(1.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">VobVorot</div>
+        <div class="spinner"></div>
+        <p>Redirecting to secure payment...</p>
+        <p class="message">You will be redirected to WesternBid payment gateway</p>
+        
+        <form id="westernbid-form" action="https://shop.westernbid.info" method="post" style="display: none;">
+            <!-- Форма будет заполнена через JavaScript -->
+        </form>
+        
+        <button class="manual-button" onclick="submitForm()" style="display: none;" id="manual-button">
+            Continue to Payment
+        </button>
+        
+        <div id="debug-info" style="margin-top: 1rem; font-size: 0.8rem; text-align: left; max-height: 200px; overflow-y: auto;">
+            <strong>Status:</strong> <span id="status">Initializing...</span><br>
+            <strong>Form Status:</strong> <span id="form-status">Loading...</span>
+        </div>
+    </div>
+
+    <script>
+        console.log('WesternBid redirect page loaded');
+        
+        // Extract payment data from URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const paymentId = urlParams.get('paymentId');
+        const orderId = urlParams.get('orderId');
+        const sessionId = urlParams.get('sessionId');
+        
+        document.getElementById('status').textContent = 'Extracting payment data...';
+        
+        if (!paymentId || !orderId || !sessionId) {
+            document.getElementById('status').textContent = 'Error: Missing payment parameters';
+            document.getElementById('form-status').textContent = 'Failed - redirecting to checkout...';
+            setTimeout(() => {
+                window.location.href = '/checkout?error=invalid_payment_parameters';
+            }, 3000);
+        } else {
+            document.getElementById('status').textContent = 'Fetching payment form data...';
+            initializePayment();
+        }
+        
+        function initializePayment() {
+            // Make request to our API to get the WesternBid form data
+            fetch(`/api/payment/westernbid/redirect?paymentId=${paymentId}&orderId=${orderId}&sessionId=${sessionId}`)
+                .then(response => response.text())
+                .then(html => {
+                    document.getElementById('status').textContent = 'Payment form received';
+                    
+                    // Parse the HTML response to extract form data
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    const originalForm = doc.getElementById('westernbid-form');
+                    
+                    if (originalForm) {
+                        // Copy all form inputs
+                        const newForm = document.getElementById('westernbid-form');
+                        newForm.innerHTML = originalForm.innerHTML;
+                        
+                        document.getElementById('form-status').textContent = 'Ready for submission';
+                        document.getElementById('status').textContent = 'Auto-submitting in 2 seconds...';
+                        
+                        // Auto-submit after 2 seconds
+                        setTimeout(() => {
+                            submitForm();
+                        }, 2000);
+                        
+                        // Show manual button as backup
+                        setTimeout(() => {
+                            document.getElementById('manual-button').style.display = 'inline-block';
+                            document.getElementById('status').textContent = 'Click button if not redirected automatically';
+                        }, 5000);
+                    } else {
+                        document.getElementById('form-status').textContent = 'Error: Invalid form data';
+                        document.getElementById('status').textContent = 'Redirecting to checkout...';
+                        setTimeout(() => {
+                            window.location.href = '/checkout?error=form_generation_failed';
+                        }, 3000);
+                    }
+                })
+                .catch(error => {
+                    console.error('Payment initialization failed:', error);
+                    document.getElementById('form-status').textContent = 'Network error';
+                    document.getElementById('status').textContent = 'Redirecting to checkout...';
+                    setTimeout(() => {
+                        window.location.href = '/checkout?error=network_error';
+                    }, 3000);
+                });
+        }
+        
+        function submitForm() {
+            const form = document.getElementById('westernbid-form');
+            if (form && form.children.length > 0) {
+                document.getElementById('status').textContent = 'Submitting to WesternBid...';
+                document.getElementById('form-status').textContent = 'Redirecting...';
+                console.log('Submitting form to WesternBid');
+                form.submit();
+            } else {
+                document.getElementById('status').textContent = 'Form not ready - please wait';
+                document.getElementById('form-status').textContent = 'Error: Form empty';
+            }
+        }
+    </script>
+</body>
+</html>
