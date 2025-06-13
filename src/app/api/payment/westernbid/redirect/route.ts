@@ -172,11 +172,26 @@ export async function GET(request: NextRequest) {
                     submitButton.style.cssText = 'padding: 10px 20px; margin: 10px; background: #4ecdc4; color: white; border: none; border-radius: 5px; cursor: pointer;';
                     submitButton.onclick = function() {
                         console.log('Manual form submission triggered');
+                        console.log('Form action before submit:', form.action);
+                        console.log('Form target before submit:', form.target);
+                        
+                        // Try different approaches
                         try {
+                            console.log('Attempting form.submit()...');
                             form.submit();
+                            console.log('form.submit() completed');
                         } catch (error) {
-                            console.error('Manual submission failed:', error);
-                            alert('Manual submission failed: ' + error.message);
+                            console.error('form.submit() failed:', error);
+                            
+                            // Try alternative: redirect to action URL with POST simulation
+                            try {
+                                console.log('Trying alternative: window.open with form action');
+                                const actionUrl = form.action;
+                                window.open(actionUrl, '_blank');
+                            } catch (altError) {
+                                console.error('Alternative method failed:', altError);
+                                alert('Both submission methods failed. WesternBid integration may need different approach.');
+                            }
                         }
                     };
                     document.querySelector('.container').appendChild(submitButton);
