@@ -147,7 +147,7 @@ export async function GET(request: NextRequest) {
                 </details>
             </div>
             
-            <form id="westernbid-form" action="https://shop.westernbid.info" method="post" target="_self" style="display: none;">
+            <form id="westernbid-form" action="https://shop.westernbid.info" method="post" style="display: none;">
                 ${Object.entries(formData)
                   .map(([key, value]) => `<input type="hidden" name="${key}" value="${value.replace(/"/g, '&quot;')}" />`)
                   .join('\n                ')}
@@ -155,180 +155,22 @@ export async function GET(request: NextRequest) {
         </div>
 
         <script>
-            console.log('Payment redirect page loaded - v2');
+            console.log('WesternBid payment redirect');
             
-            // Wait for DOM to be ready
-            document.addEventListener('DOMContentLoaded', function() {
+            // Simple automatic form submission
+            window.onload = function() {
                 const form = document.getElementById('westernbid-form');
-                
                 if (form) {
-                    console.log('Form found:', form);
-                    console.log('Form action:', form.action);
-                    console.log('Form method:', form.method);
-                    console.log('Form target:', form.target);
-                    console.log('Form innerHTML:', form.innerHTML);
-                    
-                    // Log all form fields
-                    const formData = new FormData(form);
-                    console.log('Form fields count:', formData.entries().length);
-                    console.log('Form fields:');
-                    for (let [key, value] of formData.entries()) {
-                        console.log(key + ':', value);
-                    }
-                    
-                    // Check if form is properly attached to DOM
-                    console.log('Form parent:', form.parentElement);
-                    console.log('Form in document:', document.contains(form));
-                    
-                    // Add manual submit button for testing
-                    const submitButton = document.createElement('button');
-                    submitButton.textContent = 'Manual Submit to WesternBid';
-                    submitButton.style.cssText = 'padding: 10px 20px; margin: 10px; background: #4ecdc4; color: white; border: none; border-radius: 5px; cursor: pointer;';
-                    submitButton.onclick = function() {
-                        console.log('Manual form submission triggered');
-                        console.log('Form action before submit:', form.action);
-                        console.log('Form target before submit:', form.target);
-                        
-                        // Try different approaches
-                        try {
-                            console.log('Attempting form.submit()...');
-                            
-                            // Method 1: Direct form submission
-                            form.submit();
-                            console.log('form.submit() completed - page should redirect now');
-                            
-                        } catch (error) {
-                            console.error('form.submit() failed:', error);
-                            
-                            // Method 2: Create and submit a clone
-                            try {
-                                console.log('Trying method 2: form clone submission');
-                                const clonedForm = form.cloneNode(true);
-                                document.body.appendChild(clonedForm);
-                                clonedForm.submit();
-                                console.log('Cloned form submitted');
-                            } catch (cloneError) {
-                                console.error('Clone method failed:', cloneError);
-                                
-                                // Method 3: Manual POST request
-                                try {
-                                    console.log('Trying method 3: manual POST');
-                                    const formData = new FormData(form);
-                                    fetch(form.action, {
-                                        method: 'POST',
-                                        body: formData,
-                                        mode: 'no-cors'
-                                    }).then(() => {
-                                        console.log('Manual POST completed');
-                                        window.location.href = form.action;
-                                    }).catch(fetchError => {
-                                        console.error('Manual POST failed:', fetchError);
-                                        alert('All submission methods failed. Check console for details.');
-                                    });
-                                } catch (manualError) {
-                                    console.error('Manual POST setup failed:', manualError);
-                                    alert('All submission methods failed. WesternBid may be blocking requests.');
-                                }
-                            }
-                        }
-                    };
-                    document.querySelector('.container').appendChild(submitButton);
-                    
-                    // Add missing required fields immediately
-                    const requiredFields = {
-                        'address1': 'Test Address',
-                        'city': 'Kyiv', 
-                        'state': 'Ukraine',
-                        'zip': '01001',
-                        'country': 'UA'
-                    };
-                    
-                    Object.entries(requiredFields).forEach(([name, value]) => {
-                        if (!form.querySelector('input[name="' + name + '"]')) {
-                            const input = document.createElement('input');
-                            input.type = 'hidden';
-                            input.name = name;
-                            input.value = value;
-                            form.appendChild(input);
-                            console.log('Added required field:', name, '=', value);
-                        }
-                    });
-                    
-                    // Fix phone field - remove extra spaces
-                    const phoneInput = form.querySelector('input[name="phone"]');
-                    if (phoneInput && phoneInput.value) {
-                        phoneInput.value = phoneInput.value.trim();
-                        console.log('Fixed phone field:', phoneInput.value);
-                    }
-                    
-                    // Add button to show/hide actual form for debugging
-                    const showFormButton = document.createElement('button');
-                    showFormButton.textContent = 'Show/Hide Form for Manual Submit';
-                    showFormButton.style.cssText = 'padding: 10px 20px; margin: 10px; background: #ff6b6b; color: white; border: none; border-radius: 5px; cursor: pointer;';
-                    showFormButton.onclick = function() {
-                        if (form.style.display === 'none') {
-                            form.style.display = 'block';
-                            form.style.padding = '20px';
-                            form.style.background = 'rgba(255,255,255,0.1)';
-                            form.style.borderRadius = '10px';
-                            form.style.marginTop = '20px';
-                            
-                            // Add visible submit button to the form
-                            const visibleSubmit = document.createElement('input');
-                            visibleSubmit.type = 'submit';
-                            visibleSubmit.value = 'SUBMIT TO WESTERNBID';
-                            visibleSubmit.style.cssText = 'padding: 15px 30px; background: #4ecdc4; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin-top: 10px;';
-                            form.appendChild(visibleSubmit);
-                        } else {
-                            form.style.display = 'none';
-                        }
-                    };
-                    document.querySelector('.container').appendChild(showFormButton);
-                    
-                    // Add button to submit form in new window
-                    const newWindowButton = document.createElement('button');
-                    newWindowButton.textContent = 'Submit in New Window';
-                    newWindowButton.style.cssText = 'padding: 10px 20px; margin: 10px; background: #9b59b6; color: white; border: none; border-radius: 5px; cursor: pointer;';
-                    newWindowButton.onclick = function() {
-                        console.log('Opening form in new window...');
-                        try {
-                            // Change target to _blank and submit
-                            form.target = '_blank';
-                            form.submit();
-                            console.log('Form submitted in new window');
-                        } catch (error) {
-                            console.error('New window submission failed:', error);
-                        }
-                    };
-                    document.querySelector('.container').appendChild(newWindowButton);
-                    
-                    // Change form target to prevent blank page issue
-                    form.target = '_self';
-                    
-                    // Also try automatic submission
-                    setTimeout(function() {
-                        console.log('Automatic form submission in 3 seconds...');
-                        try {
-                            // Change form action to handle the response properly
-                            console.log('Submitting form to WesternBid...');
-                            form.submit();
-                            console.log('Form submitted - should redirect to PayPal');
-                        } catch (error) {
-                            console.error('Automatic form submission failed:', error);
-                            document.querySelector('.container').innerHTML += 
-                                '<p style="color: #ff6b6b; margin-top: 1rem;">Automatic submission failed: ' + error.message + '</p>' +
-                                '<p style="color: #fff;">Try the manual submit button above or <a href="/checkout" style="color: #4ecdc4;">go back to checkout</a></p>';
-                        }
-                    }, 3000);
-                    
+                    console.log('Submitting form to WesternBid...');
+                    form.submit();
                 } else {
-                    console.error('Form not found!');
+                    console.error('Form not found');
                     document.querySelector('.container').innerHTML = 
                         '<div class="logo">VobVorot</div>' +
-                        '<p style="color: #ff6b6b;">Payment form not found. Please try again.</p>' +
-                        '<a href="/checkout" style="color: #4ecdc4; text-decoration: none;">← Back to Checkout</a>';
+                        '<p style="color: #ff6b6b;">Payment form error. Please try again.</p>' +
+                        '<a href="/checkout" style="color: #4ecdc4;">← Back to Checkout</a>';
                 }
-            });
+            };
         </script>
     </body>
     </html>
