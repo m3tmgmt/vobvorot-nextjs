@@ -100,7 +100,7 @@ export async function GET(request: NextRequest) {
         })
       }
     } catch (error) {
-      logger.error('Direct WesternBid POST failed', error)
+      logger.error('Direct WesternBid POST failed', {}, error instanceof Error ? error : new Error(String(error)))
     }
 
     // Fallback to HTML form if direct POST fails
