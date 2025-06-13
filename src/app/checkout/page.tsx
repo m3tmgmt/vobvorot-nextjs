@@ -139,11 +139,20 @@ export default function CheckoutPage() {
         }
       } else {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Order creation failed')
+        console.error('Order creation failed:', errorData)
+        
+        // Show more user-friendly error messages
+        if (errorData.error === 'Missing required order data') {
+          alert('Please fill in all required fields')
+        } else if (errorData.error === 'Payment gateway is currently disabled') {
+          alert('Payment system is temporarily unavailable. Please try again later.')
+        } else {
+          alert(errorData.error || 'Unable to process your order. Please try again.')
+        }
       }
     } catch (error) {
       console.error('Checkout error:', error)
-      alert('Order failed. Please try again.')
+      alert('Unable to connect to payment system. Please check your internet connection and try again.')
     } finally {
       setLoading(false)
     }
@@ -346,21 +355,60 @@ export default function CheckoutPage() {
                     }}>
                       Phone *
                     </label>
-                    <input
-                      type="tel"
-                      required
-                      value={shippingInfo.phone}
-                      onChange={(e) => setShippingInfo({...shippingInfo, phone: e.target.value})}
-                      style={{
-                        width: '100%',
-                        padding: '1rem',
-                        background: 'rgba(255,255,255,0.1)',
-                        border: '1px solid var(--cyan-accent)',
-                        borderRadius: '8px',
-                        color: 'var(--white)',
-                        fontSize: '1rem'
-                      }}
-                    />
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <select
+                        value={shippingInfo.country === 'US' ? '+1' : 
+                               shippingInfo.country === 'GB' ? '+44' :
+                               shippingInfo.country === 'FR' ? '+33' :
+                               shippingInfo.country === 'DE' ? '+49' :
+                               shippingInfo.country === 'IT' ? '+39' :
+                               shippingInfo.country === 'ES' ? '+34' :
+                               shippingInfo.country === 'CA' ? '+1' :
+                               shippingInfo.country === 'AU' ? '+61' :
+                               shippingInfo.country === 'JP' ? '+81' :
+                               shippingInfo.country === 'MX' ? '+52' : '+1'}
+                        onChange={(e) => {/* Handle code change if needed */}}
+                        style={{
+                          width: '120px',
+                          padding: '1rem',
+                          background: 'rgba(255,255,255,0.1)',
+                          border: '1px solid var(--cyan-accent)',
+                          borderRadius: '8px',
+                          color: 'var(--white)',
+                          fontSize: '1rem'
+                        }}
+                      >
+                        <option value="+1">🇺🇸 +1</option>
+                        <option value="+44">🇬🇧 +44</option>
+                        <option value="+33">🇫🇷 +33</option>
+                        <option value="+49">🇩🇪 +49</option>
+                        <option value="+39">🇮🇹 +39</option>
+                        <option value="+34">🇪🇸 +34</option>
+                        <option value="+61">🇦🇺 +61</option>
+                        <option value="+81">🇯🇵 +81</option>
+                        <option value="+52">🇲🇽 +52</option>
+                        <option value="+380">🇺🇦 +380</option>
+                        <option value="+7">🇷🇺 +7</option>
+                        <option value="+86">🇨🇳 +86</option>
+                        <option value="+91">🇮🇳 +91</option>
+                      </select>
+                      <input
+                        type="tel"
+                        required
+                        value={shippingInfo.phone}
+                        onChange={(e) => setShippingInfo({...shippingInfo, phone: e.target.value})}
+                        placeholder="123 456 7890"
+                        style={{
+                          flex: 1,
+                          padding: '1rem',
+                          background: 'rgba(255,255,255,0.1)',
+                          border: '1px solid var(--cyan-accent)',
+                          borderRadius: '8px',
+                          color: 'var(--white)',
+                          fontSize: '1rem'
+                        }}
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -504,22 +552,66 @@ export default function CheckoutPage() {
             {/* Step 2: Payment Information */}
             {step === 2 && (
               <div>
-                <PaymentMethodSelector
-                  onMethodSelect={(method) => {
-                    setPaymentInfo({ method })
-                    // Auto-advance to review step when method is selected
-                    setTimeout(() => setStep(3), 500)
-                  }}
-                  selectedMethod={paymentInfo.method}
-                  amount={finalTotal}
-                  currency="USD"
-                  disabled={loading}
-                />
+                <h2 style={{
+                  color: 'var(--cyan-accent)',
+                  fontSize: '1.8rem',
+                  marginBottom: '2rem'
+                }}>
+                  Payment Method
+                </h2>
+
+                {/* Simple payment method selection */}
+                <div style={{ marginBottom: '2rem' }}>
+                  {[
+                    { 
+                      id: 'westernbid', 
+                      name: 'WesternBid (Stripe & PayPal)', 
+                      description: 'Pay with Credit Card or PayPal',
+                      icon: '💳'
+                    }
+                  ].map((method) => (
+                    <div
+                      key={method.id}
+                      onClick={() => setPaymentInfo({ method: method as any })}
+                      style={{
+                        padding: '1.5rem',
+                        background: paymentInfo.method?.id === method.id 
+                          ? 'rgba(0,245,255,0.2)' 
+                          : 'rgba(255,255,255,0.1)',
+                        border: `2px solid ${paymentInfo.method?.id === method.id 
+                          ? 'var(--cyan-accent)' 
+                          : 'rgba(255,255,255,0.2)'}`,
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        marginBottom: '1rem'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <span style={{ fontSize: '2rem' }}>{method.icon}</span>
+                        <div>
+                          <h3 style={{ 
+                            color: 'var(--white)', 
+                            fontSize: '1.2rem',
+                            marginBottom: '0.5rem' 
+                          }}>
+                            {method.name}
+                          </h3>
+                          <p style={{ 
+                            color: 'rgba(255,255,255,0.7)', 
+                            fontSize: '0.9rem' 
+                          }}>
+                            {method.description}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
 
                 <div style={{
                   display: 'flex',
-                  gap: '1rem',
-                  marginTop: '2rem'
+                  gap: '1rem'
                 }}>
                   <button
                     type="button"
@@ -536,6 +628,31 @@ export default function CheckoutPage() {
                     }}
                   >
                     Back to Shipping
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (paymentInfo.method) {
+                        setStep(3)
+                      }
+                    }}
+                    disabled={!paymentInfo.method}
+                    style={{
+                      flex: 2,
+                      padding: '1rem',
+                      background: paymentInfo.method
+                        ? 'linear-gradient(45deg, var(--pink-main), var(--cyan-accent))'
+                        : 'rgba(255,255,255,0.2)',
+                      border: 'none',
+                      borderRadius: '8px',
+                      color: 'var(--white)',
+                      fontSize: '1.1rem',
+                      fontWeight: '600',
+                      cursor: paymentInfo.method ? 'pointer' : 'not-allowed',
+                      opacity: paymentInfo.method ? 1 : 0.5
+                    }}
+                  >
+                    Continue to Review
                   </button>
                 </div>
               </div>
@@ -630,7 +747,7 @@ export default function CheckoutPage() {
                       opacity: loading ? 0.7 : 1
                     }}
                   >
-                    {loading ? 'Processing...' : 'Place Order'}
+                    {loading ? 'Processing...' : 'Proceed to Payment'}
                   </button>
                 </div>
               </div>
