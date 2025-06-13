@@ -252,19 +252,73 @@ ${Object.entries(formData)
                     button.addEventListener('click', function(e) {
                         e.preventDefault(); // Prevent default form submission
                         console.log('Payment button clicked - submitting to WesternBid');
+                        console.log('Form action:', form.action);
+                        console.log('Form method:', form.method);
                         
                         // Add loading state
                         button.innerHTML = '⏳ Redirecting to Payment Gateway...';
                         button.disabled = true;
                         
-                        // Submit form manually after loading state is set
+                        // Try multiple submission methods
                         setTimeout(function() {
-                            console.log('Form submission proceeding to:', form.action);
-                            form.submit();
-                        }, 100);
+                            console.log('Attempting form submission...');
+                            
+                            try {
+                                // Method 1: Direct form submit
+                                console.log('Method 1: form.submit()');
+                                form.submit();
+                                console.log('Form submit called successfully');
+                            } catch (error) {
+                                console.error('Method 1 failed:', error);
+                                
+                                // Method 2: Create new form and submit
+                                try {
+                                    console.log('Method 2: Creating new form');
+                                    const newForm = document.createElement('form');
+                                    newForm.method = 'POST';
+                                    newForm.action = 'https://shop.westernbid.info';
+                                    newForm.target = '_self';
+                                    
+                                    // Copy all hidden inputs
+                                    const inputs = form.querySelectorAll('input[type="hidden"]');
+                                    inputs.forEach(input => {
+                                        const newInput = document.createElement('input');
+                                        newInput.type = 'hidden';
+                                        newInput.name = input.name;
+                                        newInput.value = input.value;
+                                        newForm.appendChild(newInput);
+                                    });
+                                    
+                                    document.body.appendChild(newForm);
+                                    newForm.submit();
+                                    console.log('New form submitted');
+                                } catch (error2) {
+                                    console.error('Method 2 failed:', error2);
+                                    
+                                    // Method 3: Manual redirect with POST data
+                                    console.log('Method 3: Manual redirect');
+                                    const formData = new FormData(form);
+                                    const params = new URLSearchParams();
+                                    for (let [key, value] of formData.entries()) {
+                                        params.append(key, value);
+                                    }
+                                    
+                                    // Show form data for debugging
+                                    console.log('Form data to send:', Object.fromEntries(formData));
+                                    
+                                    button.innerHTML = '❌ Submission failed - Please try again';
+                                    button.disabled = false;
+                                }
+                            }
+                        }, 500);
                     });
                     
                     console.log('✅ WesternBid form ready for manual submission');
+                    console.log('Form details:', {
+                        action: form.action,
+                        method: form.method,
+                        inputs: form.querySelectorAll('input').length
+                    });
                 } else {
                     console.error('❌ Form or button not found');
                 }
