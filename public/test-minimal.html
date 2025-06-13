@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Minimal WesternBid Test</title>
+    <meta charset="utf-8">
+</head>
+<body>
+    <h1>Minimal WesternBid Test</h1>
+    
+    <form id="testForm" action="https://shop.westernbid.info" method="post">
+        <input type="hidden" name="charset" value="utf-8">
+        <input type="hidden" name="wb_login" value="159008">
+        <input type="hidden" name="wb_hash" value="8d3040b2f0118b327462923010dc8a38">
+        <input type="hidden" name="invoice" value="TEST_INVOICE_123">
+        <input type="hidden" name="email" value="test@vobvorot.com">
+        <input type="hidden" name="phone" value="+380990007099">
+        <input type="hidden" name="first_name" value="Test">
+        <input type="hidden" name="last_name" value="User">
+        <input type="hidden" name="address1" value="Test Address">
+        <input type="hidden" name="city" value="Kyiv">
+        <input type="hidden" name="country" value="UA">
+        <input type="hidden" name="state" value="Kyiv">
+        <input type="hidden" name="zip" value="01001">
+        <input type="hidden" name="item_name" value="Test Product">
+        <input type="hidden" name="amount" value="17.28">
+        <input type="hidden" name="currency_code" value="USD">
+        <input type="hidden" name="item_name_1" value="Test Product">
+        <input type="hidden" name="item_number_1" value="TEST001">
+        <input type="hidden" name="amount_1" value="17.28">
+        <input type="hidden" name="quantity_1" value="1">
+        <input type="hidden" name="url_1" value="https://vobvorot.com/products">
+        <input type="hidden" name="description_1" value="Test product description">
+        <input type="hidden" name="return" value="https://vobvorot.com/payment/success">
+        <input type="hidden" name="cancel_return" value="https://vobvorot.com/payment/cancel">
+        <input type="hidden" name="notify_url" value="https://vobvorot.com/api/webhooks/westernbid">
+        <input type="hidden" name="no_shipping" value="1">
+        
+        <input type="submit" value="Submit to WesternBid" style="padding: 15px 30px; background: #4ecdc4; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">
+    </form>
+    
+    <br><br>
+    
+    <button onclick="testWithFetch()" style="padding: 15px 30px; background: #ff6b6b; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px;">Test with Fetch API</button>
+    
+    <div id="result" style="margin-top: 20px; padding: 10px; background: #f5f5f5; display: none;"></div>
+    
+    <script>
+    function testWithFetch() {
+        const form = document.getElementById('testForm');
+        const formData = new FormData(form);
+        
+        console.log('Testing WesternBid connection...');
+        document.getElementById('result').style.display = 'block';
+        document.getElementById('result').innerHTML = 'Testing connection...';
+        
+        fetch('https://shop.westernbid.info', {
+            method: 'POST',
+            body: formData,
+            mode: 'no-cors'
+        })
+        .then(() => {
+            console.log('Request sent successfully');
+            document.getElementById('result').innerHTML = 'Request sent - check network tab for response';
+        })
+        .catch(error => {
+            console.error('Request failed:', error);
+            document.getElementById('result').innerHTML = 'Error: ' + error.message;
+        });
+    }
+    
+    // Log form data for debugging
+    const form = document.getElementById('testForm');
+    const formData = new FormData(form);
+    console.log('Form data:');
+    for (let [key, value] of formData.entries()) {
+        console.log(key + ':', value);
+    }
+    </script>
+</body>
+</html>
