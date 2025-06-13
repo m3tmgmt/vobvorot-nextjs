@@ -155,7 +155,7 @@ export async function GET(request: NextRequest) {
         </div>
 
         <script>
-            console.log('Payment redirect page loaded');
+            console.log('Payment redirect page loaded - v2');
             
             // Wait for DOM to be ready
             document.addEventListener('DOMContentLoaded', function() {
