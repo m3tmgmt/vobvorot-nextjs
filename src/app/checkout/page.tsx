@@ -370,14 +370,15 @@ export default function CheckoutPage() {
                     value={shippingInfo.phone}
                     onChange={(e) => {
                       let value = e.target.value
+                      
+                      // Remove any non-digit characters except + and spaces/hyphens/parentheses for formatting
+                      value = value.replace(/[^\d\+\s\-\(\)]/g, '')
+                      
                       // Auto-add + if user starts typing a number without it
-                      if (value.length === 1 && /^\d$/.test(value)) {
+                      if (value.length > 0 && !value.startsWith('+') && /^\d/.test(value)) {
                         value = '+' + value
                       }
-                      // Don't allow removing + if it's the first character
-                      if (shippingInfo.phone.startsWith('+') && !value.startsWith('+') && value.length > 0) {
-                        value = '+' + value
-                      }
+                      
                       setShippingInfo({...shippingInfo, phone: value})
                     }}
                     placeholder="+1 (555) 123-4567"

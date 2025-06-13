@@ -353,9 +353,19 @@ class WesternBidAPI {
 
   // Generate WesternBid payment form data
   public generatePaymentFormData(request: PaymentRequest, paymentId: string): Record<string, string> {
+    // Use real merchant ID or fallback for testing
+    const merchantId = this.config.merchantId || '159008'
+    
+    this.logger.info('Generating WesternBid form data', {
+      configMerchantId: this.config.merchantId,
+      usedMerchantId: merchantId,
+      environment: this.config.environment
+    })
+    
     const formData = {
-      // Required WesternBid fields
-      business: this.config.merchantId, // wb_login
+      // Required WesternBid fields (using both formats for compatibility)
+      business: merchantId,
+      wb_login: merchantId,
       item_name: request.description,
       item_number: request.orderId,
       amount: request.amount.toFixed(2),
