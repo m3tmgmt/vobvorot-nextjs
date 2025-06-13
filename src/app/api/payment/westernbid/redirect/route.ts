@@ -73,7 +73,37 @@ export async function GET(request: NextRequest) {
     // Generate WesternBid form data
     const formData = westernbid.generatePaymentFormData(paymentRequest, paymentId)
 
-    // Create HTML form that auto-submits to WesternBid
+    // Try direct server-to-server POST to WesternBid
+    try {
+      const formBody = Object.entries(formData)
+        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(value)}`)
+        .join('&')
+
+      const response = await fetch('https://shop.westernbid.info', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'User-Agent': 'VobVorot-Store/1.0'
+        },
+        body: formBody
+      })
+
+      if (response.ok) {
+        const responseText = await response.text()
+        
+        // Return the WesternBid response directly 
+        return new NextResponse(responseText, {
+          headers: {
+            'Content-Type': 'text/html; charset=utf-8',
+            'Cache-Control': 'no-cache'
+          }
+        })
+      }
+    } catch (error) {
+      logger.error('Direct WesternBid POST failed', error)
+    }
+
+    // Fallback to HTML form if direct POST fails
     const html = `
     <!DOCTYPE html>
     <html>
