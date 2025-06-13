@@ -359,7 +359,7 @@ class WesternBidAPI {
     const amount = request.amount.toFixed(2)
     
     // WesternBid fields according to official documentation
-    const formData = {
+    const formData: Record<string, string> = {
       // Required WesternBid fields
       wb_login: merchantId,
       charset: 'utf-8',
