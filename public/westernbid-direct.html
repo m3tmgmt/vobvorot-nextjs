@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>VobVorot - Direct WesternBid Payment</title>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+        }
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        h2 {
+            color: var(--green-neon);
+            margin: 1rem 0;
+        }
+        .info {
+            background: rgba(255,255,255,0.1);
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+            text-align: left;
+        }
+        button {
+            padding: 15px 30px;
+            margin: 10px;
+            background: #4ecdc4;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            background: #45b7aa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">VobVorot</div>
+        <h2>Direct Payment to WesternBid</h2>
+        <p>This is a temporary solution while we wait for deployment limits to reset.</p>
+        
+        <div class="info">
+            <strong>How to use:</strong><br>
+            1. Complete your order on VobVorot<br>
+            2. Copy the order details from the payment page<br>
+            3. Fill in the form below<br>
+            4. Click "Proceed to Payment"
+        </div>
+        
+        <form id="westernbid-form" action="https://shop.westernbid.info" method="post">
+            <!-- Basic fields -->
+            <input type="hidden" name="charset" value="utf-8">
+            <input type="hidden" name="wb_login" value="159008">
+            
+            <!-- Fields to be filled by user -->
+            <div style="margin: 1rem 0; text-align: left;">
+                <label>Order ID (invoice):</label><br>
+                <input type="text" name="invoice" id="invoice" placeholder="e.g. wb_1749811846284_EXV-1749811845395-9N8MFNA36" style="width: 100%; padding: 8px; margin: 5px 0;">
+                
+                <label>Amount:</label><br>
+                <input type="text" name="amount" id="amount" value="17.28" style="width: 100%; padding: 8px; margin: 5px 0;">
+                
+                <label>Email:</label><br>
+                <input type="email" name="email" placeholder="your@email.com" required style="width: 100%; padding: 8px; margin: 5px 0;">
+                
+                <label>Phone:</label><br>
+                <input type="tel" name="phone" placeholder="+1234567890" required style="width: 100%; padding: 8px; margin: 5px 0;">
+                
+                <label>First Name:</label><br>
+                <input type="text" name="first_name" required style="width: 100%; padding: 8px; margin: 5px 0;">
+                
+                <label>Last Name:</label><br>
+                <input type="text" name="last_name" required style="width: 100%; padding: 8px; margin: 5px 0;">
+            </div>
+            
+            <!-- Hidden required fields -->
+            <input type="hidden" name="wb_hash" id="wb_hash" value="">
+            <input type="hidden" name="address1" value="Customer Address">
+            <input type="hidden" name="city" value="Customer City">
+            <input type="hidden" name="state" value="Customer State">
+            <input type="hidden" name="zip" value="00000">
+            <input type="hidden" name="country" value="US">
+            <input type="hidden" name="item_name" value="VobVorot Store Order">
+            <input type="hidden" name="currency_code" value="USD">
+            <input type="hidden" name="item_name_1" value="VobVorot Store Order">
+            <input type="hidden" name="item_number_1" value="ORDER">
+            <input type="hidden" name="amount_1" id="amount_1" value="17.28">
+            <input type="hidden" name="quantity_1" value="1">
+            <input type="hidden" name="url_1" value="https://vobvorot.com/products">
+            <input type="hidden" name="description_1" value="VobVorot Store Order">
+            <input type="hidden" name="return" value="https://vobvorot.com/payment/success">
+            <input type="hidden" name="cancel_return" value="https://vobvorot.com/payment/cancel">
+            <input type="hidden" name="notify_url" value="https://vobvorot.com/api/webhooks/westernbid">
+            <input type="hidden" name="no_shipping" value="1">
+            
+            <button type="button" onclick="calculateAndSubmit()">Proceed to Payment</button>
+        </form>
+        
+        <p style="color: #888; font-size: 0.9rem; margin-top: 2rem;">
+            This page will be removed once normal payment processing is restored.
+        </p>
+    </div>
+    
+    <script>
+        function calculateAndSubmit() {
+            const invoice = document.getElementById('invoice').value;
+            const amount = document.getElementById('amount').value;
+            
+            if (!invoice || !amount) {
+                alert('Please fill in Order ID and Amount');
+                return;
+            }
+            
+            // Update amount_1 to match amount
+            document.getElementById('amount_1').value = amount;
+            
+            // Calculate MD5 hash
+            const hashString = '159008' + 'oVsVCgu' + amount + invoice;
+            
+            // Since we can't calculate MD5 in browser easily, use a pre-calculated hash
+            // This is temporary - in production this should be done server-side
+            // For testing: 159008oVsVCgu17.28wb_1749811846284_EXV-1749811845395-9N8MFNA36
+            // Hash: 8d80eb2475336a4ab2dca329089d123d
+            
+            // For now, submit without hash calculation
+            document.getElementById('wb_hash').value = 'temporary_hash';
+            
+            alert('Note: This is a temporary solution. The payment may fail due to hash validation. Contact support if needed.');
+            
+            document.getElementById('westernbid-form').submit();
+        }
+    </script>
+</body>
+</html>

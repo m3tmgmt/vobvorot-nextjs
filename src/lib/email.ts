@@ -509,6 +509,38 @@ export const emailService = {
   },
 
   /**
+   * Send payment confirmation email to customer (for completed payments)
+   */
+  async sendPaymentConfirmation(orderData: OrderEmailData): Promise<void> {
+    const template = generatePaymentConfirmationTemplate(orderData)
+    const client = getResendClient()
+    
+    await client.emails.send({
+      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
+      to: orderData.customerEmail,
+      subject: template.subject,
+      html: template.html,
+      text: template.text
+    })
+  },
+
+  /**
+   * Send payment notification to admin (for completed payments)
+   */
+  async sendAdminPaymentNotification(data: AdminNotificationData): Promise<void> {
+    const template = generateAdminPaymentNotificationTemplate(data)
+    const client = getResendClient()
+    
+    await client.emails.send({
+      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
+      to: process.env.ADMIN_EMAIL || 'admin@vobvorot.com',
+      subject: template.subject,
+      html: template.html,
+      text: template.text
+    })
+  },
+
+  /**
    * Test email functionality
    */
   async sendTestEmail(to: string): Promise<void> {
@@ -1487,6 +1519,307 @@ EXVICPMOUR - Your Name, My Pic
 
   return {
     subject: `✍️ Your custom sign "${data.signName}" is being created!`,
+    html,
+    text
+  }
+}
+
+/**
+ * Generate payment confirmation email template
+ */
+function generatePaymentConfirmationTemplate(orderData: OrderEmailData): EmailTemplate {
+  const lang = orderData.language || 'en'
+  const t = translations[lang]
+  
+  const itemsHtml = orderData.items.map(item => `
+    <tr>
+      <td>
+        <div style="display: flex; align-items: center;">
+          ${item.imageUrl ? `<img src="${item.imageUrl}" alt="${item.name}" style="width: 60px; height: 60px; object-fit: cover; border-radius: 8px; margin-right: 16px;">` : ''}
+          <div>
+            <div style="font-weight: 600; color: #1a1a1a;">${item.name}</div>
+            ${item.size ? `<div style="font-size: 14px; color: #6b7280; margin-top: 4px;">Size: ${item.size}</div>` : ''}
+            ${item.color ? `<div style="font-size: 14px; color: #6b7280; margin-top: 2px;">Color: ${item.color}</div>` : ''}
+          </div>
+        </div>
+      </td>
+      <td style="text-align: center; font-weight: 600;">${item.quantity}</td>
+      <td style="text-align: right; font-weight: 600;">$${Number(item.price).toFixed(2)}</td>
+      <td style="text-align: right; font-weight: 600; color: #059669;">$${(Number(item.price) * item.quantity).toFixed(2)}</td>
+    </tr>
+  `).join('')
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Payment Confirmed - ${orderData.orderNumber}</title>
+      ${getBaseEmailStyles()}
+    </head>
+    <body>
+      <div class="email-container">
+        <div class="header" style="background: linear-gradient(135deg, #059669 0%, #047857 100%);">
+          <h1>EXVICPMOUR</h1>
+          <p style="color: #ffffff; font-size: 18px; margin: 8px 0 0 0; opacity: 0.9;">Payment Confirmed</p>
+        </div>
+        
+        <div class="content">
+          <div style="text-align: center; margin-bottom: 32px;">
+            <div style="width: 80px; height: 80px; background: #d1fae5; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+              <span style="color: #059669; font-size: 32px;">✅</span>
+            </div>
+            <h2 style="color: #059669; font-size: 24px; margin: 0 0 8px 0;">Payment Successful!</h2>
+            <p style="color: #6b7280; font-size: 16px; margin: 0;">Order #${orderData.orderNumber}</p>
+          </div>
+
+          <div style="background: #d1fae5; border: 1px solid #059669; border-radius: 12px; padding: 20px; margin: 32px 0; text-align: center;">
+            <h3 style="color: #059669; margin: 0 0 12px 0; font-size: 18px;">Your payment has been processed successfully!</h3>
+            <p style="color: #047857; margin: 0; font-size: 14px;">
+              Your order is now confirmed and will be processed for shipping.
+            </p>
+          </div>
+
+          <div class="card">
+            <h3 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 18px;">Order Summary</h3>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+              <div>
+                <p style="margin: 8px 0; color: #6b7280; font-size: 14px;">Order Number</p>
+                <p style="margin: 0; font-weight: 600; color: #1a1a1a;">${orderData.orderNumber}</p>
+              </div>
+              <div>
+                <p style="margin: 8px 0; color: #6b7280; font-size: 14px;">Customer</p>
+                <p style="margin: 0; font-weight: 600; color: #1a1a1a;">${orderData.customerName}</p>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin: 32px 0;">
+            <h3 style="color: #1a1a1a; margin: 0 0 20px 0; font-size: 18px;">Items Ordered</h3>
+            <table class="order-table">
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th style="text-align: center;">Qty</th>
+                  <th style="text-align: right;">Price</th>
+                  <th style="text-align: right;">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtml}
+              </tbody>
+            </table>
+          </div>
+
+          <div style="margin: 32px 0;">
+            <div style="background: #f8f9fa; border-radius: 12px; padding: 24px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                <span style="color: #6b7280;">Subtotal:</span>
+                <span style="font-weight: 600;">$${Number(orderData.subtotal).toFixed(2)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 16px;">
+                <span style="color: #6b7280;">Shipping:</span>
+                <span style="font-weight: 600;">$${Number(orderData.shippingCost).toFixed(2)}</span>
+              </div>
+              <div style="border-top: 2px solid #059669; padding-top: 16px; display: flex; justify-content: space-between;">
+                <span style="font-size: 18px; font-weight: 700; color: #1a1a1a;">Total Paid:</span>
+                <span style="font-size: 18px; font-weight: 700; color: #059669;">$${Number(orderData.total).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="text-align: center; margin: 40px 0;">
+            <a href="${process.env.NEXT_PUBLIC_SITE_URL}/account/orders" class="button">
+              Track Your Order
+            </a>
+          </div>
+
+          <div style="text-align: center; padding: 24px; background: #f8f9fa; border-radius: 12px; margin: 32px 0;">
+            <p style="color: #6b7280; margin: 0 0 16px 0; font-size: 14px;">
+              We'll send you a shipping confirmation when your order is on its way.
+            </p>
+            <p style="color: #6b7280; margin: 0; font-size: 14px;">
+              Questions? Contact us at <a href="mailto:noreply@vobvorot.com" style="color: #1a1a1a; font-weight: 600;">noreply@vobvorot.com</a>
+            </p>
+          </div>
+        </div>
+        
+        <div class="footer">
+          <div class="social-links">
+            <a href="#" style="text-decoration: none;">📧</a>
+            <a href="#" style="text-decoration: none;">📱</a>
+            <a href="#" style="text-decoration: none;">🌐</a>
+          </div>
+          <p style="margin: 0; font-size: 14px;">© 2024 EXVICPMOUR. All rights reserved.</p>
+          <p style="margin: 8px 0 0 0; font-size: 12px;">
+            EXVICPMOUR - Luxury Fashion Redefined
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+
+  const text = `
+Payment Successful! - ${orderData.orderNumber}
+
+Your payment has been processed successfully!
+Your order is now confirmed and will be processed for shipping.
+
+Order Summary:
+- Order Number: ${orderData.orderNumber}
+- Customer: ${orderData.customerName}
+- Email: ${orderData.customerEmail}
+
+Items Ordered:
+${orderData.items.map(item => 
+  `- ${item.name} ${item.size ? `(Size: ${item.size})` : ''} ${item.color ? `(Color: ${item.color})` : ''} x${item.quantity} - $${(Number(item.price) * item.quantity).toFixed(2)}`
+).join('\n')}
+
+Subtotal: $${Number(orderData.subtotal).toFixed(2)}
+Shipping: $${Number(orderData.shippingCost).toFixed(2)}
+Total Paid: $${Number(orderData.total).toFixed(2)}
+
+We'll send you a shipping confirmation when your order is on its way.
+Questions? Contact us at noreply@vobvorot.com
+
+© 2024 EXVICPMOUR. All rights reserved.
+  `
+
+  return {
+    subject: `✅ Payment Confirmed - Order ${orderData.orderNumber}`,
+    html,
+    text
+  }
+}
+
+/**
+ * Generate admin payment notification template
+ */
+function generateAdminPaymentNotificationTemplate(data: AdminNotificationData): EmailTemplate {
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Payment Received - ${data.orderNumber}</title>
+      ${getBaseEmailStyles()}
+    </head>
+    <body>
+      <div class="email-container">
+        <div class="header" style="background: linear-gradient(135deg, #059669 0%, #047857 100%);">
+          <h1>EXVICPMOUR</h1>
+          <p style="color: #ffffff; font-size: 18px; margin: 8px 0 0 0; opacity: 0.9;">Payment Received</p>
+        </div>
+        
+        <div class="content">
+          <div style="text-align: center; margin-bottom: 32px;">
+            <div style="width: 80px; height: 80px; background: #d1fae5; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">
+              <span style="color: #059669; font-size: 32px;">💰</span>
+            </div>
+            <h2 style="color: #059669; font-size: 24px; margin: 0 0 8px 0;">Payment Received!</h2>
+            <p style="color: #6b7280; font-size: 16px; margin: 0;">
+              Order #${data.orderNumber}
+            </p>
+          </div>
+
+          <div class="card" style="border-left: 4px solid #059669;">
+            <h3 style="color: #1a1a1a; margin: 0 0 20px 0; font-size: 18px;">Payment Details</h3>
+            <div style="display: grid; gap: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #6b7280; font-weight: 500;">Order Number:</span>
+                <span style="font-weight: 600; color: #1a1a1a; font-family: monospace;">${data.orderNumber}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #6b7280; font-weight: 500;">Customer:</span>
+                <span style="font-weight: 600; color: #1a1a1a;">${data.customerName}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #6b7280; font-weight: 500;">Email:</span>
+                <a href="mailto:${data.customerEmail}" style="font-weight: 600; color: #1a1a1a; text-decoration: none;">${data.customerEmail}</a>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #6b7280; font-weight: 500;">Amount Received:</span>
+                <span style="font-weight: 700; color: #059669; font-size: 20px;">$${Number(data.total).toFixed(2)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #6b7280; font-weight: 500;">Payment Method:</span>
+                <span style="font-weight: 600; color: #1a1a1a;">${data.paymentMethod}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span style="color: #6b7280; font-weight: 500;">Items:</span>
+                <span style="font-weight: 600; color: #1a1a1a;">${data.itemCount} item(s)</span>
+              </div>
+            </div>
+          </div>
+
+          <div style="background: #d1fae5; border: 1px solid #059669; border-radius: 12px; padding: 20px; margin: 32px 0;">
+            <div style="display: flex; align-items: center; margin-bottom: 12px;">
+              <span style="color: #059669; font-size: 20px; margin-right: 12px;">📋</span>
+              <h4 style="color: #047857; margin: 0; font-size: 16px; font-weight: 600;">Next Steps</h4>
+            </div>
+            <ul style="color: #047857; margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.5;">
+              <li>Process the order for fulfillment</li>
+              <li>Prepare items for shipping</li>
+              <li>Generate shipping label and tracking</li>
+              <li>Send shipping confirmation to customer</li>
+            </ul>
+          </div>
+
+          <div style="text-align: center; margin: 32px 0;">
+            <a href="${process.env.NEXT_PUBLIC_SITE_URL}/admin/orders/${data.orderNumber}" class="button">
+              Process Order
+            </a>
+          </div>
+
+          <div style="text-align: center; padding: 24px; background: #f8f9fa; border-radius: 12px; margin: 32px 0;">
+            <p style="color: #6b7280; margin: 0; font-size: 14px;">
+              Payment processing completed automatically.
+            </p>
+            <p style="color: #6b7280; margin: 8px 0 0 0; font-size: 12px;">
+              Timestamp: ${new Date().toLocaleString()}
+            </p>
+          </div>
+        </div>
+        
+        <div class="footer">
+          <p style="margin: 0; font-size: 14px;">© 2024 EXVICPMOUR. All rights reserved.</p>
+          <p style="margin: 8px 0 0 0; font-size: 12px;">
+            EXVICPMOUR - Admin Dashboard
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+
+  const text = `
+💰 Payment Received! - ${data.orderNumber}
+
+Payment Details:
+- Order Number: ${data.orderNumber}
+- Customer: ${data.customerName}
+- Email: ${data.customerEmail}
+- Amount Received: $${Number(data.total).toFixed(2)}
+- Payment Method: ${data.paymentMethod}
+- Items: ${data.itemCount} item(s)
+
+Next Steps:
+- Process the order for fulfillment
+- Prepare items for shipping
+- Generate shipping label and tracking
+- Send shipping confirmation to customer
+
+Process order: ${process.env.NEXT_PUBLIC_SITE_URL}/admin/orders/${data.orderNumber}
+
+Payment processing completed automatically.
+Timestamp: ${new Date().toLocaleString()}
+  `
+
+  return {
+    subject: `💰 Payment Received - ${data.orderNumber} - $${Number(data.total).toFixed(2)}`,
     html,
     text
   }

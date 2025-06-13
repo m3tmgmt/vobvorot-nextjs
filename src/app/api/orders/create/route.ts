@@ -165,54 +165,73 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Process payment with WesternBid (handles Stripe & PayPal)
-    logger.info('Creating WesternBid payment', {
+    // Process payment based on selected method
+    const paymentMethod = orderData.paymentInfo.method
+    logger.info('Creating payment', {
       orderNumber,
       amount: orderData.total,
       userId: session?.user?.id || 'guest',
       customerEmail: orderData.shippingInfo.email,
-      requestedMethod: orderData.paymentInfo.method
+      paymentMethod
     })
     
     const startTime = Date.now()
+    let paymentResult: any
     
-    const paymentRequest = {
-      orderId: orderNumber,
-      amount: orderData.total,
-      currency: 'USD',
-      description: `Order ${orderNumber} - ${orderData.items.length} items (${orderData.paymentInfo.method.toUpperCase()})`,
-      customerEmail: orderData.shippingInfo.email,
-      customerName: `${orderData.shippingInfo.firstName} ${orderData.shippingInfo.lastName}`,
-      customerPhone: orderData.shippingInfo.phone,
-      returnUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success`,
-      cancelUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/cancel`,
-      webhookUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`,
-      metadata: {
-        orderNumber: orderNumber,
+    if (paymentMethod === 'stripe') {
+      // Handle Stripe payments - redirect to Stripe checkout
+      logger.info('Processing Stripe payment', { orderNumber })
+      
+      paymentResult = {
+        success: true,
+        paymentId: `stripe_${orderNumber}`,
+        paymentUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/stripe?order=${orderNumber}&amount=${orderData.total}`,
+        sessionId: `stripe_session_${Date.now()}`
+      }
+      
+    } else {
+      // Handle PayPal payments via WesternBid (default for 'paypal' or fallback)
+      logger.info('Processing PayPal payment via WesternBid', { orderNumber })
+      
+      const paymentRequest = {
+        orderId: orderNumber,
+        amount: orderData.total,
+        currency: 'USD',
+        description: `Order ${orderNumber} - ${orderData.items.length} items (PayPal)`,
+        customerEmail: orderData.shippingInfo.email,
+        customerName: `${orderData.shippingInfo.firstName} ${orderData.shippingInfo.lastName}`,
+        customerPhone: orderData.shippingInfo.phone,
+        returnUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success`,
+        cancelUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/cancel`,
+        webhookUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`,
+        metadata: {
+          orderNumber: orderNumber,
+          userId: session?.user?.id || 'guest',
+          userEmail: session?.user?.email || orderData.shippingInfo.email,
+          itemCount: orderData.items.length,
+          shippingCountry: orderData.shippingInfo.country,
+          preferredPaymentMethod: orderData.paymentInfo.method
+        }
+      }
+
+      // Log payment creation attempt
+      logPaymentCreation({
+        orderId: orderNumber,
         userId: session?.user?.id || 'guest',
-        userEmail: session?.user?.email || orderData.shippingInfo.email,
-        itemCount: orderData.items.length,
-        shippingCountry: orderData.shippingInfo.country,
-        preferredPaymentMethod: orderData.paymentInfo.method
-      }
+        amount: orderData.total,
+        currency: 'USD',
+        gateway: 'WESTERNBID',
+        metadata: paymentRequest.metadata,
+        request: {
+          method: 'POST',
+          url: '/api/orders/create',
+          body: { ...paymentRequest, metadata: '[LOGGED_SEPARATELY]' }
+        }
+      })
+
+      paymentResult = await westernbid.createPayment(paymentRequest)
     }
-
-    // Log payment creation attempt
-    logPaymentCreation({
-      orderId: orderNumber,
-      userId: session?.user?.id || 'guest',
-      amount: orderData.total,
-      currency: 'USD',
-      gateway: 'WESTERNBID',
-      metadata: paymentRequest.metadata,
-      request: {
-        method: 'POST',
-        url: '/api/orders/create',
-        body: { ...paymentRequest, metadata: '[LOGGED_SEPARATELY]' }
-      }
-    })
-
-    const paymentResult = await westernbid.createPayment(paymentRequest)
+    
     const duration = Date.now() - startTime
     
     if (paymentResult.success && paymentResult.paymentUrl) {
