@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Payment Processing</title>
+    <meta charset="utf-8">
+</head>
+<body>
+    <form id="paymentForm" action="https://shop.westernbid.info" method="post">
+        <!-- Form will be populated by JavaScript -->
+    </form>
+    
+    <script>
+        // Get URL parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        const formData = urlParams.get('data');
+        
+        if (formData) {
+            try {
+                const data = JSON.parse(atob(formData));
+                const form = document.getElementById('paymentForm');
+                
+                // Add all fields to form
+                Object.entries(data).forEach(([key, value]) => {
+                    const input = document.createElement('input');
+                    input.type = 'hidden';
+                    input.name = key;
+                    input.value = value;
+                    form.appendChild(input);
+                });
+                
+                // Auto-submit
+                form.submit();
+            } catch (e) {
+                console.error('Invalid payment data');
+            }
+        }
+    </script>
+</body>
+</html>
