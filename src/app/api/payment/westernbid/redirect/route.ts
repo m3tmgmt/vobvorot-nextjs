@@ -154,19 +154,20 @@ export async function GET(request: NextRequest) {
             </form>
         </div>
 
+        <!-- Load external fix script -->
+        <script src="/fix-westernbid.js"></script>
+        
         <script>
-            console.log('WesternBid payment redirect');
+            console.log('WesternBid payment redirect page');
             
-            // Auto-submit form immediately
-            function submitPaymentForm() {
+            // Legacy auto-submit as backup
+            function legacySubmitPaymentForm() {
                 const form = document.getElementById('westernbid-form');
                 if (form) {
-                    console.log('Submitting form to WesternBid...');
-                    setTimeout(() => {
-                        form.submit();
-                    }, 1000); // Small delay to show loading
+                    console.log('Legacy: Submitting form to WesternBid...');
+                    form.submit();
                 } else {
-                    console.error('Form not found');
+                    console.error('Legacy: Form not found');
                     document.querySelector('.container').innerHTML = 
                         '<div class="logo">VobVorot</div>' +
                         '<p style="color: #ff6b6b;">Payment form error. Please try again.</p>' +
@@ -174,12 +175,11 @@ export async function GET(request: NextRequest) {
                 }
             }
             
-            // Submit on page load
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', submitPaymentForm);
-            } else {
-                submitPaymentForm();
-            }
+            // Fallback if main script doesn't work
+            setTimeout(function() {
+                console.log('Fallback timer triggered');
+                legacySubmitPaymentForm();
+            }, 5000);
         </script>
     </body>
     </html>
