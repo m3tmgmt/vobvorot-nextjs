@@ -816,7 +816,7 @@ export default function CheckoutPage() {
                       opacity: loading ? 0.7 : 1
                     }}
                   >
-                    {loading ? 'Creating Order...' : 'Complete Order'}
+                    {loading ? 'Creating Order...' : '🔒 Proceed to Secure Payment'}
                   </button>
                 </div>
               </div>

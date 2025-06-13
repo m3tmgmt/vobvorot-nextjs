@@ -250,14 +250,18 @@ ${Object.entries(formData)
                 
                 if (form && button) {
                     button.addEventListener('click', function(e) {
+                        e.preventDefault(); // Prevent default form submission
                         console.log('Payment button clicked - submitting to WesternBid');
                         
                         // Add loading state
                         button.innerHTML = '⏳ Redirecting to Payment Gateway...';
                         button.disabled = true;
                         
-                        // Form will submit normally since we're not preventing default
-                        console.log('Form submission proceeding to:', form.action);
+                        // Submit form manually after loading state is set
+                        setTimeout(function() {
+                            console.log('Form submission proceeding to:', form.action);
+                            form.submit();
+                        }, 100);
                     });
                     
                     console.log('✅ WesternBid form ready for manual submission');
