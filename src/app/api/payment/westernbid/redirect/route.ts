@@ -234,6 +234,34 @@ export async function GET(request: NextRequest) {
                     };
                     document.querySelector('.container').appendChild(submitButton);
                     
+                    // Add missing required fields to form
+                    const missingFields = {
+                        'address1': '${order.shippingAddress || 'Test Address 123'}',
+                        'city': '${order.shippingCity || 'Test City'}',
+                        'country': '${order.shippingCountry || 'UA'}',
+                        'state': 'Test State',
+                        'zip': '${order.shippingZip || '01001'}'
+                    };
+                    
+                    Object.entries(missingFields).forEach(([name, value]) => {
+                        // Check if field already exists
+                        if (!form.querySelector('input[name="' + name + '"]')) {
+                            const input = document.createElement('input');
+                            input.type = 'hidden';
+                            input.name = name;
+                            input.value = value;
+                            form.appendChild(input);
+                            console.log('Added missing field:', name, '=', value);
+                        }
+                    });
+                    
+                    // Fix phone field - remove extra spaces
+                    const phoneInput = form.querySelector('input[name="phone"]');
+                    if (phoneInput && phoneInput.value) {
+                        phoneInput.value = phoneInput.value.trim();
+                        console.log('Fixed phone field:', phoneInput.value);
+                    }
+                    
                     // Add button to show/hide actual form for debugging
                     const showFormButton = document.createElement('button');
                     showFormButton.textContent = 'Show/Hide Form for Manual Submit';
