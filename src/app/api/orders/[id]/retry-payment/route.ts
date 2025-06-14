@@ -5,10 +5,10 @@ import { logger } from '@/lib/logger'
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { orderId: string } }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { orderId } = params
+    const orderId = params.id
     
     // Find the existing order
     const order = await prisma.order.findFirst({
@@ -146,7 +146,7 @@ export async function POST(
 
   } catch (error) {
     logger.error('Order payment retry failed', {
-      orderId: params.orderId
+      orderId: params.id
     }, error instanceof Error ? error : new Error(String(error)))
     
     return NextResponse.json(
