@@ -659,6 +659,8 @@ async function handleUserState(message: any, userState: any) {
       return await handleAddProductVideo(chatId, userId, video, text)
     case 'add_product_stock':
       return await handleAddProductStock(chatId, userId, text)
+    case 'add_product_weight':
+      return await handleAddProductWeight(chatId, userId, text)
     case 'upload_home_video':
       return await handleUploadHomeVideo(chatId, userId, video)
     case 'upload_product_video':
@@ -962,6 +964,34 @@ async function handleAddProductStock(chatId: number, userId: number, text: strin
   
   userState.productData.stock = stock
   
+  // Переходим к запросу веса товара
+  userState.action = 'add_product_weight'
+  userStates.set(userId.toString(), userState)
+  await sendTelegramMessage(chatId, '⚖️ Введите вес товара в килограммах (например: 0.5 или 1.2):\n\n💡 *Это нужно для автоматического расчета стоимости доставки по тарифам Meest*', true)
+}
+
+async function handleAddProductWeight(chatId: number, userId: number, text: string) {
+  const userState = userStates.get(userId.toString())
+  
+  if (!text || text.startsWith('/')) {
+    await sendTelegramMessage(chatId, '❌ Введите корректный вес товара:')
+    return
+  }
+  
+  const weight = parseFloat(text.trim().replace(',', '.'))
+  
+  if (isNaN(weight) || weight <= 0) {
+    await sendTelegramMessage(chatId, '❌ Вес должен быть положительным числом (например: 0.5). Попробуйте еще раз:')
+    return
+  }
+  
+  if (weight > 50) {
+    await sendTelegramMessage(chatId, '❌ Слишком большой вес. Максимум 50 кг:')
+    return
+  }
+  
+  userState.productData.weight = weight
+  
   // Создаем товар
   await createProductFromBot(chatId, userId, userState.productData)
   userStates.delete(userId.toString())
@@ -1017,6 +1047,7 @@ async function createProductFromBot(chatId: number, userId: number, productData:
         sku: `SKU-${product.id.slice(-8).toUpperCase()}`,
         price: productData.price,
         stock: productData.stock || 100,
+        weight: productData.weight || 0.5,
         productId: product.id,
         isActive: true
       }
