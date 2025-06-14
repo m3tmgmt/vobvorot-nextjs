@@ -34,7 +34,7 @@ export default function HomePage() {
   const videos = useMemo(() => allVideos, [allVideos])
 
   const allCategories = [
-    { id: 'all', name: 'All Items', icon: '✨' },
+    { id: 'all', name: 'All Items', icon: '' },
     { id: 'electronics', name: 'Electronics', icon: '📱' },
     { id: 'clothing', name: 'Clothing', icon: '👗' },
     { id: 'accessories', name: 'Accessories', icon: '💍' },
