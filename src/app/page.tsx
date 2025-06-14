@@ -252,7 +252,7 @@ export default function HomePage() {
                 }
               }}
             >
-              SOLD OUT - Show All Categories
+              Show All Categories
             </button>
           </div>
         )}
