@@ -38,13 +38,24 @@ interface PaymentInfo {
 }
 
 interface OrderData {
-  shippingInfo: ShippingInfo
-  paymentInfo: PaymentInfo
+  shippingInfo?: ShippingInfo
+  paymentInfo?: PaymentInfo
   items: OrderItem[]
   subtotal: number
   shippingCost: number
-  tax: number
+  tax?: number
   total: number
+  // For minimal checkout
+  shippingCountry?: string
+  shippingEmail?: string
+  shippingPhone?: string
+  paymentMethod?: string
+  shippingName?: string
+  shippingAddress?: string
+  shippingCity?: string
+  shippingZip?: string
+  currency?: string
+  isMinimalCheckout?: boolean
 }
 
 export async function POST(request: NextRequest) {
@@ -64,16 +75,49 @@ export async function POST(request: NextRequest) {
 
     orderData = await request.json()
     
-    // Validate required fields
-    if (!orderData || !orderData.shippingInfo || !orderData.paymentInfo || !orderData.items?.length) {
+    // Validate required fields - support both full and minimal checkout
+    if (!orderData || !orderData.items?.length) {
       return NextResponse.json(
         { error: 'Missing required order data' },
         { status: 400 }
       )
     }
 
+    // For minimal checkout, we only need shippingCountry and paymentMethod
+    const isMinimalCheckout = orderData.isMinimalCheckout || false
+    
+    if (!isMinimalCheckout) {
+      // Full checkout validation
+      if (!orderData.shippingInfo || !orderData.paymentInfo) {
+        return NextResponse.json(
+          { error: 'Missing required shipping or payment info' },
+          { status: 400 }
+        )
+      }
+    } else {
+      // Minimal checkout validation
+      if (!orderData.shippingCountry || !orderData.paymentMethod || !orderData.shippingPhone || !orderData.shippingEmail) {
+        return NextResponse.json(
+          { error: 'Missing required email, phone number, country, or payment method' },
+          { status: 400 }
+        )
+      }
+    }
+
     // Validate and normalize phone number
-    if (orderData.shippingInfo.phone) {
+    if (isMinimalCheckout && orderData.shippingPhone) {
+      const phoneValidation = validatePhoneNumber(orderData.shippingPhone)
+      if (!phoneValidation.isValid) {
+        logger.warn('Invalid phone number provided in minimal checkout', {
+          phone: orderData.shippingPhone,
+          error: phoneValidation.error
+        })
+        // Don't fail the order, but normalize what we can
+        orderData.shippingPhone = phoneValidation.normalized
+      } else {
+        orderData.shippingPhone = phoneValidation.normalized
+      }
+    } else if (!isMinimalCheckout && orderData.shippingInfo?.phone) {
       const phoneValidation = validatePhoneNumber(orderData.shippingInfo.phone)
       if (!phoneValidation.isValid) {
         logger.warn('Invalid phone number provided', {
@@ -87,8 +131,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Validate state for US addresses
-    if (orderData.shippingInfo.country === 'US' && !orderData.shippingInfo.state) {
+    // Validate state for US addresses (only for full checkout)
+    if (!isMinimalCheckout && orderData.shippingInfo?.country === 'US' && !orderData.shippingInfo?.state) {
       return NextResponse.json(
         { error: 'State/Province is required for US addresses' },
         { status: 400 }
@@ -104,23 +148,42 @@ export async function POST(request: NextRequest) {
         orderNumber,
         userId: session?.user?.id || null, // Allow null for guest orders
         status: 'PENDING',
-        currency: 'USD',
+        currency: orderData.currency || 'USD',
         subtotal: orderData.subtotal,
         shippingCost: orderData.shippingCost,
+        tax: orderData.tax || 0,
         total: orderData.total,
         
-        // Shipping information
-        shippingName: `${orderData.shippingInfo.firstName} ${orderData.shippingInfo.lastName}`,
-        shippingEmail: orderData.shippingInfo.email,
-        shippingPhone: orderData.shippingInfo.phone,
-        shippingAddress: orderData.shippingInfo.address,
-        shippingCity: orderData.shippingInfo.city,
-        shippingState: orderData.shippingInfo.state || null,
-        shippingZip: orderData.shippingInfo.postalCode,
-        shippingCountry: orderData.shippingInfo.country,
+        // Shipping information - support both full and minimal checkout
+        shippingName: isMinimalCheckout 
+          ? (orderData.shippingName || 'Customer Name (to be updated from payment)')
+          : `${orderData.shippingInfo!.firstName} ${orderData.shippingInfo!.lastName}`,
+        shippingEmail: isMinimalCheckout 
+          ? orderData.shippingEmail!
+          : orderData.shippingInfo!.email,
+        shippingPhone: isMinimalCheckout 
+          ? orderData.shippingPhone
+          : orderData.shippingInfo?.phone,
+        shippingAddress: isMinimalCheckout 
+          ? (orderData.shippingAddress || 'Address to be updated from payment')
+          : orderData.shippingInfo!.address,
+        shippingCity: isMinimalCheckout 
+          ? (orderData.shippingCity || 'City to be updated from payment')
+          : orderData.shippingInfo!.city,
+        shippingState: isMinimalCheckout 
+          ? null
+          : (orderData.shippingInfo?.state || null),
+        shippingZip: isMinimalCheckout 
+          ? (orderData.shippingZip || 'ZIP to be updated from payment')
+          : orderData.shippingInfo!.postalCode,
+        shippingCountry: isMinimalCheckout 
+          ? orderData.shippingCountry!
+          : orderData.shippingInfo!.country,
         
         // Payment information
-        paymentMethod: orderData.paymentInfo.method,
+        paymentMethod: isMinimalCheckout 
+          ? orderData.paymentMethod!
+          : orderData.paymentInfo!.method,
         paymentStatus: 'PENDING',
         
         // Order items will be created separately
@@ -195,8 +258,8 @@ export async function POST(request: NextRequest) {
       orderNumber,
       amount: orderData.total,
       userId: session?.user?.id || 'guest',
-      customerEmail: orderData.shippingInfo.email,
-      requestedMethod: orderData.paymentInfo.method
+      customerEmail: isMinimalCheckout ? (orderData.shippingEmail || 'customer@example.com') : orderData.shippingInfo!.email,
+      requestedMethod: isMinimalCheckout ? orderData.paymentMethod : orderData.paymentInfo!.method
     })
     
     const startTime = Date.now()
@@ -205,24 +268,27 @@ export async function POST(request: NextRequest) {
       orderId: orderNumber,
       amount: orderData.total,
       currency: 'USD',
-      description: `Order ${orderNumber} - ${orderData.items.length} items (${orderData.paymentInfo.method.toUpperCase()})`,
-      customerEmail: orderData.shippingInfo.email,
-      customerName: `${orderData.shippingInfo.firstName} ${orderData.shippingInfo.lastName}`,
-      customerPhone: orderData.shippingInfo.phone,
+      description: `Order ${orderNumber} - ${orderData.items.length} items (${isMinimalCheckout ? orderData.paymentMethod : orderData.paymentInfo!.method})`,
+      customerEmail: isMinimalCheckout ? orderData.shippingEmail! : orderData.shippingInfo!.email,
+      customerName: isMinimalCheckout ? (orderData.shippingName || 'Customer Name') : `${orderData.shippingInfo!.firstName} ${orderData.shippingInfo!.lastName}`,
+      customerPhone: isMinimalCheckout ? (orderData.shippingPhone || '') : (orderData.shippingInfo?.phone || ''),
       returnUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success?orderId=${orderNumber}`,
       cancelUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/cancel?orderId=${orderNumber}`,
       webhookUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`,
       metadata: {
         orderNumber: orderNumber,
         userId: session?.user?.id || 'guest',
-        userEmail: session?.user?.email || orderData.shippingInfo.email,
+        userEmail: session?.user?.email || (isMinimalCheckout ? orderData.shippingEmail! : orderData.shippingInfo!.email),
         itemCount: orderData.items.length,
-        shippingCountry: orderData.shippingInfo.country,
-        preferredPaymentMethod: orderData.paymentInfo.method,
-        shippingAddress: orderData.shippingInfo.address,
-        shippingCity: orderData.shippingInfo.city,
-        shippingState: orderData.shippingInfo.state || '',
-        shippingZip: orderData.shippingInfo.postalCode,
+        shippingCountry: isMinimalCheckout ? orderData.shippingCountry : orderData.shippingInfo!.country,
+        shippingEmail: isMinimalCheckout ? orderData.shippingEmail : orderData.shippingInfo!.email,
+        shippingPhone: isMinimalCheckout ? orderData.shippingPhone : orderData.shippingInfo?.phone,
+        preferredPaymentMethod: isMinimalCheckout ? orderData.paymentMethod : orderData.paymentInfo!.method,
+        shippingAddress: isMinimalCheckout ? (orderData.shippingAddress || 'To be updated') : orderData.shippingInfo!.address,
+        shippingCity: isMinimalCheckout ? (orderData.shippingCity || 'To be updated') : orderData.shippingInfo!.city,
+        shippingState: isMinimalCheckout ? '' : (orderData.shippingInfo?.state || ''),
+        shippingZip: isMinimalCheckout ? (orderData.shippingZip || 'To be updated') : orderData.shippingInfo!.postalCode,
+        isMinimalCheckout: isMinimalCheckout,
         // Detailed items information for better tracking
         items: orderData.items.map((item, index) => ({
           [`item_${index + 1}_name`]: item.product.name,
@@ -254,7 +320,7 @@ export async function POST(request: NextRequest) {
     
     if (paymentResult.success && paymentResult.paymentUrl) {
       // Generate WesternBid form data for direct client submission
-      const preferredGate = orderData.paymentInfo.method
+      const preferredGate = isMinimalCheckout ? orderData.paymentMethod : orderData.paymentInfo!.method
       const formData = westernbid.generatePaymentFormData(paymentRequest, paymentResult.paymentId || `wb_${Date.now()}_${orderNumber}`, preferredGate)
       // Update order with payment information
       const updatedOrder = await prisma.order.update({
@@ -382,9 +448,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     logger.error('Order creation failed', {
       userId: session?.user?.id,
-      shippingEmail: orderData?.shippingInfo?.email,
+      shippingEmail: orderData?.shippingInfo?.email || orderData?.shippingEmail,
       itemCount: orderData?.items?.length,
-      total: orderData?.total
+      total: orderData?.total,
+      isMinimalCheckout: orderData?.isMinimalCheckout
     }, error instanceof Error ? error : new Error(String(error)))
     
     return NextResponse.json(

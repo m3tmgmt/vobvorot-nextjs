@@ -5,11 +5,13 @@ import Image from 'next/image'
 import { Button } from '@/components/ui/button'
 
 interface PaymentMethodSelectorProps {
-  onMethodSelect: (method: PaymentMethod) => void
-  disabled?: boolean
   selectedMethod?: PaymentMethod | null
-  amount: number
-  currency: string
+  onMethodChange?: (method: PaymentMethod | null) => void
+  onMethodSelect?: (method: PaymentMethod) => void
+  disabled?: boolean
+  amount?: number
+  currency?: string
+  showOnlyWesternbid?: boolean
 }
 
 export interface PaymentMethod {
@@ -105,9 +107,9 @@ export default function PaymentMethodSelector({
         {PAYMENT_METHODS.map((method) => {
           const isSelected = selectedMethod?.id === method.id
           const isHovered = hoveredMethod === method.id
-          const fees = calculateFees(method, amount)
-          const totalAmount = amount + fees
-          const isSupported = method.supportedCurrencies.includes(currency.toUpperCase())
+          const fees = calculateFees(method, amount || 0)
+          const totalAmount = (amount || 0) + fees
+          const isSupported = method.supportedCurrencies.includes((currency || 'USD').toUpperCase())
 
           return (
             <div
@@ -126,7 +128,7 @@ export default function PaymentMethodSelector({
               `}
               onClick={() => {
                 if (!disabled && isSupported) {
-                  onMethodSelect(method)
+                  onMethodSelect?.(method)
                 }
               }}
               onMouseEnter={() => setHoveredMethod(method.id)}
@@ -177,19 +179,19 @@ export default function PaymentMethodSelector({
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Processing fee:</span>
                   <span className="text-white">
-                    {method.fees.percentage}% + {formatCurrency(method.fees.fixed, currency)}
+                    {method.fees.percentage}% + {formatCurrency(method.fees.fixed, currency || 'USD')}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-400">Total fee:</span>
                   <span className="text-cyan-400 font-medium">
-                    {formatCurrency(fees, currency)}
+                    {formatCurrency(fees, currency || 'USD')}
                   </span>
                 </div>
                 <div className="flex justify-between text-lg font-semibold border-t border-gray-700 pt-2">
                   <span className="text-white">Total amount:</span>
                   <span className="text-cyan-400">
-                    {formatCurrency(totalAmount, currency)}
+                    {formatCurrency(totalAmount, currency || 'USD')}
                   </span>
                 </div>
               </div>
@@ -217,7 +219,7 @@ export default function PaymentMethodSelector({
                   <div className="text-center">
                     <p className="text-red-400 font-medium">Not available</p>
                     <p className="text-xs text-gray-400 mt-1">
-                      {currency.toUpperCase()} not supported
+                      {(currency || 'USD').toUpperCase()} not supported
                     </p>
                   </div>
                 </div>
@@ -246,7 +248,7 @@ export default function PaymentMethodSelector({
         <Button
           className="w-full py-3 bg-gradient-to-r from-pink-500 to-cyan-400 hover:from-pink-600 hover:to-cyan-500 text-white font-semibold"
           disabled={disabled}
-          onClick={() => onMethodSelect(selectedMethod)}
+          onClick={() => selectedMethod && onMethodSelect?.(selectedMethod)}
         >
           Continue with {selectedMethod.name}
         </Button>

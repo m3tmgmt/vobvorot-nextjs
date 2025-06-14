@@ -372,7 +372,7 @@ class WesternBidAPI {
       notify_url: request.webhookUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`, // Correct field name
       
       // Payment gateway selection - updated based on WesternBid documentation
-      gate: preferredGate === 'stripe' ? 'stripe.com' : 'paypal.com', // Updated PayPal gateway value
+      gate: (preferredGate === 'stripe' || preferredGate === 'westernbid_stripe') ? 'stripe.com' : 'paypal.com', // Updated PayPal gateway value
       
       // Customer info - comprehensive autofill fields (15+ variations for maximum compatibility)
       email: request.customerEmail,
@@ -384,6 +384,11 @@ class WesternBidAPI {
       user_email: request.customerEmail, // Alternative field
       billing_email: request.customerEmail, // Billing specific
       
+      // Additional email fields from metadata for better compatibility
+      shipping_email: request.metadata?.shippingEmail || request.customerEmail, // Shipping specific
+      contact_email_alt: request.metadata?.shippingEmail || request.customerEmail, // Alternative contact
+      primary_email: request.metadata?.shippingEmail || request.customerEmail, // Primary email
+      
       phone: request.customerPhone || '',
       telephone: request.customerPhone || '', // Alternative field
       contact_phone: request.customerPhone || '', // Alternative field
@@ -392,6 +397,11 @@ class WesternBidAPI {
       billing_phone: request.customerPhone || '', // Alternative field
       mobile: request.customerPhone || '', // Alternative field
       cell_phone: request.customerPhone || '', // Alternative field
+      
+      // Additional phone fields from metadata for better compatibility
+      shipping_phone: request.metadata?.shippingPhone || request.customerPhone || '', // Shipping specific
+      contact_phone_alt: request.metadata?.shippingPhone || request.customerPhone || '', // Alternative contact
+      primary_phone: request.metadata?.shippingPhone || request.customerPhone || '', // Primary phone
       
       // Name fields - comprehensive variations for better compatibility (10+ fields)
       first_name: request.customerName.split(' ')[0] || '',
@@ -484,7 +494,7 @@ class WesternBidAPI {
     }
     
     // Add Florida tax for Stripe payments (7% requirement)
-    if (preferredGate === 'stripe' && (request.metadata?.shippingState === 'FL' || request.metadata?.shippingState === 'Florida')) {
+    if ((preferredGate === 'stripe' || preferredGate === 'westernbid_stripe') && (request.metadata?.shippingState === 'FL' || request.metadata?.shippingState === 'Florida')) {
       const taxAmount = (parseFloat(amount) * 0.07).toFixed(2)
       formData.sales_tax = taxAmount
       this.logger.info('Added Florida tax for Stripe payment', { 

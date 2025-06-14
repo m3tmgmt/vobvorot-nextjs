@@ -283,32 +283,66 @@ async function handlePaymentCompleted(order: any, webhookData: WebhookData) {
     paidAt: new Date()
   }
   
-  // Update customer information if available from webhook (hybrid approach)
-  if (payerData.email || payerData.name || payerData.phone) {
+  // Update customer information if available from webhook (enhanced for minimal checkout)
+  if (payerData.email || payerData.name || payerData.phone || payerData.address) {
     logger.info('Updating customer data from webhook', {
       orderNumber: order.orderNumber,
       webhookEmail: payerData.email,
       webhookName: payerData.name,
-      webhookPhone: payerData.phone
+      webhookPhone: payerData.phone,
+      webhookAddress: payerData.address,
+      webhookCity: payerData.city,
+      webhookState: payerData.state,
+      webhookZip: payerData.zip,
+      hasCompleteAddress: !!(payerData.address && payerData.city && payerData.zip)
     })
     
-    // Update email if provided and different
-    if (payerData.email && payerData.email !== order.shippingEmail) {
-      updateData.actualPayerEmail = payerData.email
+    // For minimal checkout orders, update all shipping information
+    const isMinimalOrder = order.shippingEmail?.includes('customer@example.com') || 
+                          order.shippingName?.includes('to be updated')
+    
+    if (isMinimalOrder) {
+      logger.info('Updating minimal checkout order with complete customer data', {
+        orderNumber: order.orderNumber,
+        originalEmail: order.shippingEmail,
+        newEmail: payerData.email
+      })
+      
+      // Update all shipping fields with actual customer data
+      if (payerData.email) updateData.shippingEmail = payerData.email
+      if (payerData.name) updateData.shippingName = payerData.name
+      if (payerData.phone) updateData.shippingPhone = payerData.phone
+      if (payerData.address) updateData.shippingAddress = payerData.address
+      if (payerData.city) updateData.shippingCity = payerData.city
+      if (payerData.state) updateData.shippingState = payerData.state
+      if (payerData.zip) updateData.shippingZip = payerData.zip
+      if (payerData.country) updateData.shippingCountry = payerData.country
+    } else {
+      // For full checkout orders, store as additional payer info
+      if (payerData.email && payerData.email !== order.shippingEmail) {
+        updateData.actualPayerEmail = payerData.email
+      }
+      
+      if (payerData.name && payerData.name !== order.shippingName) {
+        updateData.actualPayerName = payerData.name
+      }
     }
     
-    // Update name if provided and different
-    if (payerData.name && payerData.name !== order.shippingName) {
-      updateData.actualPayerName = payerData.name
-    }
-    
-    // Store additional payer information in metadata
+    // Store complete payer information in metadata
     updateData.payerMetadata = JSON.stringify({
       payerEmail: payerData.email,
       payerName: payerData.name,
+      payerFirstName: payerData.firstName,
+      payerLastName: payerData.lastName,
       payerPhone: payerData.phone,
+      payerAddress: payerData.address,
+      payerCity: payerData.city,
+      payerState: payerData.state,
+      payerZip: payerData.zip,
+      payerCountry: payerData.country,
       originalEmail: order.shippingEmail,
       originalName: order.shippingName,
+      isMinimalOrder,
       dataSource: 'westernbid_webhook',
       extractedAt: new Date().toISOString()
     })
@@ -559,12 +593,44 @@ async function sendNotifications(order: any, webhookData: WebhookData) {
   }
 }
 
-// Get status message for Telegram
+// Get status message for Telegram (enhanced for minimal checkout)
 function getStatusMessage(event: string, order: any): string {
-  // Include actual payer info if different from shipping info (hybrid approach)
+  // Parse payer metadata if available
+  let payerData: any = {}
+  if (order.payerMetadata) {
+    try {
+      payerData = JSON.parse(order.payerMetadata)
+    } catch (e) {
+      // Ignore parsing errors
+    }
+  }
+
+  // Build customer information
   let customerInfo = `👤 Customer: ${order.shippingName}
 📧 Email: ${order.shippingEmail}`
 
+  // Add phone if available
+  if (order.shippingPhone) {
+    customerInfo += `\n📞 Phone: ${order.shippingPhone}`
+  }
+
+  // Add shipping address
+  customerInfo += `\n📍 Address: ${order.shippingAddress}`
+  customerInfo += `\n🏙️ City: ${order.shippingCity}, ${order.shippingCountry}`
+  if (order.shippingState) {
+    customerInfo += ` (${order.shippingState})`
+  }
+  if (order.shippingZip) {
+    customerInfo += ` ${order.shippingZip}`
+  }
+
+  // Show if this was a minimal checkout order
+  const wasMinimalOrder = payerData.isMinimalOrder || false
+  if (wasMinimalOrder) {
+    customerInfo += `\n🔄 Data collected from payment processor`
+  }
+
+  // Show actual payer info if different (for full checkout orders)
   if (order.actualPayerName && order.actualPayerName !== order.shippingName) {
     customerInfo += `\n💳 Actual Payer: ${order.actualPayerName}`
   }
@@ -581,9 +647,11 @@ ${customerInfo}
 
   switch (event) {
     case 'payment.completed':
-      const hybridNote = (order.actualPayerName || order.actualPayerEmail) ? 
-        '\n🔄 Customer data updated from payment gateway' : ''
-      return `✅ Payment Completed\n${baseInfo}\n\n🎉 Order confirmed and ready for processing!${hybridNote}`
+      const completionNote = wasMinimalOrder ? 
+        '\n✨ Quick checkout completed - all customer data collected!' :
+        (order.actualPayerName || order.actualPayerEmail) ? 
+          '\n🔄 Customer data verified from payment gateway' : ''
+      return `✅ Payment Completed\n${baseInfo}\n\n🎉 Order confirmed and ready for processing!${completionNote}`
     
     case 'payment.failed':
       return `❌ Payment Failed\n${baseInfo}\n\n⚠️ Payment could not be processed.`
@@ -602,11 +670,18 @@ ${customerInfo}
   }
 }
 
-// Extract customer data from webhook metadata (hybrid approach)
+// Extract customer data from webhook metadata (enhanced for minimal checkout)
 function extractCustomerDataFromWebhook(webhookData: WebhookData): {
   email?: string
   name?: string
   phone?: string
+  address?: string
+  city?: string
+  state?: string
+  zip?: string
+  country?: string
+  firstName?: string
+  lastName?: string
 } {
   const metadata = webhookData.metadata || {}
   const rawFormData = metadata.rawFormData || {}
@@ -615,7 +690,8 @@ function extractCustomerDataFromWebhook(webhookData: WebhookData): {
     hasMetadata: !!metadata,
     hasRawFormData: !!rawFormData,
     payerEmail: metadata.payerEmail,
-    payerName: metadata.payerName
+    payerName: metadata.payerName,
+    availableFields: Object.keys(rawFormData)
   })
   
   // Extract email from multiple possible sources
@@ -623,32 +699,94 @@ function extractCustomerDataFromWebhook(webhookData: WebhookData): {
                 rawFormData.payer_email || 
                 rawFormData.email || 
                 rawFormData.buyer_email || 
-                rawFormData.customer_email
-  
-  // Extract name from multiple possible sources
-  const firstName = rawFormData.first_name || ''
-  const lastName = rawFormData.last_name || ''
+                rawFormData.customer_email ||
+                rawFormData.contact_email ||
+                rawFormData.billing_email
+
+  // Extract name components
+  const firstName = rawFormData.first_name || rawFormData.payer_first_name || ''
+  const lastName = rawFormData.last_name || rawFormData.payer_last_name || ''
   const fullName = metadata.payerName || 
                    rawFormData.payer_name || 
                    rawFormData.customer_name || 
                    rawFormData.buyer_name ||
+                   rawFormData.full_name ||
+                   rawFormData.name ||
                    (firstName && lastName ? `${firstName} ${lastName}`.trim() : '') ||
                    firstName || lastName
   
   // Extract phone from multiple possible sources
   const phone = rawFormData.phone || 
+                rawFormData.telephone ||
                 rawFormData.contact_phone || 
                 rawFormData.payer_phone || 
                 rawFormData.customer_phone || 
-                rawFormData.buyer_phone
+                rawFormData.buyer_phone ||
+                rawFormData.mobile ||
+                rawFormData.cell_phone
+  
+  // Extract address information
+  const address = rawFormData.address1 ||
+                  rawFormData.address ||
+                  rawFormData.street_address ||
+                  rawFormData.shipping_address_1 ||
+                  rawFormData.billing_address_1 ||
+                  rawFormData.payer_address ||
+                  rawFormData.customer_address
+  
+  const city = rawFormData.city ||
+               rawFormData.town ||
+               rawFormData.locality ||
+               rawFormData.shipping_city ||
+               rawFormData.billing_city ||
+               rawFormData.payer_city ||
+               rawFormData.customer_city
+  
+  const state = rawFormData.state ||
+                rawFormData.province ||
+                rawFormData.region ||
+                rawFormData.shipping_state ||
+                rawFormData.billing_state ||
+                rawFormData.payer_state ||
+                rawFormData.customer_state
+  
+  const zip = rawFormData.zip ||
+              rawFormData.postal_code ||
+              rawFormData.postcode ||
+              rawFormData.zip_code ||
+              rawFormData.shipping_zip ||
+              rawFormData.billing_zip ||
+              rawFormData.payer_zip ||
+              rawFormData.customer_zip
+  
+  const country = rawFormData.country ||
+                  rawFormData.country_code ||
+                  rawFormData.shipping_country ||
+                  rawFormData.billing_country ||
+                  rawFormData.payer_country ||
+                  rawFormData.customer_country
   
   const extractedData = {
     email: email || undefined,
     name: fullName || undefined,
-    phone: phone || undefined
+    firstName: firstName || undefined,
+    lastName: lastName || undefined,
+    phone: phone || undefined,
+    address: address || undefined,
+    city: city || undefined,
+    state: state || undefined,
+    zip: zip || undefined,
+    country: country || undefined
   }
   
-  logger.info('Customer data extracted', extractedData)
+  logger.info('Enhanced customer data extracted', {
+    ...extractedData,
+    hasAddress: !!address,
+    hasCity: !!city,
+    hasState: !!state,
+    hasZip: !!zip,
+    hasCountry: !!country
+  })
   
   return extractedData
 }
