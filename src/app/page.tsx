@@ -286,7 +286,7 @@ export default function HomePage() {
                 Memory Puzzle
               </h3>
               <p className="feature-card-description">
-                Test your memory with our Y2K-themed puzzle game
+                Test your memory with our Y2K-themed puzzle game throughout the site
               </p>
             </div>
             <button 
