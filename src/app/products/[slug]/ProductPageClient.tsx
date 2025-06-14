@@ -14,7 +14,7 @@ interface Product {
   description?: string
   brand?: string
   images: { url: string; alt?: string; isPrimary: boolean }[]
-  skus: { id: string; price: any; stock: number; size?: string; color?: string }[]
+  skus: { id: string; price: any; stock: number; size?: string; color?: string; weight?: number }[]
   category: { name: string; slug: string }
   video?: {
     url: string
@@ -45,6 +45,7 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
           quantity: 1,
           productName: product.name,
           price: Number(selectedSkuData.price),
+          weight: selectedSkuData.weight ? Number(selectedSkuData.weight) : 0.5,
           image: product.images[selectedImageIndex]?.url,
           size: selectedSkuData.size,
           color: selectedSkuData.color,

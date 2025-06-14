@@ -1031,18 +1031,27 @@ body {
 
 .cards-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(420px, 480px)) !important;
-  gap: 2rem !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 1.5rem !important;
   margin-top: 2rem;
   /* Полное центрирование при любом количестве карточек */
   justify-content: center;
   /* Выравнивание отдельных карточек внутри ячеек */
   justify-items: stretch;
   align-items: start;
-  max-width: 1300px !important;
+  max-width: 800px !important;
   margin-left: auto;
   margin-right: auto;
   padding: 0 2rem;
+}
+
+/* Mobile responsiveness for cards-grid */
+@media (max-width: 640px) {
+  .cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+    padding: 0 1rem;
+  }
 }
 
 
@@ -2085,12 +2094,13 @@ ul::-webkit-scrollbar-corner, ol::-webkit-scrollbar-corner, li::-webkit-scrollba
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  min-height: 250px;
+  min-height: 200px;
+  padding: 1.5rem;
 }
 
 .feature-card-icon {
-  font-size: 4rem;
-  margin-bottom: var(--space-4);
+  font-size: 3rem;
+  margin-bottom: var(--space-3);
 }
 
 .feature-card-title {

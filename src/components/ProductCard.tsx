@@ -62,6 +62,7 @@ const ProductCard = memo(function ProductCard({
             quantity: 1,
             productName: product.name,
             price: Number(defaultSku.price),
+            weight: defaultSku.weight ? Number(defaultSku.weight) : 0.5,
             image: primaryImage?.url,
             size: defaultSku.size,
             color: defaultSku.color,

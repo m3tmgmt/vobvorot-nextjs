@@ -87,7 +87,12 @@ export default function HomePage() {
       .then(data => {
         const productsList = data.products || []
         setProducts(productsList)
-        setFilteredProducts(productsList)
+        
+        // For EXVICPMOUR Store section, show only EXVICPMOUR category products
+        const exvicpmourProducts = productsList.filter((p: Product) => 
+          p.category.slug === 'exvicpmour'
+        )
+        setFilteredProducts(exvicpmourProducts)
         
         // Get unique categories from actual products
         const productCategories = new Set(productsList.map((p: Product) => p.category.slug))
@@ -104,11 +109,18 @@ export default function HomePage() {
 
   const handleFilter = (categoryId: string) => {
     setActiveFilter(categoryId)
+    
+    // Always filter within EXVICPMOUR products only
+    const exvicpmourProducts = products.filter((p: Product) => 
+      p.category.slug === 'exvicpmour'
+    )
+    
     if (categoryId === 'all') {
-      setFilteredProducts(products)
+      setFilteredProducts(exvicpmourProducts)
     } else {
-      // Filter by actual category slug
-      const filtered = products.filter(product => 
+      // For EXVICPMOUR Store, we only show EXVICPMOUR products
+      // So other category filters will show empty results
+      const filtered = exvicpmourProducts.filter(product => 
         product.category.slug === categoryId
       )
       setFilteredProducts(filtered)
@@ -228,13 +240,19 @@ export default function HomePage() {
         {filteredProducts.length === 0 && (
           <div className="empty-state">
             <h3 className="empty-state-title">
-              No items found in this category
+              SOLD OUT
             </h3>
             <button 
               className="filter-btn"
-              onClick={() => handleFilter('all')}
+              onClick={() => {
+                try {
+                  router.push('/products')
+                } catch (error) {
+                  window.location.href = '/products'
+                }
+              }}
             >
-              Show All Categories
+              SOLD OUT - Show All Categories
             </button>
           </div>
         )}

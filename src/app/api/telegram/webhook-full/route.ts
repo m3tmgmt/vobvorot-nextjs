@@ -152,7 +152,19 @@ async function handleCallbackQuery(callbackQuery: any) {
       if (userState && userState.action === 'add_product_photo') {
         userState.action = 'add_product_video'
         userStates.set(userId.toString(), userState)
-        await sendTelegramMessage(chatId, '🎬 Отправьте видео товара или напишите "пропустить":')
+        
+        const videoKeyboard = {
+          inline_keyboard: [
+            [
+              { text: '⏭️ Пропустить видео', callback_data: 'video_upload_skip' }
+            ],
+            [
+              { text: '❌ Отменить создание товара', callback_data: 'cancel_product_creation' }
+            ]
+          ]
+        }
+        
+        await sendTelegramMessage(chatId, '🎬 Отправьте видео товара или используйте кнопку для пропуска:', true, videoKeyboard)
       }
       break
     case 'photo_upload_skip':
@@ -161,7 +173,29 @@ async function handleCallbackQuery(callbackQuery: any) {
       if (userStateSkip && userStateSkip.action === 'add_product_photo') {
         userStateSkip.action = 'add_product_video'
         userStates.set(userId.toString(), userStateSkip)
-        await sendTelegramMessage(chatId, '⏭️ Фото пропущены\n\n🎬 Отправьте видео товара или напишите "пропустить":')
+        
+        const videoKeyboard = {
+          inline_keyboard: [
+            [
+              { text: '⏭️ Пропустить видео', callback_data: 'video_upload_skip' }
+            ],
+            [
+              { text: '❌ Отменить создание товара', callback_data: 'cancel_product_creation' }
+            ]
+          ]
+        }
+        
+        await sendTelegramMessage(chatId, '⏭️ Фото пропущены\n\n🎬 Отправьте видео товара или используйте кнопку для пропуска:', true, videoKeyboard)
+      }
+      break
+    case 'video_upload_skip':
+      // Пропускаем загрузку видео и переходим к количеству
+      const userStateVideoSkip = userStates.get(userId.toString())
+      if (userStateVideoSkip && userStateVideoSkip.action === 'add_product_video') {
+        userStateVideoSkip.productData.videoUrl = null
+        userStateVideoSkip.action = 'add_product_stock'
+        userStates.set(userId.toString(), userStateVideoSkip)
+        await sendTelegramMessage(chatId, '⏭️ Видео пропущено\n\n📊 Введите количество товара в наличии (например: 50):')
       }
       break
     case 'cancel_product_creation':
@@ -651,7 +685,19 @@ async function handleUserState(message: any, userState: any) {
         const userState = userStates.get(userId.toString())
         userState.action = 'add_product_video'
         userStates.set(userId.toString(), userState)
-        return await sendTelegramMessage(chatId, '🎬 Отправьте видео товара или напишите "пропустить":')
+        
+        const videoKeyboard = {
+          inline_keyboard: [
+            [
+              { text: '⏭️ Пропустить видео', callback_data: 'video_upload_skip' }
+            ],
+            [
+              { text: '❌ Отменить создание товара', callback_data: 'cancel_product_creation' }
+            ]
+          ]
+        }
+        
+        return await sendTelegramMessage(chatId, '🎬 Отправьте видео товара или используйте кнопку для пропуска:', true, videoKeyboard)
       } else {
         return await handleAddProductPhoto(chatId, userId, photo, text)
       }
@@ -852,7 +898,19 @@ async function handleAddProductPhoto(chatId: number, userId: number, photo: any,
   if (text === 'пропустить' || text === 'skip') {
     userState.action = 'add_product_video'
     userStates.set(userId.toString(), userState)
-    await sendTelegramMessage(chatId, '🎬 Отправьте видео товара или напишите "пропустить":')
+    
+    const videoKeyboard = {
+      inline_keyboard: [
+        [
+          { text: '⏭️ Пропустить видео', callback_data: 'video_upload_skip' }
+        ],
+        [
+          { text: '❌ Отменить создание товара', callback_data: 'cancel_product_creation' }
+        ]
+      ]
+    }
+    
+    await sendTelegramMessage(chatId, '🎬 Отправьте видео товара или используйте кнопку для пропуска:', true, videoKeyboard)
     return
   }
   
@@ -932,7 +990,18 @@ async function handleAddProductVideo(chatId: number, userId: number, video: any,
       await sendTelegramMessage(chatId, '❌ Ошибка загрузки видео, продолжаем без видео...')
     }
   } else {
-    await sendTelegramMessage(chatId, '❌ Отправьте видео или напишите "пропустить"')
+    const videoKeyboard = {
+      inline_keyboard: [
+        [
+          { text: '⏭️ Пропустить видео', callback_data: 'video_upload_skip' }
+        ],
+        [
+          { text: '❌ Отменить создание товара', callback_data: 'cancel_product_creation' }
+        ]
+      ]
+    }
+    
+    await sendTelegramMessage(chatId, '❌ Отправьте видео или используйте кнопку для пропуска:', true, videoKeyboard)
     return
   }
   
@@ -1092,7 +1161,7 @@ async function createProductFromBot(chatId: number, userId: number, productData:
     
     await sendTelegramMessage(
       chatId,
-      `✅ *Товар успешно создан!*\n\n📦 Название: ${productData.name}\n💰 Цена: $${productData.price}\n🏷️ Категория: ${selectedCategory.name}\n📊 Статус: ${product.isActive ? 'Активен ✅' : 'Неактивен ❌'}\n🆔 ID: ${product.id}\n🔑 Slug: ${product.slug}\n\n🔗 Ссылка: https://vobvorot.com/products/${product.slug}\n\n💡 Если товар не виден на сайте, убедитесь что категория активна.`,
+      `✅ *Товар успешно создан!*\n\n📦 Название: ${productData.name}\n💰 Цена: $${productData.price}\n⚖️ Вес: ${productData.weight}кг\n🏷️ Категория: ${selectedCategory.name}\n📊 Статус: ${product.isActive ? 'Активен ✅' : 'Неактивен ❌'}\n🆔 ID: ${product.id}\n🔑 Slug: ${product.slug}\n\n🔗 Ссылка: https://vobvorot.com/products/${product.slug}\n\n💡 Если товар не виден на сайте, убедитесь что категория активна.`,
       true,
       keyboard
     )

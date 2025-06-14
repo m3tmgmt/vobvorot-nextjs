@@ -27,6 +27,8 @@
     "integrity:fix": "tsx scripts/data-integrity.ts --auto-fix",
     "performance:monitor": "tsx scripts/performance-monitor.ts",
     "performance:continuous": "tsx scripts/performance-monitor.ts --continuous",
+    "check:product-weight": "tsx scripts/check-product-weight.ts",
+    "check:product": "tsx scripts/check-product-details.ts",
     "deploy:production": "./scripts/deploy-production.sh",
     "build:optimize": "node scripts/optimize-build.js",
     "build:analyze": "ANALYZE=true node scripts/optimize-build.js",
