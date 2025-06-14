@@ -328,6 +328,9 @@ export default function HomePage() {
             </button>
           </div>
 
+          {/* Letters to Future Card */}
+          <LettersToFuture />
+
           {/* Community Card */}
           <div className="product-card feature-card">
             <div>
@@ -352,9 +355,6 @@ export default function HomePage() {
               Join Community
             </button>
           </div>
-
-          {/* Letters to Future Card */}
-          <LettersToFuture />
         </div>
         </div>
       </LazySection>
