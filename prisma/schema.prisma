@@ -189,6 +189,7 @@ model Order {
   shippingPhone   String?
   shippingAddress String
   shippingCity    String
+  shippingState   String?
   shippingCountry String
   shippingZip     String
   subtotal        Decimal       @db.Decimal(10, 2)

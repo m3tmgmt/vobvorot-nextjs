@@ -7,6 +7,7 @@ import { emailService, type OrderEmailData, type AdminNotificationData } from '@
 import { logPaymentCreation, logPaymentFailure } from '@/lib/payment-logger'
 import { getWesternBidConfig, isFeatureEnabled } from '@/lib/payment-config'
 import { logger } from '@/lib/logger'
+import { normalizePhoneNumber, validatePhoneNumber } from '@/lib/phone-utils'
 
 interface OrderItem {
   product: {
@@ -71,6 +72,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate and normalize phone number
+    if (orderData.shippingInfo.phone) {
+      const phoneValidation = validatePhoneNumber(orderData.shippingInfo.phone)
+      if (!phoneValidation.isValid) {
+        logger.warn('Invalid phone number provided', {
+          phone: orderData.shippingInfo.phone,
+          error: phoneValidation.error
+        })
+        // Don't fail the order, but normalize what we can
+        orderData.shippingInfo.phone = phoneValidation.normalized
+      } else {
+        orderData.shippingInfo.phone = phoneValidation.normalized
+      }
+    }
+
+    // Validate state for US addresses
+    if (orderData.shippingInfo.country === 'US' && !orderData.shippingInfo.state) {
+      return NextResponse.json(
+        { error: 'State/Province is required for US addresses' },
+        { status: 400 }
+      )
+    }
+
     // Generate order number
     const orderNumber = `EXV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
@@ -91,6 +115,7 @@ export async function POST(request: NextRequest) {
         shippingPhone: orderData.shippingInfo.phone,
         shippingAddress: orderData.shippingInfo.address,
         shippingCity: orderData.shippingInfo.city,
+        shippingState: orderData.shippingInfo.state || null,
         shippingZip: orderData.shippingInfo.postalCode,
         shippingCountry: orderData.shippingInfo.country,
         
@@ -196,8 +221,16 @@ export async function POST(request: NextRequest) {
         preferredPaymentMethod: orderData.paymentInfo.method,
         shippingAddress: orderData.shippingInfo.address,
         shippingCity: orderData.shippingInfo.city,
-        shippingState: orderData.shippingInfo.state,
-        shippingZip: orderData.shippingInfo.postalCode
+        shippingState: orderData.shippingInfo.state || '',
+        shippingZip: orderData.shippingInfo.postalCode,
+        // Detailed items information for better tracking
+        items: orderData.items.map((item, index) => ({
+          [`item_${index + 1}_name`]: item.product.name,
+          [`item_${index + 1}_quantity`]: item.quantity,
+          [`item_${index + 1}_price`]: Number(item.product.price),
+          [`item_${index + 1}_size`]: item.selectedSize || 'N/A',
+          [`item_${index + 1}_color`]: item.selectedColor || 'N/A'
+        })).reduce((acc, item) => ({ ...acc, ...item }), {})
       }
     }
 

@@ -1,78 +1,72 @@
 'use client'
 
 import { useRouter, useSearchParams } from 'next/navigation'
-import { useState } from 'react'
+import { Suspense } from 'react'
 import { Footer } from '@/components/Footer'
 
-export default function PaymentCancelPage() {
+function PaymentCancelContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const [retrying, setRetrying] = useState(false)
   
   // Try to get order ID from URL parameters
   const orderId = searchParams.get('orderId') || searchParams.get('orderNumber')
 
   const handleRetryPayment = async () => {
+    console.log('Retry payment button clicked', { orderId })
+    
     if (!orderId) {
-      // No order ID available, redirect to checkout
+      console.log('No order ID found, redirecting to checkout')
+      // No order ID, redirect to checkout for new order
       router.push('/checkout')
       return
     }
 
-    setRetrying(true)
-    
     try {
+      console.log('Calling retry payment API for order:', orderId)
+      
+      // Call the retry payment API endpoint
       const response = await fetch(`/api/orders/${orderId}/retry-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          paymentMethod: 'stripe' // Default to stripe, could be made selectable
-        })
+        }
       })
 
-      if (response.ok) {
-        const result = await response.json()
+      const result = await response.json()
+      console.log('Retry payment API response:', { status: response.status, result })
+
+      if (response.ok && result.formData) {
+        console.log('Creating payment form for WesternBid submission')
         
-        console.log('Retry payment created:', result)
-        
-        // Create and submit form directly to WesternBid
-        if (result.formData && result.targetUrl) {
-          const form = document.createElement('form')
-          form.method = 'POST'
-          form.action = result.targetUrl
-          form.style.display = 'none'
-          
-          // Add all form fields
-          Object.entries(result.formData).forEach(([key, value]) => {
-            const input = document.createElement('input')
-            input.type = 'hidden'
-            input.name = key
-            input.value = String(value)
-            form.appendChild(input)
-          })
-          
-          // Add form to page and submit
-          document.body.appendChild(form)
-          console.log('Submitting retry payment form...')
-          form.submit()
-          
-        } else if (result.paymentUrl) {
-          window.location.href = result.paymentUrl
-        } else {
-          throw new Error('No payment URL provided')
-        }
+        // Create and submit the payment form automatically
+        const form = document.createElement('form')
+        form.method = 'POST'
+        form.action = result.targetUrl || 'https://shop.westernbid.info'
+        form.style.display = 'none'
+
+        // Add all form fields
+        Object.entries(result.formData).forEach(([key, value]) => {
+          const input = document.createElement('input')
+          input.type = 'hidden'
+          input.name = key
+          input.value = String(value)
+          form.appendChild(input)
+        })
+
+        document.body.appendChild(form)
+        console.log('Submitting payment form to:', form.action)
+        form.submit()
       } else {
-        const errorData = await response.json()
-        console.error('Retry payment failed:', errorData)
-        alert(errorData.error || 'Failed to retry payment')
+        console.error('Failed to retry payment:', result.error)
+        console.log('Redirecting to checkout as fallback')
+        // Fallback to checkout
+        router.push('/checkout')
       }
     } catch (error) {
-      console.error('Retry payment error:', error)
-      alert('Unable to retry payment. Please try again.')
-    } finally {
-      setRetrying(false)
+      console.error('Error retrying payment:', error)
+      console.log('Redirecting to checkout due to error')
+      // Fallback to checkout
+      router.push('/checkout')
     }
   }
 
@@ -103,6 +97,19 @@ export default function PaymentCancelPage() {
           }}>
             Your payment was cancelled. You can try again or continue shopping.
           </p>
+          
+          {orderId && (
+            <div style={{
+              background: 'rgba(0,245,255,0.1)',
+              border: '1px solid var(--cyan-accent)',
+              borderRadius: '8px',
+              padding: '1rem',
+              marginBottom: '2rem',
+              fontSize: '0.9rem'
+            }}>
+              <strong>Order ID:</strong> {orderId}
+            </div>
+          )}
           
           <div style={{
             background: 'rgba(0,0,0,0.3)',
@@ -136,33 +143,25 @@ export default function PaymentCancelPage() {
           }}>
             <button
               onClick={handleRetryPayment}
-              disabled={retrying}
               style={{
                 padding: '1rem 2rem',
-                background: retrying 
-                  ? 'rgba(255,255,255,0.2)' 
-                  : 'linear-gradient(45deg, var(--pink-main), var(--cyan-accent))',
+                background: 'linear-gradient(45deg, var(--pink-main), var(--cyan-accent))',
                 border: 'none',
                 borderRadius: '8px',
                 color: 'var(--white)',
                 fontSize: '1rem',
                 fontWeight: '600',
-                cursor: retrying ? 'not-allowed' : 'pointer',
-                transition: 'all 0.3s ease',
-                opacity: retrying ? 0.7 : 1
+                cursor: 'pointer',
+                transition: 'all 0.3s ease'
               }}
               onMouseEnter={(e) => {
-                if (!retrying) {
-                  e.currentTarget.style.transform = 'scale(1.05)'
-                }
+                e.currentTarget.style.transform = 'scale(1.05)'
               }}
               onMouseLeave={(e) => {
-                if (!retrying) {
-                  e.currentTarget.style.transform = 'scale(1)'
-                }
+                e.currentTarget.style.transform = 'scale(1)'
               }}
             >
-              {retrying ? 'Retrying Payment...' : 'Try Payment Again'}
+              Try Payment Again
             </button>
             <button
               onClick={() => router.push('/products')}
@@ -190,5 +189,17 @@ export default function PaymentCancelPage() {
       </div>
       <Footer />
     </div>
+  )
+}
+
+export default function PaymentCancel() {
+  return (
+    <Suspense fallback={
+      <div style={{ minHeight: '100vh', padding: '2rem', textAlign: 'center', color: 'white' }}>
+        <div style={{ marginTop: '10rem' }}>Loading...</div>
+      </div>
+    }>
+      <PaymentCancelContent />
+    </Suspense>
   )
 }

@@ -116,6 +116,13 @@ export default function CheckoutPage() {
 
   const handleShippingSubmit = (e: React.FormEvent) => {
     e.preventDefault()
+    
+    // Проверить, что state заполнен для US и Canada
+    if ((shippingInfo.country === 'US' || shippingInfo.country === 'CA') && !shippingInfo.state?.trim()) {
+      alert(`${shippingInfo.country === 'US' ? 'State' : 'Province'} is required for ${shippingInfo.country === 'US' ? 'US' : 'Canadian'} addresses`)
+      return
+    }
+    
     setStep(2)
   }
 
@@ -639,6 +646,37 @@ export default function CheckoutPage() {
                     </select>
                   </div>
                 </div>
+
+                {/* State/Province field - показывать только для US и Canada */}
+                {(shippingInfo.country === 'US' || shippingInfo.country === 'CA') && (
+                  <div style={{ marginBottom: '1rem' }}>
+                    <label style={{
+                      display: 'block',
+                      color: 'var(--white)',
+                      marginBottom: '0.5rem',
+                      fontSize: '0.9rem'
+                    }}>
+                      {shippingInfo.country === 'US' ? 'State' : 'Province'} *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={shippingInfo.state}
+                      onChange={(e) => setShippingInfo({...shippingInfo, state: e.target.value})}
+                      placeholder={shippingInfo.country === 'US' ? 'e.g., California' : 'e.g., Ontario'}
+                      style={{
+                        width: '100%',
+                        padding: '1rem',
+                        background: 'rgba(255,255,255,0.1)',
+                        border: '1px solid var(--cyan-accent)',
+                        borderRadius: '8px',
+                        color: 'var(--white)',
+                        fontSize: '1rem',
+                        backdropFilter: 'blur(10px)'
+                      }}
+                    />
+                  </div>
+                )}
 
                 <button
                   type="submit"
