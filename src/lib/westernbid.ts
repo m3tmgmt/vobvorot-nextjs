@@ -374,62 +374,102 @@ class WesternBidAPI {
       // Payment gateway selection - updated based on WesternBid documentation
       gate: preferredGate === 'stripe' ? 'stripe.com' : 'paypal.com', // Updated PayPal gateway value
       
-      // Customer info - comprehensive autofill fields
+      // Customer info - comprehensive autofill fields (15+ variations for maximum compatibility)
       email: request.customerEmail,
       payer_email: request.customerEmail, // PayPal specific
       business_email: request.customerEmail, // Alternative field
       contact_email: request.customerEmail, // Alternative field
+      customer_email: request.customerEmail, // Alternative field
+      buyer_email: request.customerEmail, // Alternative field
+      user_email: request.customerEmail, // Alternative field
+      billing_email: request.customerEmail, // Billing specific
+      
       phone: request.customerPhone || '',
       telephone: request.customerPhone || '', // Alternative field
       contact_phone: request.customerPhone || '', // Alternative field
+      customer_phone: request.customerPhone || '', // Alternative field
+      buyer_phone: request.customerPhone || '', // Alternative field
+      billing_phone: request.customerPhone || '', // Alternative field
+      mobile: request.customerPhone || '', // Alternative field
+      cell_phone: request.customerPhone || '', // Alternative field
       
-      // Name fields - multiple variations for better compatibility
+      // Name fields - comprehensive variations for better compatibility (10+ fields)
       first_name: request.customerName.split(' ')[0] || '',
       last_name: request.customerName.split(' ').slice(1).join(' ') || '',
       payer_name: request.customerName, // Full name for PayPal
       buyer_name: request.customerName, // Alternative field
       customer_name: request.customerName, // Alternative field
       full_name: request.customerName, // Alternative field
+      name: request.customerName, // Simple name field
+      contact_name: request.customerName, // Contact field
+      billing_name: request.customerName, // Billing name
+      shipping_name: request.customerName, // Shipping name
+      user_name: request.customerName, // User name
       
-      // Address info - comprehensive mapping for all payment gateways
+      // Address info - comprehensive mapping for all payment gateways (20+ fields)
       address1: request.metadata?.shippingAddress || '',
       address_1: request.metadata?.shippingAddress || '', // Alternative field name
       street_address: request.metadata?.shippingAddress || '', // Alternative field name
+      address: request.metadata?.shippingAddress || '', // Simple address field
+      street: request.metadata?.shippingAddress || '', // Street field
+      street1: request.metadata?.shippingAddress || '', // Street1 field
+      address_line_1: request.metadata?.shippingAddress || '', // Line 1 field
       shipping_address_1: request.metadata?.shippingAddress || '', // Shipping specific
       billing_address_1: request.metadata?.shippingAddress || '', // Billing specific (same as shipping)
+      contact_address: request.metadata?.shippingAddress || '', // Contact address
+      customer_address: request.metadata?.shippingAddress || '', // Customer address
       
       address2: '', // Usually empty for our use case
       address_2: '', // Alternative field name
       shipping_address_2: '', // Shipping specific
       billing_address_2: '', // Billing specific
       
-      // City fields
+      // City fields - comprehensive mapping (8+ fields)
       city: request.metadata?.shippingCity || '',
       town: request.metadata?.shippingCity || '', // Alternative field
+      locality: request.metadata?.shippingCity || '', // Locality field
+      municipality: request.metadata?.shippingCity || '', // Municipality field
       shipping_city: request.metadata?.shippingCity || '', // Shipping specific
       billing_city: request.metadata?.shippingCity || '', // Billing specific
+      contact_city: request.metadata?.shippingCity || '', // Contact city
+      customer_city: request.metadata?.shippingCity || '', // Customer city
       
-      // State/Province fields  
+      // State/Province fields - comprehensive mapping (10+ fields)
       state: request.metadata?.shippingState || '',
       province: request.metadata?.shippingState || '', // Alternative field
       region: request.metadata?.shippingState || '', // Alternative field
+      state_province: request.metadata?.shippingState || '', // Combined field
+      administrative_area: request.metadata?.shippingState || '', // Administrative area
       shipping_state: request.metadata?.shippingState || '', // Shipping specific
       billing_state: request.metadata?.shippingState || '', // Billing specific
+      contact_state: request.metadata?.shippingState || '', // Contact state
+      customer_state: request.metadata?.shippingState || '', // Customer state
+      payer_state: request.metadata?.shippingState || '', // PayPal state
       
-      // Country fields
+      // Country fields - comprehensive mapping (10+ fields)
       country: request.metadata?.shippingCountry || 'US',
       country_code: request.metadata?.shippingCountry || 'US',
       country_name: request.metadata?.shippingCountry || 'United States',
+      iso_country_code: request.metadata?.shippingCountry || 'US', // ISO code
+      nation: request.metadata?.shippingCountry || 'US', // Alternative field
       shipping_country: request.metadata?.shippingCountry || 'US', // Shipping specific
       billing_country: request.metadata?.shippingCountry || 'US', // Billing specific
+      contact_country: request.metadata?.shippingCountry || 'US', // Contact country
+      customer_country: request.metadata?.shippingCountry || 'US', // Customer country
+      payer_country: request.metadata?.shippingCountry || 'US', // PayPal country
       
-      // ZIP/Postal code fields
+      // ZIP/Postal code fields - comprehensive mapping (10+ fields)
       zip: request.metadata?.shippingZip || '',
       postal_code: request.metadata?.shippingZip || '', // Alternative field name
       postcode: request.metadata?.shippingZip || '', // Alternative field name
       zip_code: request.metadata?.shippingZip || '', // Alternative field name
+      zipcode: request.metadata?.shippingZip || '', // No underscore version
+      postal: request.metadata?.shippingZip || '', // Short postal
       shipping_zip: request.metadata?.shippingZip || '', // Shipping specific
       billing_zip: request.metadata?.shippingZip || '', // Billing specific
+      contact_zip: request.metadata?.shippingZip || '', // Contact ZIP
+      customer_zip: request.metadata?.shippingZip || '', // Customer ZIP
+      payer_zip: request.metadata?.shippingZip || '', // PayPal ZIP
       
       // Required item fields (Cart format)
       item_name_1: request.description,
@@ -466,7 +506,18 @@ class WesternBidAPI {
       usedMerchantId: merchantId,
       environment: this.config.environment,
       hashString: hashString.substring(0, 50) + '...',
-      wb_hash: wb_hash
+      wb_hash: wb_hash,
+      customerEmail: request.customerEmail,
+      customerName: request.customerName,
+      customerPhone: request.customerPhone,
+      shippingData: {
+        address: request.metadata?.shippingAddress,
+        city: request.metadata?.shippingCity,
+        state: request.metadata?.shippingState,
+        zip: request.metadata?.shippingZip,
+        country: request.metadata?.shippingCountry
+      },
+      totalFieldsGenerated: Object.keys(formData).length
     })
 
     return formData

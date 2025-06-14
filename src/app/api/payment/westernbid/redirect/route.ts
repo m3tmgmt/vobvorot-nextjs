@@ -59,7 +59,20 @@ export async function GET(request: NextRequest) {
       metadata: {
         sessionId,
         orderItems: order.items.length,
-        shippingMethod: 'standard'
+        shippingMethod: 'standard',
+        // Critical: Add all shipping data for auto-fill
+        shippingAddress: order.shippingAddress,
+        shippingCity: order.shippingCity,
+        shippingState: order.shippingState || '',
+        shippingZip: order.shippingZip,
+        shippingCountry: order.shippingCountry,
+        // Enhanced item details for better payment tracking
+        items: order.items.map((item, index) => ({
+          [`item_${index + 1}_name`]: item.sku.product.name,
+          [`item_${index + 1}_quantity`]: item.quantity,
+          [`item_${index + 1}_price`]: Number(item.price),
+          [`item_${index + 1}_sku`]: item.sku.sku || 'N/A'
+        })).reduce((acc, item) => ({ ...acc, ...item }), {})
       }
     }
 
