@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WesternBid Autofill Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .form-container { max-width: 600px; background: #f5f5f5; padding: 20px; margin: 20px 0; }
+        .debug { background: #e8f4f8; padding: 10px; margin: 10px 0; font-family: monospace; }
+        input { width: 100%; padding: 8px; margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>WesternBid Autofill Test</h1>
+    
+    <div class="debug">
+        <h3>Test Data Being Sent:</h3>
+        <p><strong>Customer:</strong> John Doe (test@example.com, +1234567890)</p>
+        <p><strong>Address:</strong> 123 Test Street, Test City, CA 90210, US</p>
+    </div>
+
+    <div class="form-container">
+        <h2>Simulated WesternBid Form with Enhanced Field Mapping</h2>
+        <form action="https://shop.westernbid.info" method="POST" target="_blank">
+            
+            <!-- Required WesternBid fields -->
+            <input type="hidden" name="wb_login" value="159008" />
+            <input type="hidden" name="charset" value="utf-8" />
+            <input type="hidden" name="invoice" value="TEST_12345" />
+            <input type="hidden" name="amount" value="29.99" />
+            <input type="hidden" name="item_name" value="Test Product" />
+            <input type="hidden" name="currency_code" value="USD" />
+            <input type="hidden" name="return" value="https://vobvorot.com/payment/success" />
+            <input type="hidden" name="cancel_return" value="https://vobvorot.com/payment/cancel" />
+            <input type="hidden" name="notify_url" value="https://vobvorot.com/api/webhooks/westernbid" />
+            <input type="hidden" name="gate" value="paypal.com" />
+            <input type="hidden" name="wb_hash" value="dummy_hash_for_test" />
+            
+            <!-- Enhanced Customer Email Fields (8 variations) -->
+            <input type="hidden" name="email" value="test@example.com" />
+            <input type="hidden" name="payer_email" value="test@example.com" />
+            <input type="hidden" name="business_email" value="test@example.com" />
+            <input type="hidden" name="contact_email" value="test@example.com" />
+            <input type="hidden" name="customer_email" value="test@example.com" />
+            <input type="hidden" name="buyer_email" value="test@example.com" />
+            <input type="hidden" name="user_email" value="test@example.com" />
+            <input type="hidden" name="billing_email" value="test@example.com" />
+            
+            <!-- Enhanced Phone Fields (8 variations) -->
+            <input type="hidden" name="phone" value="+1234567890" />
+            <input type="hidden" name="telephone" value="+1234567890" />
+            <input type="hidden" name="contact_phone" value="+1234567890" />
+            <input type="hidden" name="customer_phone" value="+1234567890" />
+            <input type="hidden" name="buyer_phone" value="+1234567890" />
+            <input type="hidden" name="billing_phone" value="+1234567890" />
+            <input type="hidden" name="mobile" value="+1234567890" />
+            <input type="hidden" name="cell_phone" value="+1234567890" />
+            
+            <!-- Enhanced Name Fields (11 variations) -->
+            <input type="hidden" name="first_name" value="John" />
+            <input type="hidden" name="last_name" value="Doe" />
+            <input type="hidden" name="payer_name" value="John Doe" />
+            <input type="hidden" name="buyer_name" value="John Doe" />
+            <input type="hidden" name="customer_name" value="John Doe" />
+            <input type="hidden" name="full_name" value="John Doe" />
+            <input type="hidden" name="name" value="John Doe" />
+            <input type="hidden" name="contact_name" value="John Doe" />
+            <input type="hidden" name="billing_name" value="John Doe" />
+            <input type="hidden" name="shipping_name" value="John Doe" />
+            <input type="hidden" name="user_name" value="John Doe" />
+            
+            <!-- Enhanced Address Fields (11 variations) -->
+            <input type="hidden" name="address1" value="123 Test Street" />
+            <input type="hidden" name="address_1" value="123 Test Street" />
+            <input type="hidden" name="street_address" value="123 Test Street" />
+            <input type="hidden" name="address" value="123 Test Street" />
+            <input type="hidden" name="street" value="123 Test Street" />
+            <input type="hidden" name="street1" value="123 Test Street" />
+            <input type="hidden" name="address_line_1" value="123 Test Street" />
+            <input type="hidden" name="shipping_address_1" value="123 Test Street" />
+            <input type="hidden" name="billing_address_1" value="123 Test Street" />
+            <input type="hidden" name="contact_address" value="123 Test Street" />
+            <input type="hidden" name="customer_address" value="123 Test Street" />
+            
+            <!-- Enhanced City Fields (8 variations) -->
+            <input type="hidden" name="city" value="Test City" />
+            <input type="hidden" name="town" value="Test City" />
+            <input type="hidden" name="locality" value="Test City" />
+            <input type="hidden" name="municipality" value="Test City" />
+            <input type="hidden" name="shipping_city" value="Test City" />
+            <input type="hidden" name="billing_city" value="Test City" />
+            <input type="hidden" name="contact_city" value="Test City" />
+            <input type="hidden" name="customer_city" value="Test City" />
+            
+            <!-- Enhanced State Fields (10 variations) -->
+            <input type="hidden" name="state" value="CA" />
+            <input type="hidden" name="province" value="CA" />
+            <input type="hidden" name="region" value="CA" />
+            <input type="hidden" name="state_province" value="CA" />
+            <input type="hidden" name="administrative_area" value="CA" />
+            <input type="hidden" name="shipping_state" value="CA" />
+            <input type="hidden" name="billing_state" value="CA" />
+            <input type="hidden" name="contact_state" value="CA" />
+            <input type="hidden" name="customer_state" value="CA" />
+            <input type="hidden" name="payer_state" value="CA" />
+            
+            <!-- Enhanced Country Fields (10 variations) -->
+            <input type="hidden" name="country" value="US" />
+            <input type="hidden" name="country_code" value="US" />
+            <input type="hidden" name="country_name" value="United States" />
+            <input type="hidden" name="iso_country_code" value="US" />
+            <input type="hidden" name="nation" value="US" />
+            <input type="hidden" name="shipping_country" value="US" />
+            <input type="hidden" name="billing_country" value="US" />
+            <input type="hidden" name="contact_country" value="US" />
+            <input type="hidden" name="customer_country" value="US" />
+            <input type="hidden" name="payer_country" value="US" />
+            
+            <!-- Enhanced ZIP Fields (11 variations) -->
+            <input type="hidden" name="zip" value="90210" />
+            <input type="hidden" name="postal_code" value="90210" />
+            <input type="hidden" name="postcode" value="90210" />
+            <input type="hidden" name="zip_code" value="90210" />
+            <input type="hidden" name="zipcode" value="90210" />
+            <input type="hidden" name="postal" value="90210" />
+            <input type="hidden" name="shipping_zip" value="90210" />
+            <input type="hidden" name="billing_zip" value="90210" />
+            <input type="hidden" name="contact_zip" value="90210" />
+            <input type="hidden" name="customer_zip" value="90210" />
+            <input type="hidden" name="payer_zip" value="90210" />
+            
+            <!-- Additional Cart fields -->
+            <input type="hidden" name="item_name_1" value="Test Product" />
+            <input type="hidden" name="item_number_1" value="TEST_12345" />
+            <input type="hidden" name="amount_1" value="29.99" />
+            <input type="hidden" name="quantity_1" value="1" />
+            <input type="hidden" name="shipping" value="0" />
+            
+            <button type="submit" style="padding: 15px 30px; background: #007cba; color: white; border: none; border-radius: 5px; font-size: 16px;">
+                🧪 Test WesternBid Autofill (Opens in New Tab)
+            </button>
+            
+            <p style="color: #666; font-size: 14px; margin-top: 10px;">
+                This will open WesternBid payment form in a new tab with all our autofill data.<br>
+                Check if customer information is pre-filled on their payment page.
+            </p>
+        </form>
+    </div>
+    
+    <div class="debug">
+        <h3>Total Fields Sent:</h3>
+        <p><strong>Basic Required:</strong> 11 fields</p>
+        <p><strong>Email Fields:</strong> 8 variations</p>
+        <p><strong>Phone Fields:</strong> 8 variations</p>
+        <p><strong>Name Fields:</strong> 11 variations</p>
+        <p><strong>Address Fields:</strong> 11 variations</p>
+        <p><strong>City Fields:</strong> 8 variations</p>
+        <p><strong>State Fields:</strong> 10 variations</p>
+        <p><strong>Country Fields:</strong> 10 variations</p>
+        <p><strong>ZIP Fields:</strong> 11 variations</p>
+        <p><strong>Cart Fields:</strong> 5 additional</p>
+        <p><strong>Total:</strong> ~93 fields for maximum autofill compatibility</p>
+    </div>
+    
+</body>
+</html>

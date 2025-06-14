@@ -213,6 +213,9 @@ model Order {
   trackingNumber  String?
   notes           String?
   internalNotes   String?
+  actualPayerEmail String?
+  actualPayerName  String?
+  payerMetadata    String?
   createdAt       DateTime      @default(now())
   updatedAt       DateTime      @updatedAt
   refundedBy      String?

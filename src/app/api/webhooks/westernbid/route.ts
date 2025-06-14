@@ -271,15 +271,52 @@ async function handlePaymentCompleted(order: any, webhookData: WebhookData) {
     paymentId: webhookData.paymentId
   })
   
+  // Extract customer data from webhook metadata (hybrid approach)
+  const payerData = extractCustomerDataFromWebhook(webhookData)
+  
+  // Prepare update data with payment info
+  const updateData: any = {
+    status: 'CONFIRMED',
+    paymentStatus: 'COMPLETED',
+    paymentId: webhookData.paymentId,
+    transactionId: webhookData.transactionId,
+    paidAt: new Date()
+  }
+  
+  // Update customer information if available from webhook (hybrid approach)
+  if (payerData.email || payerData.name || payerData.phone) {
+    logger.info('Updating customer data from webhook', {
+      orderNumber: order.orderNumber,
+      webhookEmail: payerData.email,
+      webhookName: payerData.name,
+      webhookPhone: payerData.phone
+    })
+    
+    // Update email if provided and different
+    if (payerData.email && payerData.email !== order.shippingEmail) {
+      updateData.actualPayerEmail = payerData.email
+    }
+    
+    // Update name if provided and different
+    if (payerData.name && payerData.name !== order.shippingName) {
+      updateData.actualPayerName = payerData.name
+    }
+    
+    // Store additional payer information in metadata
+    updateData.payerMetadata = JSON.stringify({
+      payerEmail: payerData.email,
+      payerName: payerData.name,
+      payerPhone: payerData.phone,
+      originalEmail: order.shippingEmail,
+      originalName: order.shippingName,
+      dataSource: 'westernbid_webhook',
+      extractedAt: new Date().toISOString()
+    })
+  }
+  
   const updatedOrder = await prisma.order.update({
     where: { id: order.id },
-    data: {
-      status: 'CONFIRMED',
-      paymentStatus: 'COMPLETED',
-      paymentId: webhookData.paymentId,
-      transactionId: webhookData.transactionId,
-      paidAt: new Date()
-    },
+    data: updateData,
     include: {
       items: {
         include: {
@@ -524,16 +561,29 @@ async function sendNotifications(order: any, webhookData: WebhookData) {
 
 // Get status message for Telegram
 function getStatusMessage(event: string, order: any): string {
+  // Include actual payer info if different from shipping info (hybrid approach)
+  let customerInfo = `👤 Customer: ${order.shippingName}
+📧 Email: ${order.shippingEmail}`
+
+  if (order.actualPayerName && order.actualPayerName !== order.shippingName) {
+    customerInfo += `\n💳 Actual Payer: ${order.actualPayerName}`
+  }
+  
+  if (order.actualPayerEmail && order.actualPayerEmail !== order.shippingEmail) {
+    customerInfo += `\n📧 Payer Email: ${order.actualPayerEmail}`
+  }
+
   const baseInfo = `
 🛒 Order: ${order.orderNumber}
 💰 Amount: $${order.total}
-👤 Customer: ${order.shippingName}
-📧 Email: ${order.shippingEmail}
+${customerInfo}
   `.trim()
 
   switch (event) {
     case 'payment.completed':
-      return `✅ Payment Completed\n${baseInfo}\n\n🎉 Order confirmed and ready for processing!`
+      const hybridNote = (order.actualPayerName || order.actualPayerEmail) ? 
+        '\n🔄 Customer data updated from payment gateway' : ''
+      return `✅ Payment Completed\n${baseInfo}\n\n🎉 Order confirmed and ready for processing!${hybridNote}`
     
     case 'payment.failed':
       return `❌ Payment Failed\n${baseInfo}\n\n⚠️ Payment could not be processed.`
@@ -550,6 +600,57 @@ function getStatusMessage(event: string, order: any): string {
     default:
       return `📄 Payment Update\n${baseInfo}\n\nEvent: ${event}`
   }
+}
+
+// Extract customer data from webhook metadata (hybrid approach)
+function extractCustomerDataFromWebhook(webhookData: WebhookData): {
+  email?: string
+  name?: string
+  phone?: string
+} {
+  const metadata = webhookData.metadata || {}
+  const rawFormData = metadata.rawFormData || {}
+  
+  logger.info('Extracting customer data from webhook', {
+    hasMetadata: !!metadata,
+    hasRawFormData: !!rawFormData,
+    payerEmail: metadata.payerEmail,
+    payerName: metadata.payerName
+  })
+  
+  // Extract email from multiple possible sources
+  const email = metadata.payerEmail || 
+                rawFormData.payer_email || 
+                rawFormData.email || 
+                rawFormData.buyer_email || 
+                rawFormData.customer_email
+  
+  // Extract name from multiple possible sources
+  const firstName = rawFormData.first_name || ''
+  const lastName = rawFormData.last_name || ''
+  const fullName = metadata.payerName || 
+                   rawFormData.payer_name || 
+                   rawFormData.customer_name || 
+                   rawFormData.buyer_name ||
+                   (firstName && lastName ? `${firstName} ${lastName}`.trim() : '') ||
+                   firstName || lastName
+  
+  // Extract phone from multiple possible sources
+  const phone = rawFormData.phone || 
+                rawFormData.contact_phone || 
+                rawFormData.payer_phone || 
+                rawFormData.customer_phone || 
+                rawFormData.buyer_phone
+  
+  const extractedData = {
+    email: email || undefined,
+    name: fullName || undefined,
+    phone: phone || undefined
+  }
+  
+  logger.info('Customer data extracted', extractedData)
+  
+  return extractedData
 }
 
 // GET method for webhook verification (optional)
