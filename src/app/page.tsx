@@ -220,7 +220,7 @@ export default function HomePage() {
               className={`filter-btn ${activeFilter === category.id ? 'active' : ''}`}
               onClick={() => handleFilter(category.id)}
             >
-              <span style={{ marginRight: '0.5rem' }}>{category.icon}</span>
+              {category.icon && <span style={{ marginRight: '0.5rem' }}>{category.icon}</span>}
               {category.name}
             </button>
           ))}
