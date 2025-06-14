@@ -371,22 +371,26 @@ class WesternBidAPI {
       cancel_return: request.cancelUrl, // Correct field name
       notify_url: request.webhookUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`, // Correct field name
       
-      // Payment gateway selection
-      gate: preferredGate === 'stripe' ? 'stripe.com' : 'paypal', // paypal is default
+      // Payment gateway selection - updated based on WesternBid documentation
+      gate: preferredGate === 'stripe' ? 'stripe.com' : 'paypal.com', // Updated PayPal gateway value
       
-      // Customer info
+      // Customer info - enhanced for better autofill
       email: request.customerEmail,
+      payer_email: request.customerEmail, // PayPal specific
       phone: request.customerPhone || '',
       first_name: request.customerName.split(' ')[0] || '',
       last_name: request.customerName.split(' ').slice(1).join(' ') || '',
+      payer_name: request.customerName, // Full name for PayPal
       
-      // Address info (extracted from metadata)
+      // Address info (extracted from metadata) - enhanced mapping
       address1: request.metadata?.shippingAddress || '',
       address2: '',
       country: request.metadata?.shippingCountry || 'US',
+      country_code: request.metadata?.shippingCountry || 'US',
       city: request.metadata?.shippingCity || '',
       state: request.metadata?.shippingState || '',
       zip: request.metadata?.shippingZip || '',
+      postal_code: request.metadata?.shippingZip || '', // Alternative field name
       
       // Required item fields (Cart format)
       item_name_1: request.description,

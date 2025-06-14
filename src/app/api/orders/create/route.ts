@@ -184,8 +184,8 @@ export async function POST(request: NextRequest) {
       customerEmail: orderData.shippingInfo.email,
       customerName: `${orderData.shippingInfo.firstName} ${orderData.shippingInfo.lastName}`,
       customerPhone: orderData.shippingInfo.phone,
-      returnUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success`,
-      cancelUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/cancel`,
+      returnUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success?orderId=${orderNumber}`,
+      cancelUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/cancel?orderId=${orderNumber}`,
       webhookUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`,
       metadata: {
         orderNumber: orderNumber,
