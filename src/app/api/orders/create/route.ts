@@ -295,8 +295,7 @@ export async function POST(request: NextRequest) {
           }
         }
 
-        // Send confirmation email to customer
-        await emailService.sendOrderConfirmation(emailData)
+        // Note: Customer confirmation email will be sent via webhook after successful payment
 
         // Send notification email to admin
         const adminData: AdminNotificationData = {

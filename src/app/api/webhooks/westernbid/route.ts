@@ -628,31 +628,59 @@ async function sendNotifications(order: any, webhookData: WebhookData) {
   try {
     // Send email notification for payment completion
     if (webhookData.event === 'payment.completed') {
-      const emailData: OrderEmailData = {
-        orderNumber: order.orderNumber,
-        customerName: order.shippingName,
-        customerEmail: order.shippingEmail,
-        items: order.items.map((item: any) => ({
-          name: item.sku.product.name,
-          quantity: item.quantity,
-          price: item.price,
-          size: item.sku.size || undefined,
-          color: item.sku.color || undefined,
-          imageUrl: item.sku.product.images[0]?.url
-        })),
-        subtotal: order.subtotal,
-        shippingCost: order.shippingCost,
-        total: order.total,
-        shippingAddress: {
-          name: order.shippingName,
-          address: order.shippingAddress,
-          city: order.shippingCity,
-          country: order.shippingCountry,
-          zip: order.shippingZip
+      
+      // Check if this is a sign order
+      if (order.orderType === 'SIGN_PHOTO' && (order as any).signOrder) {
+        // Sign order confirmation email
+        await emailService.sendSignOrderConfirmation({
+          orderNumber: order.orderNumber,
+          customerName: order.shippingName,
+          customerEmail: order.shippingEmail,
+          signName: (order as any).signOrder.signName,
+          extraNotes: (order as any).signOrder.extraNotes || '',
+          amount: parseFloat(order.total.toString()),
+          estimatedDelivery: '2-7 days'
+        })
+        
+        logger.info('Sign order confirmation email sent after payment', {
+          orderNumber: order.orderNumber,
+          customerEmail: order.shippingEmail,
+          signName: (order as any).signOrder.signName
+        })
+      } else {
+        // Regular order confirmation email
+        const emailData: OrderEmailData = {
+          orderNumber: order.orderNumber,
+          customerName: order.shippingName,
+          customerEmail: order.shippingEmail,
+          items: order.items.map((item: any) => ({
+            name: item.sku.product.name,
+            quantity: item.quantity,
+            price: item.price,
+            size: item.sku.size || undefined,
+            color: item.sku.color || undefined,
+            imageUrl: item.sku.product.images[0]?.url
+          })),
+          subtotal: order.subtotal,
+          shippingCost: order.shippingCost,
+          total: order.total,
+          shippingAddress: {
+            name: order.shippingName,
+            address: order.shippingAddress,
+            city: order.shippingCity,
+            country: order.shippingCountry,
+            zip: order.shippingZip
+          }
         }
-      }
 
-      await emailService.sendOrderConfirmation(emailData)
+        await emailService.sendOrderConfirmation(emailData)
+        
+        logger.info('Regular order confirmation email sent after payment', {
+          orderNumber: order.orderNumber,
+          customerEmail: order.shippingEmail,
+          itemCount: order.items.length
+        })
+      }
     }
 
     // Send Telegram notification

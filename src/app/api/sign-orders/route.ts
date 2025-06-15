@@ -119,29 +119,7 @@ export async function POST(request: NextRequest) {
         }
       })
       
-      // Send confirmation email
-      try {
-        await emailService.sendSignOrderConfirmation({
-          orderNumber: orderId,
-          customerName: signName,
-          customerEmail: email,
-          signName: signName,
-          extraNotes: extraNotes || '',
-          amount: amount,
-          estimatedDelivery: '2-7 days'
-        })
-        
-        logger.info('Sign order confirmation email sent', {
-          orderId,
-          customerEmail: email
-        })
-      } catch (emailError) {
-        logger.error('Failed to send sign order confirmation email', {
-          orderId,
-          customerEmail: email
-        }, emailError instanceof Error ? emailError : new Error(String(emailError)))
-        // Don't fail the order if email fails
-      }
+      // Note: Customer confirmation email will be sent via webhook after successful payment
       
       // Note: CRM notifications for sign orders will be sent via webhook after successful payment
       
