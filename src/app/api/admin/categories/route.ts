@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    const { name } = await request.json()
+    const { name, emoji } = await request.json()
     
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
       return NextResponse.json({ error: 'Category name is required' }, { status: 400 })
@@ -55,7 +55,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Category already exists' }, { status: 400 })
     }
 
-    const newCategory = addCategory(trimmedName)
+    // Валидация эмодзи (опционально)
+    if (emoji && (typeof emoji !== 'string' || emoji.length > 10)) {
+      return NextResponse.json({ error: 'Invalid emoji format' }, { status: 400 })
+    }
+
+    const newCategory = addCategory(trimmedName, emoji)
     
     return NextResponse.json({
       success: true,

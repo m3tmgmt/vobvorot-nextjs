@@ -40,16 +40,16 @@ export const sharedProducts: Product[] = globalForProducts.sharedProducts ?? []
 globalForProducts.sharedProducts = sharedProducts
 
 export const categories = [
-  { id: 'cat-shoes', name: 'Shoes', slug: 'shoes' },
-  { id: 'cat-accessories', name: 'Accessories', slug: 'accessories' },
-  { id: 'cat-hats', name: 'Hats', slug: 'hats' },
-  { id: 'cat-exvicpmour', name: 'EXVICPMOUR', slug: 'exvicpmour' },
-  { id: 'cat-bags', name: 'Bags', slug: 'bags' },
-  { id: 'cat-clothing', name: 'Clothing', slug: 'clothing' }
+  { id: 'cat-shoes', name: 'Shoes', slug: 'shoes', emoji: '👠' },
+  { id: 'cat-accessories', name: 'Accessories', slug: 'accessories', emoji: '💍' },
+  { id: 'cat-hats', name: 'Hats', slug: 'hats', emoji: '🎩' },
+  { id: 'cat-exvicpmour', name: 'EXVICPMOUR', slug: 'exvicpmour', emoji: '✨' },
+  { id: 'cat-bags', name: 'Bags', slug: 'bags', emoji: '👜' },
+  { id: 'cat-clothing', name: 'Clothing', slug: 'clothing', emoji: '👕' }
 ]
 
 // Функция для добавления новой категории
-export function addCategory(name: string) {
+export function addCategory(name: string, emoji?: string) {
   const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-')
   const id = `cat-${slug}`
   
@@ -59,7 +59,12 @@ export function addCategory(name: string) {
     return exists
   }
   
-  const newCategory = { id, name, slug }
+  const newCategory = { 
+    id, 
+    name, 
+    slug, 
+    emoji: emoji || '📦' // Дефолтный эмодзи если не указан
+  }
   categories.push(newCategory)
   return newCategory
 }

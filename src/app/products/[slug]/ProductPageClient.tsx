@@ -214,26 +214,131 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
         }}>
           {/* Image Section */}
           <div>
-            <div style={{ marginBottom: '1.5rem' }}>
+            <div style={{ marginBottom: '1.5rem', position: 'relative' }}>
               {product.images.length > 0 ? (
-                <div style={{
-                  aspectRatio: '1',
-                  position: 'relative',
-                  overflow: 'hidden',
-                  borderRadius: '15px',
-                  border: '2px solid var(--pink-main)',
-                  background: 'rgba(255,255,255,0.05)',
-                  boxShadow: '0 0 30px rgba(255,107,157,0.3)'
-                }}>
-                  <Image
-                    src={product.images[selectedImageIndex].url}
-                    alt={product.images[selectedImageIndex].alt || product.name}
-                    fill
-                    style={{ objectFit: 'cover' }}
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    priority={selectedImageIndex === 0}
-                  />
-                </div>
+                <>
+                  <div style={{
+                    aspectRatio: '1',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    borderRadius: '15px',
+                    border: '2px solid var(--pink-main)',
+                    background: 'rgba(255,255,255,0.05)',
+                    boxShadow: '0 0 30px rgba(255,107,157,0.3)'
+                  }}>
+                    <Image
+                      src={product.images[selectedImageIndex].url}
+                      alt={product.images[selectedImageIndex].alt || product.name}
+                      fill
+                      style={{ objectFit: 'cover' }}
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      priority={selectedImageIndex === 0}
+                    />
+                  </div>
+                  
+                  {/* Navigation Arrows */}
+                  {product.images.length > 1 && (
+                    <>
+                      <button
+                        onClick={() => setSelectedImageIndex((prev) => prev === 0 ? product.images.length - 1 : prev - 1)}
+                        style={{
+                          position: 'absolute',
+                          left: '15px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          width: '45px',
+                          height: '45px',
+                          borderRadius: '50%',
+                          border: '2px solid rgba(255,255,255,0.3)',
+                          background: 'rgba(0,0,0,0.6)',
+                          color: 'var(--cyan-accent)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '20px',
+                          fontWeight: 'bold',
+                          transition: 'all 0.3s ease',
+                          backdropFilter: 'blur(10px)',
+                          zIndex: 10
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'var(--cyan-accent)'
+                          e.currentTarget.style.color = 'var(--black)'
+                          e.currentTarget.style.borderColor = 'var(--cyan-accent)'
+                          e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(0,0,0,0.6)'
+                          e.currentTarget.style.color = 'var(--cyan-accent)'
+                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'
+                          e.currentTarget.style.transform = 'translateY(-50%) scale(1)'
+                        }}
+                        aria-label="Previous image"
+                      >
+                        ←
+                      </button>
+                      
+                      <button
+                        onClick={() => setSelectedImageIndex((prev) => (prev + 1) % product.images.length)}
+                        style={{
+                          position: 'absolute',
+                          right: '15px',
+                          top: '50%',
+                          transform: 'translateY(-50%)',
+                          width: '45px',
+                          height: '45px',
+                          borderRadius: '50%',
+                          border: '2px solid rgba(255,255,255,0.3)',
+                          background: 'rgba(0,0,0,0.6)',
+                          color: 'var(--cyan-accent)',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          fontSize: '20px',
+                          fontWeight: 'bold',
+                          transition: 'all 0.3s ease',
+                          backdropFilter: 'blur(10px)',
+                          zIndex: 10
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.background = 'var(--cyan-accent)'
+                          e.currentTarget.style.color = 'var(--black)'
+                          e.currentTarget.style.borderColor = 'var(--cyan-accent)'
+                          e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)'
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.background = 'rgba(0,0,0,0.6)'
+                          e.currentTarget.style.color = 'var(--cyan-accent)'
+                          e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'
+                          e.currentTarget.style.transform = 'translateY(-50%) scale(1)'
+                        }}
+                        aria-label="Next image"
+                      >
+                        →
+                      </button>
+                      
+                      {/* Image counter */}
+                      <div style={{
+                        position: 'absolute',
+                        bottom: '15px',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        background: 'rgba(0,0,0,0.7)',
+                        color: 'var(--white)',
+                        padding: '8px 16px',
+                        borderRadius: '20px',
+                        fontSize: '0.9rem',
+                        fontFamily: 'JetBrains Mono, monospace',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(255,255,255,0.2)'
+                      }}>
+                        {selectedImageIndex + 1} / {product.images.length}
+                      </div>
+                    </>
+                  )}
+                </>
               ) : (
                 <div style={{
                   aspectRatio: '1',
@@ -248,46 +353,6 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
                 </div>
               )}
             </div>
-            
-            {product.images.length > 1 && (
-              <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(4, 1fr)', 
-                gap: '0.5rem' 
-              }}>
-                {product.images.map((image, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setSelectedImageIndex(index)}
-                    style={{
-                      aspectRatio: '1',
-                      position: 'relative',
-                      overflow: 'hidden',
-                      borderRadius: '8px',
-                      border: selectedImageIndex === index ? '2px solid var(--pink-main)' : '2px solid transparent',
-                      background: 'rgba(255,255,255,0.05)',
-                      transition: 'all 0.3s ease',
-                      cursor: 'pointer'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.boxShadow = '0 0 15px rgba(255,107,157,0.5)'
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.boxShadow = 'none'
-                    }}
-                    aria-label={`View image ${index + 1} of ${product.name}`}
-                  >
-                    <Image
-                      src={image.url}
-                      alt={image.alt || product.name}
-                      fill
-                      style={{ objectFit: 'cover' }}
-                      sizes="(max-width: 768px) 25vw, (max-width: 1200px) 15vw, 10vw"
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Details Section */}

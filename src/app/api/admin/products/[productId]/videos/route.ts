@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Cache for product video URLs (5 minutes)
+const productVideoCache = new Map<string, { videos: any[], timestamp: number }>()
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
 // Получить все видео для конкретного товара
 export async function GET(
   request: NextRequest,
@@ -8,6 +12,20 @@ export async function GET(
 ) {
   try {
     const { productId } = await params
+
+    // Check cache first
+    const cached = productVideoCache.get(productId)
+    if (cached && (Date.now() - cached.timestamp) < CACHE_DURATION) {
+      console.log('Returning cached product videos for:', productId)
+      return NextResponse.json({
+        productId,
+        productName: `Product ${productId}`, // We don't have the name in cache
+        videos: cached.videos,
+        count: cached.videos.length,
+        message: cached.videos.length > 0 ? `Found ${cached.videos.length} videos for product (cached)` : 'No videos configured for this product',
+        cached: true
+      })
+    }
 
     // Проверяем, что товар существует
     const product = await prisma.product.findUnique({
@@ -64,6 +82,12 @@ export async function GET(
         order: index,
         createdAt: setting.createdAt
       }))
+
+    // Update cache
+    productVideoCache.set(productId, {
+      videos,
+      timestamp: Date.now()
+    })
 
     return NextResponse.json({
       productId,
@@ -126,6 +150,9 @@ export async function POST(
         value: videoUrl.trim()
       }
     })
+    
+    // Clear cache after adding video
+    productVideoCache.delete(productId)
     
     console.log('New product video added:', videoKey, videoUrl)
 
@@ -228,6 +255,9 @@ export async function DELETE(
     await prisma.setting.delete({
       where: { key: videoId }
     })
+    
+    // Clear cache after deleting video
+    productVideoCache.delete(productId)
     
     console.log('Product video deleted:', videoId)
 

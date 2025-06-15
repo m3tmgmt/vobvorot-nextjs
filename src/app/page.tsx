@@ -43,7 +43,7 @@ export default function HomePage() {
     { id: 'bags', name: 'Bags', icon: '👜' }
   ]
 
-  // Функция для загрузки видео галереи
+  // Функция для загрузки видео галереи с предзагрузкой
   const loadVideosGallery = () => {
     console.log('Fetching home videos gallery from API...')
     fetch('/api/admin/site/home-videos')
@@ -56,6 +56,16 @@ export default function HomePage() {
         if (data.videos && data.videos.length > 0) {
           const videoUrls = data.videos.map((video: any) => video.url)
           console.log('Setting home videos to:', videoUrls)
+          
+          // Предзагружаем первое видео
+          if (videoUrls[0]) {
+            const firstVideo = document.createElement('video')
+            firstVideo.preload = 'auto'
+            firstVideo.src = videoUrls[0]
+            firstVideo.load()
+            console.log('Preloading first home video:', videoUrls[0])
+          }
+          
           setHomeVideo(videoUrls[0]) // Устанавливаем первое видео как текущее
           setAllVideos(videoUrls) // Обновляем массив всех видео
           console.log('Home videos gallery loaded. Total videos:', videoUrls.length)
@@ -143,10 +153,16 @@ export default function HomePage() {
               muted
               loop
               playsInline
+              preload={index === 0 ? "auto" : "metadata"}
               onError={(e) => console.error('Video error:', e, 'Video src:', video)}
               onLoadStart={() => console.log('Video load started:', video)}
               onLoadedData={() => console.log('Video loaded successfully:', video)}
-              onCanPlay={() => console.log('Video can play:', video)}
+              onCanPlay={() => {
+                console.log('Video can play:', video)
+                if (index === 0) {
+                  console.log('First video ready for immediate playback')
+                }
+              }}
             >
               <source src={video} type="video/mp4" />
             </video>

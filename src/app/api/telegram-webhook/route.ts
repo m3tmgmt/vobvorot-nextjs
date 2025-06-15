@@ -164,13 +164,106 @@ async function handleCommand(command: string, telegramCRM: any, crmDB: CRMDataba
 
 // Handle order actions
 async function handleAcceptOrder(orderId: string, telegramCRM: any, crmDB: CRMDatabase) {
-  // Update order status to processing
-  await telegramCRM.sendMessage(`✅ Заказ #${orderId} принят в работу`);
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+    
+    if (!adminApiKey) {
+      await telegramCRM.sendMessage('❌ Ошибка: API ключ администратора не настроен')
+      return
+    }
+
+    // Update order status to confirmed
+    const response = await fetch(`${baseUrl}/api/orders/${orderId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminApiKey}`
+      },
+      body: JSON.stringify({ status: 'confirmed' })
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      await telegramCRM.sendMessage(`✅ Заказ #${orderId} подтвержден и принят в работу`)
+      
+      // Notify customer if possible
+      if (result.order?.customer?.telegramChatId) {
+        try {
+          await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: result.order.customer.telegramChatId,
+              text: `✅ Ваш заказ #${orderId} подтвержден и принят в работу!`
+            })
+          })
+        } catch (error) {
+          console.log('Could not notify customer:', error)
+        }
+      }
+    } else {
+      const error = await response.json()
+      await telegramCRM.sendMessage(`❌ Ошибка при подтверждении заказа: ${error.error || 'Неизвестная ошибка'}`)
+    }
+  } catch (error) {
+    console.error('Error accepting order:', error)
+    await telegramCRM.sendMessage(`❌ Произошла ошибка при обработке заказа #${orderId}`)
+  }
 }
 
 async function handleRejectOrder(orderId: string, telegramCRM: any, crmDB: CRMDatabase) {
-  // Update order status to cancelled
-  await telegramCRM.sendMessage(`❌ Заказ #${orderId} отклонен`);
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+    
+    if (!adminApiKey) {
+      await telegramCRM.sendMessage('❌ Ошибка: API ключ администратора не настроен')
+      return
+    }
+
+    // Update order status to cancelled
+    const response = await fetch(`${baseUrl}/api/orders/${orderId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminApiKey}`
+      },
+      body: JSON.stringify({ status: 'cancelled' })
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      await telegramCRM.sendMessage(`❌ Заказ #${orderId} отклонен и отменен`)
+      
+      // Notify customer
+      if (result.order?.customer?.telegramChatId) {
+        try {
+          await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              chat_id: result.order.customer.telegramChatId,
+              text: `❌ К сожалению, ваш заказ #${orderId} был отменен. Если у вас есть вопросы, свяжитесь с поддержкой.`
+            })
+          })
+        } catch (error) {
+          console.log('Could not notify customer:', error)
+        }
+      }
+      
+      // TODO: Initiate refund process if payment was completed
+      if (result.order?.paymentStatus === 'completed') {
+        await telegramCRM.sendMessage(`💰 Внимание: Для заказа #${orderId} может потребоваться возврат средств`)
+      }
+    } else {
+      const error = await response.json()
+      await telegramCRM.sendMessage(`❌ Ошибка при отмене заказа: ${error.error || 'Неизвестная ошибка'}`)
+    }
+  } catch (error) {
+    console.error('Error rejecting order:', error)
+    await telegramCRM.sendMessage(`❌ Произошла ошибка при отмене заказа #${orderId}`)
+  }
 }
 
 async function handleShowCustomer(customerId: string, telegramCRM: any, crmDB: CRMDatabase) {

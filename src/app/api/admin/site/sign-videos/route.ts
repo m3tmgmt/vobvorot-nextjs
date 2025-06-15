@@ -1,9 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Cache for sign video URLs (5 minutes)
+let signVideoCache: { videos: any[], timestamp: number } | null = null
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
 // Получить все sign видео
 export async function GET() {
   try {
+    // Check cache first
+    if (signVideoCache && (Date.now() - signVideoCache.timestamp) < CACHE_DURATION) {
+      console.log('Returning cached sign videos')
+      return NextResponse.json({
+        videos: signVideoCache.videos,
+        count: signVideoCache.videos.length,
+        message: signVideoCache.videos.length > 0 ? `Found ${signVideoCache.videos.length} sign videos (cached)` : 'No sign videos configured',
+        cached: true
+      })
+    }
+
     // Получаем все видео из настроек для галереи (новый формат)
     const newVideoSettings = await prisma.setting.findMany({
       where: {
@@ -56,6 +71,12 @@ export async function GET() {
         createdAt: setting.createdAt
       }))
     
+    // Update cache
+    signVideoCache = {
+      videos,
+      timestamp: Date.now()
+    }
+    
     return NextResponse.json({
       videos,
       count: videos.length,
@@ -98,6 +119,9 @@ export async function POST(request: NextRequest) {
         value: videoUrl.trim()
       }
     })
+    
+    // Clear cache after adding video
+    signVideoCache = null
     
     console.log('New sign video added:', videoKey, videoUrl)
 
@@ -173,6 +197,9 @@ export async function DELETE(request: NextRequest) {
     await prisma.setting.delete({
       where: { key: videoId }
     })
+    
+    // Clear cache after deleting video
+    signVideoCache = null
     
     console.log('Sign video deleted:', videoId)
 

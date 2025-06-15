@@ -385,6 +385,30 @@ async function handlePaymentCompleted(order: any, webhookData: WebhookData) {
     })
   }
 
+  // Sync inventory changes with shared-data for CRM/Bot consistency
+  try {
+    const { updateProduct, sharedProducts } = await import('@/lib/shared-data')
+    for (const item of order.items) {
+      // Find corresponding product in shared-data
+      const sharedProduct = sharedProducts.find(p => p.name === item.sku.product.name)
+      if (sharedProduct) {
+        updateProduct(sharedProduct.id, {
+          stock: Math.max(0, (sharedProduct.stock || 0) - item.quantity)
+        })
+        logger.info('Synced inventory to shared-data', {
+          productId: sharedProduct.id,
+          productName: sharedProduct.name,
+          newStock: Math.max(0, (sharedProduct.stock || 0) - item.quantity),
+          decrementedBy: item.quantity
+        })
+      }
+    }
+  } catch (syncError) {
+    logger.error('Failed to sync inventory with shared-data', {
+      orderNumber: order.orderNumber
+    }, syncError instanceof Error ? syncError : new Error(String(syncError)))
+  }
+
   // Send CRM notifications after successful payment (for all order types)
   if (globalCRM) {
     try {
@@ -583,6 +607,30 @@ async function handleRefundCompleted(order: any, webhookData: WebhookData) {
         }
       }
     })
+  }
+
+  // Sync inventory restoration with shared-data for CRM/Bot consistency
+  try {
+    const { updateProduct, sharedProducts } = await import('@/lib/shared-data')
+    for (const item of order.items) {
+      // Find corresponding product in shared-data
+      const sharedProduct = sharedProducts.find(p => p.name === item.sku.product.name)
+      if (sharedProduct) {
+        updateProduct(sharedProduct.id, {
+          stock: (sharedProduct.stock || 0) + item.quantity
+        })
+        logger.info('Synced inventory restoration to shared-data', {
+          productId: sharedProduct.id,
+          productName: sharedProduct.name,
+          newStock: (sharedProduct.stock || 0) + item.quantity,
+          incrementedBy: item.quantity
+        })
+      }
+    }
+  } catch (syncError) {
+    logger.error('Failed to sync inventory restoration with shared-data', {
+      orderNumber: order.orderNumber
+    }, syncError instanceof Error ? syncError : new Error(String(syncError)))
   }
 
   return updatedOrder

@@ -75,18 +75,11 @@ export default function AboutPage() {
           
           <div className="section-intro-card">
             <p className="section-intro-text">
-              We are digital archaeologists, collecting fragments of the past 
-              and weaving them into tomorrow's dreams. Every piece tells a story, 
-              every click reveals a <span 
-                style={{ 
-                  color: 'var(--yellow-neon)', 
-                  cursor: 'pointer',
-                  textDecoration: 'underline dotted'
-                }}
-                onClick={handleSecretClick}
-              >
-                secret
-              </span>.
+              We're all about style, sincerity, and real feelings — living in the now, being present, and showing up fully. We want you to feel that with us, no filters.
+              <br />
+              And the pieces you find here?
+              <br />
+              They're meant to be something truly special — just like you.
             </p>
           </div>
         </div>
@@ -102,10 +95,9 @@ export default function AboutPage() {
                 🌐 Digital Playground
               </h3>
               <p style={{ lineHeight: '1.6', color: 'rgba(255,255,255,0.8)' }}>
-                vobvorot began as an experiment in digital nostalgia. We collect vintage 
-                cameras that captured memories before pixels existed, custom sneakers 
-                that walked through decades of style, and unique pieces that bridge 
-                the analog and digital worlds.
+                We're all about style, sincerity, and real feelings — living in the now, being present, and showing up fully. We want you to feel that with us, no filters.
+                And the pieces you find here?
+                They're meant to be something truly special — just like you.
               </p>
             </div>
 

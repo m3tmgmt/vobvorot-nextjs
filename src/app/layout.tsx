@@ -89,12 +89,13 @@ export const metadata: Metadata = {
   category: "fashion",
   icons: {
     icon: [
-      { url: '/icon', type: 'image/png', sizes: '32x32' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
       { url: '/favicon.ico', sizes: 'any' }
     ],
     apple: [
-      { url: '/apple-icon', type: 'image/png', sizes: '180x180' }
+      { url: '/favicon.svg', type: 'image/svg+xml', sizes: '180x180' }
     ],
+    shortcut: '/favicon.ico',
   },
 };
 

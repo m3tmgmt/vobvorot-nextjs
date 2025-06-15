@@ -8,6 +8,10 @@ interface SessionData {
   step?: string
   productData?: any
   orderFilter?: string
+  refundOrderId?: string
+  refundReason?: string
+  maxRefundAmount?: number
+  editingProductId?: string
 }
 
 type MyContext = Context & {
@@ -43,15 +47,33 @@ const mainMenu = new Menu<MyContext>('main-menu')
   .text('📦 Заказы', (ctx) => ctx.conversation.enter('manageOrders'))
   .text('🛍️ Товары', (ctx) => ctx.conversation.enter('manageProducts'))
   .row()
+  .text('🏷️ Категории', (ctx) => ctx.conversation.enter('manageCategories'))
   .text('📊 Статистика', (ctx) => ctx.conversation.enter('viewStats'))
+  .row()
   .text('🎬 Видео главной', (ctx) => ctx.conversation.enter('manageHomeVideo'))
-  .row()
   .text('✍️ Видео подписи', (ctx) => ctx.conversation.enter('manageSignVideos'))
-  .text('💬 Отзывы', (ctx) => ctx.conversation.enter('manageReviews'))
   .row()
+  .text('💬 Отзывы', (ctx) => ctx.conversation.enter('manageReviews'))
   .text('👥 Клиенты', (ctx) => ctx.conversation.enter('manageCustomers'))
 
 bot.use(mainMenu)
+
+// Обработчик текстовых сообщений для возврата средств и управления товарами
+bot.on('message:text', async (ctx) => {
+  if (!isAdmin(ctx)) return
+
+  const text = ctx.message.text
+  
+  if (ctx.session.step === 'waiting_refund_reason') {
+    await processRefundReason(ctx, text)
+  } else if (ctx.session.step === 'waiting_refund_amount') {
+    await processRefundAmount(ctx, text)
+  } else if (ctx.session.step === 'waiting_video_url') {
+    await processVideoUrl(ctx, text)
+  } else if (ctx.session.step?.startsWith('editing_')) {
+    await processFieldEdit(ctx, text)
+  }
+})
 
 // Старт бота
 bot.command('start', async (ctx) => {
@@ -129,6 +151,73 @@ async function manageProducts(conversation: any, ctx: MyContext) {
     .text('⬅️ Назад', (ctx) => ctx.reply('Главное меню', { reply_markup: mainMenu }))
 
   await ctx.editMessageReplyMarkup({ reply_markup: productsMenu })
+}
+
+// Конверсация для управления категориями
+async function manageCategories(conversation: any, ctx: MyContext) {
+  await ctx.reply('🏷️ *Управление категориями*', { parse_mode: 'Markdown' })
+  
+  const categoriesMenu = new Menu<MyContext>('categories-menu')
+    .text('➕ Добавить категорию', async (ctx) => {
+      await createCategoryConversation(conversation, ctx)
+    })
+    .text('📋 Список категорий', async (ctx) => {
+      await showCategoriesList(ctx)
+    })
+    .row()
+    .text('⬅️ Назад', (ctx) => ctx.reply('Главное меню', { reply_markup: mainMenu }))
+
+  await ctx.reply('Выберите действие:', { reply_markup: categoriesMenu })
+}
+
+async function createCategoryConversation(conversation: any, ctx: MyContext) {
+  await ctx.reply('📝 *Создание новой категории*\n\nВведите название категории:', { parse_mode: 'Markdown' })
+  
+  const nameResponse = await conversation.wait()
+  const categoryName = nameResponse.message?.text
+  
+  if (!categoryName || categoryName.trim().length === 0) {
+    await ctx.reply('❌ Некорректное название категории. Попробуйте еще раз.')
+    return
+  }
+
+  await ctx.reply('😄 *Выбор эмодзи для категории*\n\nВыберите эмодзи из предложенных или отправьте свой:', { 
+    parse_mode: 'Markdown' 
+  })
+
+  // Создаем меню с популярными эмодзи
+  const emojiMenu = new Menu<MyContext>('emoji-menu')
+    .text('🛍️', (ctx) => finalizeCategoryCreation(ctx, categoryName.trim(), '🛍️'))
+    .text('👕', (ctx) => finalizeCategoryCreation(ctx, categoryName.trim(), '👕'))
+    .text('👟', (ctx) => finalizeCategoryCreation(ctx, categoryName.trim(), '👟'))
+    .text('👜', (ctx) => finalizeCategoryCreation(ctx, categoryName.trim(), '👜'))
+    .row()
+    .text('💍', (ctx) => finalizeCategoryCreation(ctx, categoryName.trim(), '💍'))
+    .text('🎩', (ctx) => finalizeCategoryCreation(ctx, categoryName.trim(), '🎩'))
+    .text('⌚', (ctx) => finalizeCategoryCreation(ctx, categoryName.trim(), '⌚'))
+    .text('📱', (ctx) => finalizeCategoryCreation(ctx, categoryName.trim(), '📱'))
+    .row()
+    .text('🏠', (ctx) => finalizeCategoryCreation(ctx, categoryName.trim(), '🏠'))
+    .text('🎮', (ctx) => finalizeCategoryCreation(ctx, categoryName.trim(), '🎮'))
+    .text('📚', (ctx) => finalizeCategoryCreation(ctx, categoryName.trim(), '📚'))
+    .text('🎨', (ctx) => finalizeCategoryCreation(ctx, categoryName.trim(), '🎨'))
+    .row()
+    .text('⚽', (ctx) => finalizeCategoryCreation(ctx, categoryName.trim(), '⚽'))
+    .text('🚗', (ctx) => finalizeCategoryCreation(ctx, categoryName.trim(), '🚗'))
+    .text('✨', (ctx) => finalizeCategoryCreation(ctx, categoryName.trim(), '✨'))
+    .text('📦', (ctx) => finalizeCategoryCreation(ctx, categoryName.trim(), '📦'))
+
+  await ctx.reply('Популярные эмодзи:', { reply_markup: emojiMenu })
+
+  // Ожидаем пользовательский эмодзи
+  const emojiResponse = await conversation.wait()
+  const customEmoji = emojiResponse.message?.text
+  
+  if (customEmoji && customEmoji.length <= 10) {
+    await finalizeCategoryCreation(ctx, categoryName.trim(), customEmoji)
+  } else {
+    await finalizeCategoryCreation(ctx, categoryName.trim(), '📦') // Дефолтный эмодзи
+  }
 }
 
 // Конверсация для добавления нового товара
@@ -550,6 +639,7 @@ async function manageCustomers(conversation: any, ctx: MyContext) {
 bot.use(createConversation(manageOrders))
 bot.use(createConversation(manageProducts))
 bot.use(createConversation(addProduct))
+bot.use(createConversation(manageCategories))
 bot.use(createConversation(manageHomeVideo))
 bot.use(createConversation(manageSignVideos))
 bot.use(createConversation(viewStats))
@@ -598,7 +688,473 @@ async function searchOrder(ctx: MyContext, query: string) {
 }
 
 async function showProductsList(ctx: MyContext, action: string) {
-  await ctx.reply(`📋 Выберите товар для действия: ${action}`)
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+    
+    if (!adminApiKey) {
+      await ctx.reply('❌ Ошибка: API ключ администратора не настроен')
+      return
+    }
+
+    await ctx.reply('⏳ Загружаю список товаров...')
+
+    // Fetch products from API
+    const response = await fetch(`${baseUrl}/api/admin/products`, {
+      headers: {
+        'Authorization': `Bearer ${adminApiKey}`
+      }
+    })
+
+    if (!response.ok) {
+      await ctx.reply('❌ Ошибка загрузки товаров')
+      return
+    }
+
+    const result = await response.json()
+    const products = result.products || []
+
+    if (products.length === 0) {
+      await ctx.reply('📭 Товары не найдены')
+      return
+    }
+
+    // Create product list message
+    let message = `📋 *Товары для действия: ${action}*\n\n`
+    
+    const productMenu = new Menu<MyContext>(`products-${action}`)
+    
+    products.slice(0, 10).forEach((product: any, index: number) => {
+      const status = product.isActive ? '✅' : '🔒'
+      const productText = `${status} ${product.name.substring(0, 25)}${product.name.length > 25 ? '...' : ''}`
+      
+      if (index % 2 === 0) {
+        productMenu.text(productText, async (ctx) => {
+          await handleProductAction(ctx, product.id, action)
+        })
+        if (products[index + 1]) {
+          const nextProduct = products[index + 1]
+          const nextStatus = nextProduct.isActive ? '✅' : '🔒'
+          const nextText = `${nextStatus} ${nextProduct.name.substring(0, 25)}${nextProduct.name.length > 25 ? '...' : ''}`
+          productMenu.text(nextText, async (ctx) => {
+            await handleProductAction(ctx, nextProduct.id, action)
+          })
+        }
+        productMenu.row()
+      }
+    })
+
+    if (products.length > 10) {
+      productMenu.text(`📄 Показать еще (${products.length - 10})`, async (ctx) => {
+        // TODO: Implement pagination
+        await ctx.reply('🔄 Пагинация будет добавлена в следующем обновлении')
+      }).row()
+    }
+
+    productMenu.text('⬅️ Назад', (ctx) => ctx.reply('Главное меню', { reply_markup: mainMenu }))
+
+    products.forEach((product: any, index: number) => {
+      if (index < 10) {
+        const status = product.isActive ? 'Активен' : 'Архивирован'
+        const price = product.skus?.[0]?.price ? `$${product.skus[0].price}` : 'Цена не указана'
+        message += `${index + 1}. *${product.name}*\n`
+        message += `   💰 ${price} | 📊 ${status}\n`
+        message += `   🏷️ ${product.category?.name || 'Без категории'}\n\n`
+      }
+    })
+
+    await ctx.reply(message, { 
+      parse_mode: 'Markdown',
+      reply_markup: productMenu
+    })
+
+  } catch (error) {
+    console.error('Error showing products list:', error)
+    await ctx.reply('❌ Произошла ошибка при загрузке списка товаров')
+  }
+}
+
+async function handleProductAction(ctx: MyContext, productId: string, action: string) {
+  try {
+    if (action === 'edit') {
+      await showProductEditMenu(ctx, productId)
+    } else if (action === 'delete') {
+      await handleProductDelete(ctx, productId)
+    } else {
+      await ctx.reply(`🔧 Действие "${action}" для товара будет реализовано`)
+    }
+  } catch (error) {
+    console.error('Error handling product action:', error)
+    await ctx.reply('❌ Произошла ошибка при выполнении действия')
+  }
+}
+
+async function showProductEditMenu(ctx: MyContext, productId: string) {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+    
+    if (!adminApiKey) {
+      await ctx.reply('❌ Ошибка: API ключ администратора не настроен')
+      return
+    }
+
+    // Get product details
+    const response = await fetch(`${baseUrl}/api/admin/products?productId=${productId}`, {
+      headers: {
+        'Authorization': `Bearer ${adminApiKey}`
+      }
+    })
+
+    if (!response.ok) {
+      await ctx.reply('❌ Ошибка загрузки данных товара')
+      return
+    }
+
+    const result = await response.json()
+    const product = result.products?.find((p: any) => p.id === productId)
+    
+    if (!product) {
+      await ctx.reply('❌ Товар не найден')
+      return
+    }
+
+    const editMenu = new Menu<MyContext>(`edit-product-${productId}`)
+      .text('📝 Название', async (ctx) => {
+        await editProductField(ctx, productId, 'name', 'Введите новое название товара:')
+      })
+      .text('💰 Цена', async (ctx) => {
+        await editProductField(ctx, productId, 'price', 'Введите новую цену товара ($):')
+      })
+      .row()
+      .text('📄 Описание', async (ctx) => {
+        await editProductField(ctx, productId, 'description', 'Введите новое описание товара:')
+      })
+      .text('🏷️ Категория', async (ctx) => {
+        await showCategorySelection(ctx, productId)
+      })
+      .row()
+      .text('🎬 Видео', async (ctx) => {
+        await manageProductVideo(ctx, productId)
+      })
+      .text('🖼️ Изображения', async (ctx) => {
+        await manageProductImages(ctx, productId)
+      })
+      .row()
+      .text('📦 Остатки', async (ctx) => {
+        await editProductField(ctx, productId, 'stock', 'Введите количество товара на складе:')
+      })
+      .text('📊 Статус', async (ctx) => {
+        await toggleProductStatus(ctx, productId)
+      })
+      .row()
+      .text('🗃️ Архивировать', async (ctx) => {
+        await archiveProduct(ctx, productId)
+      })
+      .text('🗑️ Удалить', async (ctx) => {
+        await confirmProductDelete(ctx, productId)
+      })
+      .row()
+      .text('⬅️ Назад к списку', async (ctx) => {
+        await showProductsList(ctx, 'edit')
+      })
+
+    const status = product.isActive ? 'Активен' : 'Архивирован'
+    const price = product.skus?.[0]?.price ? `$${product.skus[0].price}` : 'Цена не указана'
+    const stock = product.skus?.[0]?.stock || 0
+    
+    let message = `🛍️ *Редактирование товара*\n\n`
+    message += `📝 *Название:* ${product.name}\n`
+    message += `💰 *Цена:* ${price}\n`
+    message += `📊 *Статус:* ${status}\n`
+    message += `📦 *Остатки:* ${stock} шт.\n`
+    message += `🏷️ *Категория:* ${product.category?.name || 'Без категории'}\n`
+    
+    if (product.description) {
+      message += `📄 *Описание:* ${product.description.substring(0, 100)}${product.description.length > 100 ? '...' : ''}\n`
+    }
+    
+    message += `\n🔧 Выберите что хотите изменить:`
+
+    await ctx.reply(message, { 
+      parse_mode: 'Markdown',
+      reply_markup: editMenu
+    })
+
+  } catch (error) {
+    console.error('Error showing product edit menu:', error)
+    await ctx.reply('❌ Произошла ошибка при загрузке меню редактирования')
+  }
+}
+
+async function archiveProduct(ctx: MyContext, productId: string) {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+    
+    if (!adminApiKey) {
+      await ctx.reply('❌ Ошибка: API ключ администратора не настроен')
+      return
+    }
+
+    await ctx.reply('⏳ Архивирую товар...')
+
+    // Set product as inactive
+    const response = await fetch(`${baseUrl}/api/admin/products`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminApiKey}`
+      },
+      body: JSON.stringify({ 
+        productId: productId,
+        status: 'inactive' 
+      })
+    })
+
+    if (response.ok) {
+      await ctx.reply('✅ Товар успешно архивирован!\n\n📝 Товар скрыт с сайта и не отображается клиентам')
+      await showProductEditMenu(ctx, productId)
+    } else {
+      const error = await response.json()
+      await ctx.reply(`❌ Ошибка архивации: ${error.error || 'Неизвестная ошибка'}`)
+    }
+
+  } catch (error) {
+    console.error('Error archiving product:', error)
+    await ctx.reply('❌ Произошла ошибка при архивации товара')
+  }
+}
+
+async function toggleProductStatus(ctx: MyContext, productId: string) {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+    
+    if (!adminApiKey) {
+      await ctx.reply('❌ Ошибка: API ключ администратора не настроен')
+      return
+    }
+
+    // Get current product status
+    const getResponse = await fetch(`${baseUrl}/api/admin/products?productId=${productId}`, {
+      headers: {
+        'Authorization': `Bearer ${adminApiKey}`
+      }
+    })
+
+    if (!getResponse.ok) {
+      await ctx.reply('❌ Ошибка получения данных товара')
+      return
+    }
+
+    const result = await getResponse.json()
+    const product = result.products?.find((p: any) => p.id === productId)
+    
+    if (!product) {
+      await ctx.reply('❌ Товар не найден')
+      return
+    }
+
+    const newStatus = product.status === 'active' ? 'inactive' : 'active'
+
+    await ctx.reply('⏳ Изменяю статус товара...')
+
+    // Toggle product status
+    const updateResponse = await fetch(`${baseUrl}/api/admin/products`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminApiKey}`
+      },
+      body: JSON.stringify({ 
+        productId: productId,
+        status: newStatus 
+      })
+    })
+
+    if (updateResponse.ok) {
+      const statusText = newStatus === 'active' ? 'активирован и доступен на сайте' : 'деактивирован и скрыт с сайта'
+      await ctx.reply(`✅ Товар успешно ${statusText}!`)
+      await showProductEditMenu(ctx, productId)
+    } else {
+      const error = await updateResponse.json()
+      await ctx.reply(`❌ Ошибка изменения статуса: ${error.error || 'Неизвестная ошибка'}`)
+    }
+
+  } catch (error) {
+    console.error('Error toggling product status:', error)
+    await ctx.reply('❌ Произошла ошибка при изменении статуса товара')
+  }
+}
+
+async function manageProductVideo(ctx: MyContext, productId: string) {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+    
+    if (!adminApiKey) {
+      await ctx.reply('❌ Ошибка: API ключ администратора не настроен')
+      return
+    }
+
+    // Get current product videos
+    const response = await fetch(`${baseUrl}/api/admin/products/${productId}/videos`, {
+      headers: {
+        'Authorization': `Bearer ${adminApiKey}`
+      }
+    })
+
+    if (!response.ok) {
+      await ctx.reply('❌ Ошибка загрузки видео товара')
+      return
+    }
+
+    const result = await response.json()
+    const videos = result.videos || []
+
+    const videoMenu = new Menu<MyContext>(`video-${productId}`)
+      .text('➕ Добавить видео', async (ctx) => {
+        await ctx.reply('🎬 Отправьте ссылку на видео для товара:')
+        ctx.session.step = 'waiting_video_url'
+        ctx.session.editingProductId = productId
+      })
+
+    if (videos.length > 0) {
+      videoMenu.row()
+      videos.forEach((video: any, index: number) => {
+        videoMenu.text(`🗑️ Удалить видео ${index + 1}`, async (ctx) => {
+          await deleteProductVideo(ctx, productId, video.id)
+        })
+        if ((index + 1) % 2 === 0) videoMenu.row()
+      })
+    }
+
+    videoMenu.row().text('⬅️ Назад к редактированию', async (ctx) => {
+      await showProductEditMenu(ctx, productId)
+    })
+
+    let message = `🎬 *Управление видео товара*\n\n`
+    
+    if (videos.length > 0) {
+      message += `📹 *Текущие видео:*\n`
+      videos.forEach((video: any, index: number) => {
+        message += `${index + 1}. ${video.url}\n`
+      })
+      message += `\n`
+    } else {
+      message += `📭 У товара пока нет видео\n\n`
+    }
+    
+    message += `🔧 Выберите действие:`
+
+    await ctx.reply(message, { 
+      parse_mode: 'Markdown',
+      reply_markup: videoMenu
+    })
+
+  } catch (error) {
+    console.error('Error managing product video:', error)
+    await ctx.reply('❌ Произошла ошибка при управлении видео товара')
+  }
+}
+
+async function deleteProductVideo(ctx: MyContext, productId: string, videoId: string) {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+    
+    if (!adminApiKey) {
+      await ctx.reply('❌ Ошибка: API ключ администратора не настроен')
+      return
+    }
+
+    await ctx.reply('⏳ Удаляю видео...')
+
+    const response = await fetch(`${baseUrl}/api/admin/products/${productId}/videos`, {
+      method: 'DELETE',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminApiKey}`
+      },
+      body: JSON.stringify({ videoId })
+    })
+
+    if (response.ok) {
+      await ctx.reply('✅ Видео успешно удалено!')
+      await manageProductVideo(ctx, productId)
+    } else {
+      const error = await response.json()
+      await ctx.reply(`❌ Ошибка удаления видео: ${error.error || 'Неизвестная ошибка'}`)
+    }
+
+  } catch (error) {
+    console.error('Error deleting product video:', error)
+    await ctx.reply('❌ Произошла ошибка при удалении видео')
+  }
+}
+
+async function manageProductImages(ctx: MyContext, productId: string) {
+  // TODO: Implement image management
+  await ctx.reply('🖼️ Управление изображениями товара будет реализовано в следующем обновлении')
+}
+
+async function editProductField(ctx: MyContext, productId: string, field: string, promptText: string) {
+  try {
+    ctx.session.editingProductId = productId
+    ctx.session.step = `editing_${field}`
+    
+    if (field === 'category') {
+      await showCategorySelection(ctx, productId)
+      return
+    }
+    
+    // For other fields, prompt for text input
+    await ctx.reply(`📝 ${promptText}\n\nВведите новое значение:`)
+    
+  } catch (error: any) {
+    await ctx.reply(`❌ Ошибка: ${error.message}`)
+  }
+}
+
+async function showCategorySelection(ctx: MyContext, productId: string) {
+  try {
+    const categories = await getCategories()
+    
+    const categoryMenu = new Menu<MyContext>('category-selection')
+    
+    categories.forEach((category: any) => {
+      categoryMenu.text(`${category.emoji} ${category.name}`, async (ctx) => {
+        await updateProductField(ctx, productId, 'category', {
+          name: category.name,
+          slug: category.slug
+        })
+      })
+      if (categories.indexOf(category) % 2 === 1) {
+        categoryMenu.row()
+      }
+    })
+    
+    categoryMenu.row()
+    categoryMenu.text('⬅️ Назад', async (ctx) => {
+      await showProductEditMenu(ctx, productId)
+    })
+    
+    await ctx.reply('🏷️ Выберите новую категорию:', { reply_markup: categoryMenu })
+    
+  } catch (error: any) {
+    await ctx.reply(`❌ Ошибка: ${error.message}`)
+  }
+}
+
+async function confirmProductDelete(ctx: MyContext, productId: string) {
+  // TODO: Implement delete confirmation
+  await ctx.reply('🗑️ Подтверждение удаления будет реализовано в следующем обновлении')
+}
+
+async function handleProductDelete(ctx: MyContext, productId: string) {
+  // TODO: Implement product deletion
+  await ctx.reply('🗑️ Удаление товара будет реализовано в следующем обновлении')
 }
 
 async function showInventory(ctx: MyContext) {
@@ -606,11 +1162,30 @@ async function showInventory(ctx: MyContext) {
 }
 
 async function getCategories() {
-  return [
-    { id: '1', name: 'Cameras' },
-    { id: '2', name: 'Fashion' },
-    { id: '3', name: 'Accessories' }
-  ]
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+    
+    if (!adminApiKey) {
+      return []
+    }
+
+    const response = await fetch(`${baseUrl}/api/admin/categories`, {
+      headers: {
+        'Authorization': `Bearer ${adminApiKey}`
+      }
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      return result.categories || []
+    }
+    
+    return []
+  } catch (error) {
+    console.error('Error fetching categories:', error)
+    return []
+  }
 }
 
 async function createProduct(productData: any) {
@@ -726,15 +1301,533 @@ function createOrderMenu(orderId: string) {
     .text('📦 Отправить', (ctx) => updateOrderStatus(ctx, orderId, 'shipped'))
     .row()
     .text('❌ Отменить', (ctx) => updateOrderStatus(ctx, orderId, 'cancelled'))
+    .text('💸 Возврат', (ctx) => handleRefundOrder(ctx, orderId))
+    .row()
     .text('👁️ Детали', (ctx) => showOrderDetails(ctx, orderId))
 }
 
 async function updateOrderStatus(ctx: MyContext, orderId: string, status: string) {
-  await ctx.reply(`✅ Статус заказа #${orderId} изменен на "${status}"`)
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+    
+    if (!adminApiKey) {
+      await ctx.reply('❌ Ошибка: API ключ администратора не настроен')
+      return
+    }
+
+    // Обновляем статус заказа через API
+    const response = await fetch(`${baseUrl}/api/orders/${orderId}/status`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminApiKey}`
+      },
+      body: JSON.stringify({ status })
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      const statusText = getStatusText(status)
+      await ctx.reply(`✅ Статус заказа #${orderId} изменен на "${statusText}"`)
+      
+      // Отправляем уведомление клиенту о смене статуса
+      if (result.order?.customer?.telegramChatId) {
+        try {
+          await ctx.api.sendMessage(
+            result.order.customer.telegramChatId,
+            `📦 Статус вашего заказа #${orderId} изменен на "${statusText}"`
+          )
+        } catch (error) {
+          console.log('Could not notify customer:', error)
+        }
+      }
+    } else {
+      const error = await response.json()
+      await ctx.reply(`❌ Ошибка обновления статуса: ${error.error || 'Неизвестная ошибка'}`)
+    }
+  } catch (error) {
+    console.error('Error updating order status:', error)
+    await ctx.reply('❌ Произошла ошибка при обновлении статуса заказа')
+  }
+}
+
+function getStatusText(status: string): string {
+  const statusMap: { [key: string]: string } = {
+    'pending': 'Ожидает обработки',
+    'confirmed': 'Подтвержден',
+    'processing': 'В обработке', 
+    'shipped': 'Отправлен',
+    'delivered': 'Доставлен',
+    'cancelled': 'Отменен'
+  }
+  return statusMap[status] || status
 }
 
 async function showOrderDetails(ctx: MyContext, orderId: string) {
-  await ctx.reply(`📋 Детали заказа #${orderId}`)
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+    
+    if (!adminApiKey) {
+      await ctx.reply('❌ Ошибка: API ключ администратора не настроен')
+      return
+    }
+
+    // Получаем детали заказа через API
+    const response = await fetch(`${baseUrl}/api/admin/orders?orderId=${orderId}`, {
+      headers: {
+        'Authorization': `Bearer ${adminApiKey}`
+      }
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      const order = result.orders?.find((o: any) => o.id === orderId)
+      
+      if (order) {
+        const statusText = getStatusText(order.status)
+        const paymentStatusText = getPaymentStatusText(order.paymentStatus)
+        
+        let message = `📋 *Детали заказа #${orderId}*\n\n`
+        message += `📊 Статус: ${statusText}\n`
+        message += `💳 Платеж: ${paymentStatusText}\n`
+        message += `💰 Сумма: $${order.total}\n`
+        message += `📅 Дата: ${new Date(order.createdAt).toLocaleDateString('ru-RU')}\n\n`
+        
+        if (order.customer) {
+          message += `👤 *Клиент:*\n`
+          message += `${order.customer.name || 'N/A'}\n`
+          message += `📧 ${order.customer.email || 'N/A'}\n`
+          if (order.customer.phone) message += `📞 ${order.customer.phone}\n`
+          message += `\n`
+        }
+        
+        if (order.shippingAddress) {
+          message += `🏠 *Адрес доставки:*\n`
+          message += `${order.shippingAddress.street}\n`
+          message += `${order.shippingAddress.city}, ${order.shippingAddress.state} ${order.shippingAddress.postalCode}\n`
+          message += `${order.shippingAddress.country}\n\n`
+        }
+        
+        if (order.items && order.items.length > 0) {
+          message += `🛍️ *Товары:*\n`
+          order.items.forEach((item: any, index: number) => {
+            message += `${index + 1}. ${item.productName}\n`
+            message += `   Количество: ${item.quantity}\n`
+            message += `   Цена: $${item.price}\n\n`
+          })
+        }
+        
+        if (order.trackingNumber) {
+          message += `📦 Трек-номер: \`${order.trackingNumber}\`\n`
+        }
+        
+        await ctx.reply(message, { parse_mode: 'Markdown' })
+      } else {
+        await ctx.reply(`❌ Заказ #${orderId} не найден`)
+      }
+    } else {
+      await ctx.reply('❌ Ошибка получения данных заказа')
+    }
+  } catch (error) {
+    console.error('Error showing order details:', error)
+    await ctx.reply('❌ Произошла ошибка при получении деталей заказа')
+  }
+}
+
+function getPaymentStatusText(status: string): string {
+  const statusMap: { [key: string]: string } = {
+    'pending': 'Ожидает оплаты',
+    'completed': 'Оплачен',
+    'failed': 'Ошибка оплаты',
+    'refunded': 'Возвращен'
+  }
+  return statusMap[status] || status
+}
+
+async function handleRefundOrder(ctx: MyContext, orderId: string) {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+    
+    if (!adminApiKey) {
+      await ctx.reply('❌ Ошибка: API ключ администратора не настроен')
+      return
+    }
+
+    // Get refund information for the order first
+    const infoResponse = await fetch(`${baseUrl}/api/orders/${orderId}/refund`, {
+      headers: {
+        'Authorization': `Bearer ${adminApiKey}`
+      }
+    })
+
+    if (!infoResponse.ok) {
+      await ctx.reply('❌ Ошибка получения информации о заказе')
+      return
+    }
+
+    const refundInfo = await infoResponse.json()
+
+    if (!refundInfo.canRefund) {
+      let reason = 'Заказ не может быть возвращен'
+      if (refundInfo.currentStatus === 'REFUNDED') {
+        reason = 'Заказ уже полностью возвращен'
+      } else if (refundInfo.paymentStatus !== 'COMPLETED') {
+        reason = 'Заказ не был оплачен'
+      }
+      await ctx.reply(`❌ ${reason}`)
+      return
+    }
+
+    // Show refund confirmation with details
+    let message = `💸 *Возврат средств для заказа #${orderId}*\n\n`
+    message += `💰 Сумма заказа: $${refundInfo.totalAmount}\n`
+    
+    if (refundInfo.hasPartialRefund) {
+      message += `🔄 Уже возвращено: $${refundInfo.refundedAmount}\n`
+      message += `💸 Доступно к возврату: $${refundInfo.maxRefundAmount}\n\n`
+    } else {
+      message += `💸 К возврату: $${refundInfo.maxRefundAmount}\n\n`
+    }
+    
+    message += `❓ Укажите причину возврата или отправьте "полный" для полного возврата:`
+
+    await ctx.reply(message, { parse_mode: 'Markdown' })
+
+    // Set conversation state to wait for refund reason
+    ctx.session.step = 'waiting_refund_reason'
+    ctx.session.refundOrderId = orderId
+    ctx.session.maxRefundAmount = refundInfo.maxRefundAmount
+
+  } catch (error) {
+    console.error('Error handling refund order:', error)
+    await ctx.reply('❌ Произошла ошибка при обработке возврата')
+  }
+}
+
+// Handle refund reason input (add this to message handler)
+async function processRefundReason(ctx: MyContext, reason: string) {
+  try {
+    const orderId = ctx.session.refundOrderId
+    const maxAmount = ctx.session.maxRefundAmount
+    
+    if (!orderId) {
+      await ctx.reply('❌ Ошибка: не найден заказ для возврата')
+      return
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+    
+    // Get admin ID from Telegram user (you might want to store this mapping)
+    const adminId = ctx.from?.id?.toString() || 'telegram_admin'
+
+    // Process full refund or ask for custom amount
+    if (reason.toLowerCase().includes('полный')) {
+      await processFullRefund(ctx, orderId, 'Полный возврат по запросу администратора', adminId, maxAmount || 0)
+    } else {
+      // Ask for custom amount
+      await ctx.reply(
+        `💸 Укажите сумму возврата (максимум $${maxAmount}) или отправьте "максимум" для полного возврата:`
+      )
+      ctx.session.step = 'waiting_refund_amount'
+      ctx.session.refundReason = reason
+    }
+
+  } catch (error) {
+    console.error('Error processing refund reason:', error)
+    await ctx.reply('❌ Произошла ошибка при обработке причины возврата')
+  }
+}
+
+async function processRefundAmount(ctx: MyContext, amountText: string) {
+  try {
+    const orderId = ctx.session.refundOrderId
+    const reason = ctx.session.refundReason
+    const maxAmount = ctx.session.maxRefundAmount
+    
+    if (!orderId || !reason) {
+      await ctx.reply('❌ Ошибка: не найдены данные для возврата')
+      return
+    }
+
+    const adminId = ctx.from?.id?.toString() || 'telegram_admin'
+
+    if (amountText.toLowerCase().includes('максимум')) {
+      await processFullRefund(ctx, orderId, reason, adminId, maxAmount || 0)
+      return
+    }
+
+    // Parse amount
+    const amount = parseFloat(amountText.replace(/[^0-9.]/g, ''))
+    
+    if (isNaN(amount) || amount <= 0) {
+      await ctx.reply('❌ Некорректная сумма. Укажите число больше 0')
+      return
+    }
+
+    if (amount > (maxAmount || 0)) {
+      await ctx.reply(`❌ Сумма превышает максимальную доступную для возврата ($${maxAmount || 0})`)
+      return
+    }
+
+    await processRefund(ctx, orderId, reason, adminId, amount)
+
+  } catch (error) {
+    console.error('Error processing refund amount:', error)
+    await ctx.reply('❌ Произошла ошибка при обработке суммы возврата')
+  }
+}
+
+async function processFullRefund(ctx: MyContext, orderId: string, reason: string, adminId: string, amount: number) {
+  await processRefund(ctx, orderId, reason, adminId, amount)
+}
+
+async function processRefund(ctx: MyContext, orderId: string, reason: string, adminId: string, amount: number) {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+
+    await ctx.reply('⏳ Обрабатываю возврат...')
+
+    const response = await fetch(`${baseUrl}/api/orders/${orderId}/refund`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminApiKey}`
+      },
+      body: JSON.stringify({
+        reason,
+        amount,
+        adminId,
+        notifyCustomer: true
+      })
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      await ctx.reply(
+        `✅ Возврат успешно обработан!\n\n` +
+        `💸 Сумма: $${result.refundAmount}\n` +
+        `🆔 ID возврата: ${result.refundId}\n` +
+        `📋 ${result.message}\n\n` +
+        `📧 Клиент уведомлен по email`
+      )
+    } else {
+      const error = await response.json()
+      await ctx.reply(`❌ Ошибка возврата: ${error.error || 'Неизвестная ошибка'}`)
+    }
+
+    // Clear session
+    ctx.session.step = undefined
+    ctx.session.refundOrderId = undefined
+    ctx.session.refundReason = undefined
+    ctx.session.maxRefundAmount = undefined
+
+  } catch (error) {
+    console.error('Error processing refund:', error)
+    await ctx.reply('❌ Произошла ошибка при обработке возврата')
+  }
+}
+
+async function processVideoUrl(ctx: MyContext, videoUrl: string) {
+  try {
+    const productId = ctx.session.editingProductId
+    
+    if (!productId) {
+      await ctx.reply('❌ Ошибка: не найден товар для добавления видео')
+      return
+    }
+
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+    
+    if (!adminApiKey) {
+      await ctx.reply('❌ Ошибка: API ключ администратора не настроен')
+      return
+    }
+
+    // Validate URL
+    if (!videoUrl.startsWith('http')) {
+      await ctx.reply('❌ Неверный формат ссылки. Ссылка должна начинаться с http:// или https://')
+      return
+    }
+
+    await ctx.reply('⏳ Добавляю видео к товару...')
+
+    const response = await fetch(`${baseUrl}/api/admin/products/${productId}/videos`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminApiKey}`
+      },
+      body: JSON.stringify({ videoUrl })
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      await ctx.reply('✅ Видео успешно добавлено к товару!')
+      
+      // Clear session and go back to video management
+      ctx.session.step = undefined
+      ctx.session.editingProductId = undefined
+      
+      await manageProductVideo(ctx, productId)
+    } else {
+      const error = await response.json()
+      await ctx.reply(`❌ Ошибка добавления видео: ${error.error || 'Неизвестная ошибка'}`)
+    }
+
+  } catch (error) {
+    console.error('Error processing video URL:', error)
+    await ctx.reply('❌ Произошла ошибка при добавлении видео')
+  }
+}
+
+async function finalizeCategoryCreation(ctx: MyContext, name: string, emoji: string) {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+    
+    if (!adminApiKey) {
+      await ctx.reply('❌ Ошибка: API ключ администратора не настроен')
+      return
+    }
+
+    await ctx.reply('⏳ Создаю категорию...')
+
+    const response = await fetch(`${baseUrl}/api/admin/categories`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminApiKey}`
+      },
+      body: JSON.stringify({ name, emoji })
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      await ctx.reply(`✅ Категория "${name}" ${emoji} успешно создана!`)
+      await showCategoriesList(ctx)
+    } else {
+      const error = await response.json()
+      await ctx.reply(`❌ Ошибка создания категории: ${error.error || 'Неизвестная ошибка'}`)
+    }
+
+  } catch (error) {
+    console.error('Error creating category:', error)
+    await ctx.reply('❌ Произошла ошибка при создании категории')
+  }
+}
+
+async function showCategoriesList(ctx: MyContext) {
+  try {
+    const categories = await getCategories()
+    
+    if (categories.length === 0) {
+      await ctx.reply('📭 Категории не найдены')
+      return
+    }
+
+    let message = '🏷️ *Список категорий:*\n\n'
+    categories.forEach((category: any, index: number) => {
+      const emoji = category.emoji || '📦'
+      message += `${index + 1}. ${emoji} *${category.name}*\n   Slug: \`${category.slug}\`\n\n`
+    })
+
+    await ctx.reply(message, { parse_mode: 'Markdown' })
+
+  } catch (error) {
+    console.error('Error showing categories list:', error)
+    await ctx.reply('❌ Произошла ошибка при загрузке списка категорий')
+  }
+}
+
+async function processFieldEdit(ctx: MyContext, newValue: string) {
+  try {
+    const productId = ctx.session.editingProductId
+    const step = ctx.session.step
+    
+    if (!productId || !step) {
+      await ctx.reply('❌ Ошибка: не найдены данные для редактирования')
+      return
+    }
+    
+    const field = step.replace('editing_', '')
+    let value: any = newValue.trim()
+    
+    // Convert values based on field type
+    if (field === 'price') {
+      value = parseFloat(value)
+      if (isNaN(value) || value <= 0) {
+        await ctx.reply('❌ Некорректная цена. Введите число больше 0:')
+        return
+      }
+    } else if (field === 'stock') {
+      value = parseInt(value)
+      if (isNaN(value) || value < 0) {
+        await ctx.reply('❌ Некорректное количество. Введите число больше или равное 0:')
+        return
+      }
+    } else if (field === 'weight') {
+      value = parseFloat(value)
+      if (isNaN(value) || value <= 0) {
+        await ctx.reply('❌ Некорректный вес. Введите число больше 0:')
+        return
+      }
+    }
+    
+    await updateProductField(ctx, productId, field, value)
+    
+  } catch (error: any) {
+    await ctx.reply(`❌ Ошибка: ${error.message}`)
+  }
+}
+
+async function updateProductField(ctx: MyContext, productId: string, field: string, value: any) {
+  try {
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+    const adminApiKey = process.env.ADMIN_API_KEY
+    
+    if (!adminApiKey) {
+      await ctx.reply('❌ Ошибка: API ключ администратора не настроен')
+      return
+    }
+    
+    await ctx.reply('⏳ Обновляю данные товара...')
+    
+    const updateData: any = { productId }
+    updateData[field] = value
+    
+    const response = await fetch(`${baseUrl}/api/admin/products`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${adminApiKey}`
+      },
+      body: JSON.stringify(updateData)
+    })
+    
+    if (response.ok) {
+      const result = await response.json()
+      await ctx.reply(`✅ Поле "${field}" успешно обновлено!`)
+      
+      // Clear session state
+      ctx.session.step = undefined
+      ctx.session.editingProductId = undefined
+      
+      // Return to edit menu
+      await showProductEditMenu(ctx, productId)
+    } else {
+      const error = await response.json()
+      await ctx.reply(`❌ Ошибка обновления: ${error.error || 'Неизвестная ошибка'}`)
+    }
+    
+  } catch (error: any) {
+    await ctx.reply(`❌ Ошибка: ${error.message}`)
+  }
 }
 
 export { bot }

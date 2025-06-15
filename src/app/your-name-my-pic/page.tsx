@@ -16,7 +16,7 @@ export default function YourNameMyPicPage() {
   const [videos, setVideos] = useState<string[]>([])
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
 
-  // Функция для загрузки видео галереи (аналогично главной странице)
+  // Функция для загрузки видео галереи с предзагрузкой первого видео
   const loadVideosGallery = () => {
     console.log('Fetching sign videos gallery from API...')
     fetch('/api/admin/site/sign-videos')
@@ -29,6 +29,16 @@ export default function YourNameMyPicPage() {
         if (data.videos && data.videos.length > 0) {
           const videoUrls = data.videos.map((video: any) => video.url)
           console.log('Setting sign videos to:', videoUrls)
+          
+          // Предзагружаем первое видео
+          if (videoUrls[0]) {
+            const firstVideo = document.createElement('video')
+            firstVideo.preload = 'auto'
+            firstVideo.src = videoUrls[0]
+            firstVideo.load()
+            console.log('Preloading first video:', videoUrls[0])
+          }
+          
           setVideos(videoUrls) // Обновляем массив всех видео
           console.log('Sign videos gallery loaded. Total videos:', videoUrls.length)
         } else {
@@ -201,7 +211,15 @@ export default function YourNameMyPicPage() {
               muted
               loop
               playsInline
+              preload={index === 0 ? "auto" : "metadata"}
               onError={() => console.error('Video failed to load:', video)}
+              onLoadStart={() => console.log('Video loading started:', video)}
+              onCanPlay={() => {
+                console.log('Video can play:', video)
+                if (index === 0) {
+                  console.log('First video ready to play immediately')
+                }
+              }}
             >
               <source src={video} type="video/mp4" />
             </video>

@@ -1018,6 +1018,31 @@ body {
   transform: translateY(-1px);
 }
 
+/* Puzzle hint button specific styles */
+.puzzle-hint-btn.hint-inactive {
+  background: transparent;
+  border-color: var(--yellow-neon);
+  color: var(--yellow-neon);
+}
+
+.puzzle-hint-btn.hint-active {
+  background: var(--yellow-neon);
+  border-color: var(--yellow-neon);
+  color: var(--black);
+}
+
+.puzzle-hint-btn.hint-inactive:hover {
+  background: rgba(255, 255, 0, 0.1);
+  border-color: var(--yellow-neon);
+  color: var(--yellow-neon);
+}
+
+.puzzle-hint-btn.hint-active:hover {
+  background: var(--yellow-neon);
+  border-color: var(--yellow-neon);
+  color: var(--black);
+}
+
 /* Product Grid */
 .products-grid {
   display: grid !important;

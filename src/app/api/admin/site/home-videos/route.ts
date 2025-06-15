@@ -1,9 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
+// Cache for video URLs (5 minutes)
+let videoCache: { videos: any[], timestamp: number } | null = null
+const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
+
 // Получить все домашние видео
 export async function GET() {
   try {
+    // Check cache first
+    if (videoCache && (Date.now() - videoCache.timestamp) < CACHE_DURATION) {
+      console.log('Returning cached home videos')
+      return NextResponse.json({
+        videos: videoCache.videos,
+        count: videoCache.videos.length,
+        message: videoCache.videos.length > 0 ? `Found ${videoCache.videos.length} videos (cached)` : 'No videos configured',
+        cached: true
+      })
+    }
+
     // Получаем все видео из настроек для галереи (новый формат)
     const newVideoSettings = await prisma.setting.findMany({
       where: {
@@ -45,6 +60,12 @@ export async function GET() {
         order: index,
         createdAt: setting.createdAt
       }))
+    
+    // Update cache
+    videoCache = {
+      videos,
+      timestamp: Date.now()
+    }
     
     return NextResponse.json({
       videos,
@@ -88,6 +109,9 @@ export async function POST(request: NextRequest) {
         value: videoUrl.trim()
       }
     })
+    
+    // Clear cache after adding video
+    videoCache = null
     
     console.log('New home video added:', videoKey, videoUrl)
 
@@ -163,6 +187,9 @@ export async function DELETE(request: NextRequest) {
     await prisma.setting.delete({
       where: { key: videoId }
     })
+    
+    // Clear cache after deleting video
+    videoCache = null
     
     console.log('Home video deleted:', videoId)
 

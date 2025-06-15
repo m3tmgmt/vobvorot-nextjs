@@ -53,6 +53,15 @@ export default function ProductVideoGallery({
       }
       
       if (data.videos && data.videos.length > 0) {
+        // Предзагружаем первое видео
+        if (data.videos[0]) {
+          const firstVideo = document.createElement('video')
+          firstVideo.preload = 'auto'
+          firstVideo.src = data.videos[0].url
+          firstVideo.load()
+          console.log('Preloading first product video:', data.videos[0].url)
+        }
+        
         setVideos(data.videos)
         setCurrentVideoIndex(0)
         console.log('Product videos loaded:', data.videos.length)
@@ -137,10 +146,16 @@ export default function ProductVideoGallery({
             loop={loop}
             controls={controls}
             playsInline={playsInline}
+            preload={index === 0 ? "auto" : "metadata"}
             onError={handleVideoError}
             onLoadStart={() => console.log('Video load started:', video.url)}
             onLoadedData={() => handleVideoLoad(video.url)}
-            onCanPlay={() => console.log('Video can play:', video.url)}
+            onCanPlay={() => {
+              console.log('Video can play:', video.url)
+              if (index === 0) {
+                console.log('First product video ready for immediate playback')
+              }
+            }}
             style={{
               display: index === currentVideoIndex ? 'block' : 'none',
               width: '100%',

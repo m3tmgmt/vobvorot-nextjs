@@ -117,11 +117,9 @@ export function PuzzleCard({ piece, onHintToggle, showHint = false }: PuzzleCard
       
       <button
         onClick={() => onHintToggle?.(piece.id)}
-        className="filter-btn"
+        className={`filter-btn puzzle-hint-btn ${showHint ? 'hint-active' : 'hint-inactive'}`}
         style={{ 
-          width: '100%',
-          background: showHint ? 'var(--yellow-neon)' : 'transparent',
-          color: showHint ? 'var(--black)' : 'var(--yellow-neon)'
+          width: '100%'
         }}
       >
         {showHint ? 'Hide Hint' : 'Show Hint'} 💡

@@ -104,7 +104,8 @@ export async function POST(request: NextRequest) {
       categoryData = {
         id: `cat-${categorySlug}`,
         name: category || 'General',
-        slug: categorySlug
+        slug: categorySlug,
+        emoji: '📦' // Default emoji for new categories
       }
     }
 
@@ -113,7 +114,10 @@ export async function POST(request: NextRequest) {
       name,
       description: description || '',
       brand: brand || 'EXVICPMOUR',
-      category: categoryData,
+      category: {
+        name: categoryData.name,
+        slug: categoryData.slug
+      },
       price: parseFloat(price),
       stock: parseInt(stock) || 0,
       weight: parseFloat(weight) || 0.5, // Default weight 0.5kg for shipping calculations
