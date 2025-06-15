@@ -7,30 +7,42 @@ export default function YourNameMyPicPage() {
   const [formData, setFormData] = useState({
     signName: '',
     email: '',
+    phone: '',
     extraNotes: ''
   })
+  const [paymentMethod, setPaymentMethod] = useState<'westernbid_stripe' | 'westernbid_paypal'>('westernbid_stripe')
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [videos, setVideos] = useState<string[]>([])
   const [currentVideoIndex, setCurrentVideoIndex] = useState(0)
 
-  // Загружаем видео при монтировании компонента
-  useEffect(() => {
-    const loadVideos = async () => {
-      try {
-        const response = await fetch('/api/admin/site/sign-videos')
-        const data = await response.json()
+  // Функция для загрузки видео галереи (аналогично главной странице)
+  const loadVideosGallery = () => {
+    console.log('Fetching sign videos gallery from API...')
+    fetch('/api/admin/site/sign-videos')
+      .then(res => {
+        console.log('Sign videos API response status:', res.status)
+        return res.json()
+      })
+      .then(data => {
+        console.log('Sign videos API data:', data)
         if (data.videos && data.videos.length > 0) {
-          setVideos(data.videos.map((video: any) => video.url))
+          const videoUrls = data.videos.map((video: any) => video.url)
+          console.log('Setting sign videos to:', videoUrls)
+          setVideos(videoUrls) // Обновляем массив всех видео
+          console.log('Sign videos gallery loaded. Total videos:', videoUrls.length)
+        } else {
+          console.log('No videos in gallery, showing empty state')
+          setVideos([]) // Пустой массив - нет видео для показа
         }
-      } catch (error) {
-        console.error('Failed to load sign page videos:', error)
-      }
-    }
-    
-    loadVideos()
-    // Обновляем видео каждые 30 секунд
-    const interval = setInterval(loadVideos, 30000)
+      })
+      .catch(err => console.error('Failed to fetch sign videos:', err))
+  }
+
+  // Загружаем галерею видео с API и обновляем каждые 30 секунд (аналогично главной странице)
+  useEffect(() => {
+    loadVideosGallery()
+    const interval = setInterval(loadVideosGallery, 30000) // Обновляем каждые 30 секунд
     return () => clearInterval(interval)
   }, [])
 
@@ -63,21 +75,66 @@ export default function YourNameMyPicPage() {
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify({
+          signName: formData.signName,
+          email: formData.email,
+          phone: formData.phone,
+          extraNotes: formData.extraNotes,
+          paymentMethod: paymentMethod
+        })
       })
 
       const result = await response.json()
 
-      if (response.ok && result.success) {
-        // Redirect to payment page
-        if (result.paymentUrl) {
+      if (response.ok) {
+        console.log('Sign order created successfully:', result)
+        console.log('Payment URL:', result.paymentUrl)
+        
+        // If form data is provided, create and submit form directly to WesternBid
+        if (result.formData && result.targetUrl) {
+          console.log('Creating direct payment form for:', result.paymentGateway)
+          console.log('Form data:', result.formData)
+          
+          // Create form element
+          const form = document.createElement('form')
+          form.method = 'POST'
+          form.action = result.targetUrl
+          form.style.display = 'none'
+          
+          // Add all form fields
+          Object.entries(result.formData).forEach(([key, value]) => {
+            const input = document.createElement('input')
+            input.type = 'hidden'
+            input.name = key
+            input.value = String(value)
+            form.appendChild(input)
+          })
+          
+          // Add form to page and submit
+          document.body.appendChild(form)
+          console.log('Submitting form directly to payment gateway...')
+          form.submit()
+          
+        } else if (result.paymentUrl) {
+          console.log('Redirecting to payment URL:', result.paymentUrl)
           window.location.href = result.paymentUrl
         } else {
+          console.log('No payment URL provided, showing success page')
           // Fallback to success page
           setIsSubmitted(true)
         }
       } else {
-        alert(result.error || 'Something went wrong. Please try again.')
+        const errorData = result.error ? result : await response.json()
+        console.error('Sign order creation failed:', errorData)
+        
+        // Show more user-friendly error messages
+        if (errorData.error === 'Missing required order data') {
+          alert('Please fill in all required fields')
+        } else if (errorData.error === 'Payment gateway is currently disabled') {
+          alert('Payment system is temporarily unavailable. Please try again later.')
+        } else {
+          alert(errorData.error || 'Unable to process your order. Please try again.')
+        }
       }
     } catch (error) {
       console.error('Order submission failed:', error)
@@ -131,47 +188,38 @@ export default function YourNameMyPicPage() {
 
   return (
     <div style={{ minHeight: '100vh' }}>
-      {/* Hero Section with Video */}
-      <section className="hero-section hero-small">
+      {/* Hero Section with Video (Full structure like home page) */}
+      <section className="hero-section">
         {/* Video Background */}
         {videos.length > 0 ? (
           videos.map((video, index) => (
             <video
               key={`${video}-${index}`}
               className={`hero-video-container ${index === currentVideoIndex ? 'active' : ''}`}
+              style={{ zIndex: 8 }}
               autoPlay
               muted
               loop
               playsInline
-              style={{
-                position: 'absolute',
-                top: 0,
-                left: 0,
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                opacity: index === currentVideoIndex ? 1 : 0,
-                transition: 'opacity 1s ease-in-out'
-              }}
+              onError={() => console.error('Video failed to load:', video)}
             >
               <source src={video} type="video/mp4" />
             </video>
           ))
         ) : (
-          // Fallback gradient background when no videos
-          <div className="hero-video-container active" style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            background: 'linear-gradient(135deg, #FF6B9D 0%, #9D4EDD 50%, #00F5FF 100%)'
-          }} />
+          // Dark placeholder when no videos are available
+          <div 
+            className="hero-video-container active"
+            style={{
+              background: 'linear-gradient(135deg, rgba(0,0,0,0.8), rgba(25,25,25,0.9))',
+              zIndex: 8
+            }}
+          />
         )}
         
         <div className="hero-overlay" style={{ background: 'linear-gradient(135deg, rgba(255,107,157,0.8), rgba(157,78,221,0.6))' }}></div>
         
-        <div className="hero-content" style={{ textAlign: 'center', position: 'relative', zIndex: 10 }}>
+        <div className="hero-content" style={{ textAlign: 'center', position: 'relative' }}>
           <h1 className="hero-title glitch" data-logo style={{ fontSize: '3.5rem', marginBottom: '1rem' }}>
             Your Name, My Pic
           </h1>
@@ -198,12 +246,6 @@ export default function YourNameMyPicPage() {
                 key={index}
                 className={`hero-pagination-dot ${index === currentVideoIndex ? 'active' : ''}`}
                 onClick={() => setCurrentVideoIndex(index)}
-                style={{
-                  position: 'absolute',
-                  bottom: '20px',
-                  left: `calc(50% - ${videos.length * 10}px + ${index * 20}px)`,
-                  zIndex: 20
-                }}
               />
             ))}
           </div>
@@ -335,6 +377,71 @@ export default function YourNameMyPicPage() {
                 />
               </div>
 
+              {/* Phone */}
+              <div style={{ marginBottom: '2rem' }}>
+                <label style={{
+                  display: 'block',
+                  color: 'var(--white)',
+                  marginBottom: '0.5rem',
+                  fontSize: '1.1rem',
+                  fontWeight: '600'
+                }}>
+                  3. Your phone number
+                </label>
+                <p style={{ 
+                  color: 'rgba(255,255,255,0.7)', 
+                  fontSize: '0.9rem', 
+                  marginBottom: '1rem' 
+                }}>
+                  Required for payment processing.
+                </p>
+                <input
+                  type="tel"
+                  name="phone"
+                  value={formData.phone}
+                  maxLength={16}
+                  onChange={(e) => {
+                    let value = e.target.value
+                    
+                    // Remove any non-digit characters except + and spaces/hyphens/parentheses for formatting
+                    value = value.replace(/[^\d\+\s\-\(\)]/g, '')
+                    
+                    // Auto-add + if user starts typing a number without it
+                    if (value.length > 0 && !value.startsWith('+') && /^\d/.test(value)) {
+                      value = '+' + value
+                    }
+                    
+                    // Limit to 16 characters
+                    if (value.length > 16) {
+                      value = value.substring(0, 16)
+                    }
+                    
+                    setFormData(prev => ({
+                      ...prev,
+                      phone: value
+                    }))
+                  }}
+                  required
+                  placeholder="+1 (555) 123-4567"
+                  style={{
+                    width: '100%',
+                    padding: '1rem',
+                    background: 'rgba(255,255,255,0.1)',
+                    border: '1px solid var(--cyan-accent)',
+                    borderRadius: '8px',
+                    color: 'var(--white)',
+                    fontSize: '1rem'
+                  }}
+                />
+                <p style={{
+                  color: 'rgba(255,255,255,0.6)',
+                  fontSize: '0.8rem',
+                  marginTop: '0.25rem'
+                }}>
+                  Include country code (e.g., +1 for US, +44 for UK)
+                </p>
+              </div>
+
               {/* Extra notes */}
               <div style={{ marginBottom: '2rem' }}>
                 <label style={{
@@ -344,7 +451,7 @@ export default function YourNameMyPicPage() {
                   fontSize: '1.1rem',
                   fontWeight: '600'
                 }}>
-                  3. Extra notes (optional)
+                  4. Extra notes (optional)
                 </label>
                 <p style={{ 
                   color: 'rgba(255,255,255,0.7)', 
@@ -377,18 +484,77 @@ export default function YourNameMyPicPage() {
                 <label style={{
                   display: 'block',
                   color: 'var(--white)',
-                  marginBottom: '0.5rem',
+                  marginBottom: '1rem',
                   fontSize: '1.1rem',
                   fontWeight: '600'
                 }}>
-                  4. Payment
+                  5. Payment Method
                 </label>
+                
+                {/* Payment method selection */}
+                <div style={{ marginBottom: '1rem' }}>
+                  {[
+                    { 
+                      id: 'westernbid_stripe', 
+                      name: 'Credit/Debit Card', 
+                      description: 'Pay securely with STRIPE',
+                      icon: '💳'
+                    },
+                    { 
+                      id: 'westernbid_paypal', 
+                      name: 'PayPal', 
+                      description: 'Pay with PayPal account',
+                      icon: '💰'
+                    }
+                  ].map((method) => (
+                    <div
+                      key={method.id}
+                      onClick={() => setPaymentMethod(method.id as any)}
+                      style={{
+                        padding: '1.5rem',
+                        background: paymentMethod === method.id 
+                          ? 'rgba(0,245,255,0.2)' 
+                          : 'rgba(255,255,255,0.1)',
+                        border: `2px solid ${paymentMethod === method.id 
+                          ? 'var(--cyan-accent)' 
+                          : 'rgba(255,255,255,0.2)'}`,
+                        borderRadius: '12px',
+                        cursor: 'pointer',
+                        transition: 'all 0.3s ease',
+                        marginBottom: '1rem'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <span style={{ fontSize: '2rem' }}>{method.icon}</span>
+                        <div>
+                          <h3 style={{ 
+                            color: 'var(--white)', 
+                            fontSize: '1.2rem',
+                            marginBottom: '0.5rem' 
+                          }}>
+                            {method.name}
+                          </h3>
+                          <p style={{ 
+                            color: 'rgba(255,255,255,0.7)', 
+                            fontSize: '0.9rem' 
+                          }}>
+                            {method.id === 'westernbid_stripe' ? (
+                              <>Pay securely with <strong>STRIPE</strong></>
+                            ) : (
+                              method.description
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               {/* Submit button */}
               <button
                 type="submit"
-                disabled={isLoading || !formData.signName || !formData.email}
+                disabled={isLoading || !formData.signName || !formData.email || !formData.phone}
                 style={{
                   width: '100%',
                   background: isLoading 
@@ -402,10 +568,10 @@ export default function YourNameMyPicPage() {
                   borderRadius: '12px',
                   cursor: isLoading ? 'not-allowed' : 'pointer',
                   transition: 'all 0.3s ease',
-                  opacity: isLoading || !formData.signName || !formData.email ? 0.7 : 1
+                  opacity: isLoading || !formData.signName || !formData.email || !formData.phone ? 0.7 : 1
                 }}
               >
-                {isLoading ? 'Processing...' : 'Pay $50 & Submit'}
+                {isLoading ? 'Creating Order...' : '🔒 Proceed to Secure Payment'}
               </button>
             </form>
           </div>

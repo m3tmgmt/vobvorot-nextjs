@@ -10,14 +10,14 @@ export async function POST(request: NextRequest) {
   try {
     const data = await request.json()
     
-    const { signName, email, extraNotes } = data
+    const { signName, email, phone, extraNotes, paymentMethod = 'westernbid_stripe' } = data
     const amount = 50 // Fixed price for sign photos
     const currency = 'USD'
     
     // Validate required fields
-    if (!signName || !email) {
+    if (!signName || !email || !phone) {
       return NextResponse.json(
-        { error: 'Sign name and email are required' },
+        { error: 'Sign name, email, and phone number are required' },
         { status: 400 }
       )
     }
@@ -49,6 +49,8 @@ export async function POST(request: NextRequest) {
       description: `Custom Sign Photo: "${signName}"`,
       customerEmail: email,
       customerName: signName,
+      customerPhone: phone,
+      paymentMethod: paymentMethod, // Include payment method
       returnUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success?type=sign&orderId=${orderId}`,
       cancelUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/cancel?type=sign&orderId=${orderId}`,
       webhookUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`,
@@ -58,7 +60,18 @@ export async function POST(request: NextRequest) {
         signName: signName,
         extraNotes: extraNotes || '',
         customerEmail: email,
-        estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        customerPhone: phone,
+        estimatedDelivery: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+        // Digital product configuration
+        isDigitalProduct: true,
+        productType: 'digital',
+        deliveryMethod: 'email',
+        noShipping: true,
+        // Digital delivery placeholders (already configured in database)
+        shippingAddress: 'Digital Delivery',
+        shippingCity: 'Email',
+        shippingCountry: 'Digital',
+        shippingZip: '00000'
       }
     }
 
@@ -66,6 +79,10 @@ export async function POST(request: NextRequest) {
     const paymentResult = await westernbid.createPayment(paymentRequest)
     
     if (paymentResult.success && paymentResult.paymentUrl) {
+      // Generate WesternBid form data for direct client submission (like checkout API)
+      const preferredGate = paymentMethod === 'westernbid_stripe' ? 'stripe' : 'paypal'
+      const formData = westernbid.generatePaymentFormData(paymentRequest, paymentResult.paymentId || `wb_${Date.now()}_${orderId}`, preferredGate)
+      
       // Save order to database
       const order = await prisma.order.create({
         data: {
@@ -74,7 +91,7 @@ export async function POST(request: NextRequest) {
           status: 'PENDING',
           shippingName: signName,
           shippingEmail: email,
-          shippingPhone: '',
+          shippingPhone: phone,
           shippingAddress: 'Digital Delivery',
           shippingCity: 'Email',
           shippingCountry: 'Digital',
@@ -159,15 +176,24 @@ export async function POST(request: NextRequest) {
         }
       }
       
-      return NextResponse.json({
+      // Return the same format as checkout API for direct payment gateway submission
+      const response: any = {
         success: true,
         orderId: orderId,
-        paymentUrl: paymentResult.paymentUrl,
         paymentId: paymentResult.paymentId,
         sessionId: paymentResult.sessionId,
         message: 'Sign order created successfully',
         estimatedDelivery: '2-7 days'
-      })
+      }
+
+      // Add direct form submission data (always available now)
+      response.formData = formData
+      response.targetUrl = 'https://shop.westernbid.info'
+      response.paymentGateway = 'westernbid'
+      
+      // DO NOT include paymentUrl to force direct form submission (avoids redirect page)
+
+      return NextResponse.json(response)
     } else {
       // Payment creation failed
       logger.error('WesternBid payment creation failed for sign order', {

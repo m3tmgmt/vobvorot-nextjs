@@ -22,13 +22,8 @@ interface OrderItem {
 }
 
 interface ShippingInfo {
-  firstName: string
-  lastName: string
   email: string
   phone: string
-  address: string
-  city: string
-  postalCode: string
   country: string
   state?: string
 }
@@ -110,13 +105,13 @@ export async function POST(request: NextRequest) {
         total: orderData.total,
         
         // Shipping information
-        shippingName: `${orderData.shippingInfo.firstName} ${orderData.shippingInfo.lastName}`,
+        shippingName: orderData.shippingInfo.email, // Use email as identifier since we don't have name fields
         shippingEmail: orderData.shippingInfo.email,
         shippingPhone: orderData.shippingInfo.phone,
-        shippingAddress: orderData.shippingInfo.address,
-        shippingCity: orderData.shippingInfo.city,
+        shippingAddress: 'Address to be provided',
+        shippingCity: 'City to be provided',
         shippingState: orderData.shippingInfo.state || null,
-        shippingZip: orderData.shippingInfo.postalCode,
+        shippingZip: 'ZIP to be provided',
         shippingCountry: orderData.shippingInfo.country,
         
         // Payment information
@@ -207,7 +202,7 @@ export async function POST(request: NextRequest) {
       currency: 'USD',
       description: `Order ${orderNumber} - ${orderData.items.length} items (${orderData.paymentInfo.method.toUpperCase()})`,
       customerEmail: orderData.shippingInfo.email,
-      customerName: `${orderData.shippingInfo.firstName} ${orderData.shippingInfo.lastName}`,
+      customerName: orderData.shippingInfo.email, // Use email as name since we don't have name fields
       customerPhone: orderData.shippingInfo.phone,
       returnUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/success?orderId=${orderNumber}`,
       cancelUrl: `${process.env.NEXT_PUBLIC_SITE_URL}/payment/cancel?orderId=${orderNumber}`,
@@ -219,10 +214,10 @@ export async function POST(request: NextRequest) {
         itemCount: orderData.items.length,
         shippingCountry: orderData.shippingInfo.country,
         preferredPaymentMethod: orderData.paymentInfo.method,
-        shippingAddress: orderData.shippingInfo.address,
-        shippingCity: orderData.shippingInfo.city,
+        shippingAddress: 'Address to be provided',
+        shippingCity: 'City to be provided',
         shippingState: orderData.shippingInfo.state || '',
-        shippingZip: orderData.shippingInfo.postalCode,
+        shippingZip: 'ZIP to be provided',
         // Detailed items information for better tracking
         items: orderData.items.map((item, index) => ({
           [`item_${index + 1}_name`]: item.product.name,

@@ -80,6 +80,9 @@ async function handleCallbackQuery(callbackQuery: any) {
     case 'video':
       await sendVideoMenu(chatId)
       break
+    case 'sign_video':
+      await sendSignVideoMenu(chatId)
+      break
     case 'orders_new':
       await sendOrdersByStatus(chatId, 'PENDING')
       break
@@ -109,6 +112,15 @@ async function handleCallbackQuery(callbackQuery: any) {
       break
     case 'current_video':
       await getCurrentVideoInfo(chatId)
+      break
+    case 'upload_sign_video':
+      await startUploadSignVideo(chatId, userId)
+      break
+    case 'delete_sign_video':
+      await deleteSignVideo(chatId)
+      break
+    case 'current_sign_video':
+      await getCurrentSignVideoInfo(chatId)
       break
     case 'back_main':
       await sendMainMenu(chatId)
@@ -233,6 +245,20 @@ async function handleCallbackQuery(callbackQuery: any) {
       // Проверяем отмену удаления видео
       else if (data.startsWith('cancel_delete_video_')) {
         await deleteHomeVideo(chatId)
+      }
+      // Проверяем удаление конкретного sign видео
+      else if (data.startsWith('delete_sign_video_')) {
+        const videoId = data.replace('delete_sign_video_', '')
+        await confirmSignVideoDelete(chatId, videoId)
+      }
+      // Проверяем подтверждение удаления sign видео
+      else if (data.startsWith('confirm_delete_sign_video_')) {
+        const videoId = data.replace('confirm_delete_sign_video_', '')
+        await executeSignVideoDelete(chatId, videoId)
+      }
+      // Проверяем отмену удаления sign видео
+      else if (data.startsWith('cancel_delete_sign_video_')) {
+        await deleteSignVideo(chatId)
       }
       // Проверяем подтверждение удаления товара
       else if (data.startsWith('confirm_delete_')) {
@@ -422,7 +448,8 @@ async function sendMainMenu(chatId: number) {
         { text: '📊 Статистика', callback_data: 'stats' }
       ],
       [
-        { text: '🎬 Видео главной', callback_data: 'video' }
+        { text: '🎬 Видео главной', callback_data: 'video' },
+        { text: '🎭 Видео Sing', callback_data: 'sign_video' }
       ]
     ]
   }
@@ -489,6 +516,25 @@ async function sendVideoMenu(chatId: number) {
   }
 
   await sendTelegramMessage(chatId, '🎬 *Управление видео главной страницы:*', true, keyboard)
+}
+
+async function sendSignVideoMenu(chatId: number) {
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: '📤 Загрузить видео', callback_data: 'upload_sign_video' },
+        { text: '🗑️ Удалить видео', callback_data: 'delete_sign_video' }
+      ],
+      [
+        { text: 'ℹ️ Текущее видео', callback_data: 'current_sign_video' }
+      ],
+      [
+        { text: '⬅️ Назад', callback_data: 'back_main' }
+      ]
+    ]
+  }
+
+  await sendTelegramMessage(chatId, '🎭 *Управление видео страницы Sing:*', true, keyboard)
 }
 
 async function sendStats(chatId: number) {
@@ -709,6 +755,8 @@ async function handleUserState(message: any, userState: any) {
       return await handleAddProductWeight(chatId, userId, text)
     case 'upload_home_video':
       return await handleUploadHomeVideo(chatId, userId, video)
+    case 'upload_sign_video':
+      return await handleUploadSignVideo(chatId, userId, video)
     case 'upload_product_video':
       return await handleUploadProductVideo(chatId, userId, video, userState.productId)
     case 'edit_product_name':
@@ -1388,6 +1436,273 @@ async function initializeGalleryWithDefault(chatId: number) {
   } catch (error) {
     console.error('Error initializing gallery:', error)
     await sendTelegramMessage(chatId, '❌ Ошибка инициализации галереи')
+  }
+}
+
+// ===== ФУНКЦИИ ДЛЯ УПРАВЛЕНИЯ SIGN ВИДЕО =====
+
+async function startUploadSignVideo(chatId: number, userId: number) {
+  userStates.set(userId.toString(), { action: 'upload_sign_video' })
+  await sendTelegramMessage(chatId, '🎭 Отправьте видео для страницы Sing:')
+}
+
+async function handleUploadSignVideo(chatId: number, userId: number, video: any) {
+  if (!video) {
+    await sendTelegramMessage(chatId, '❌ Пожалуйста, отправьте видео файл')
+    return
+  }
+
+  try {
+    await sendTelegramMessage(chatId, '🔄 Загружаю видео в галерею...')
+
+    // Загружаем видео в Cloudinary
+    const videoUrl = await uploadVideoToCloudinary(video)
+    
+    if (!videoUrl) {
+      throw new Error('Failed to upload video to Cloudinary')
+    }
+
+    // Добавляем видео в галерею sign через API
+    await addSignVideoToGallery(videoUrl)
+    
+    await sendTelegramMessage(chatId, '✅ Видео успешно добавлено в галерею страницы Sing!')
+    
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '📤 Загрузить еще', callback_data: 'upload_sign_video' }],
+        [{ text: '🎭 Проверить галерею', callback_data: 'current_sign_video' }],
+        [{ text: '⬅️ Назад к меню', callback_data: 'sign_video' }]
+      ]
+    }
+    
+    await sendTelegramMessage(chatId, '🎬 Что делаем дальше?', true, keyboard)
+    
+  } catch (error) {
+    console.error('Error uploading sign video:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка загрузки видео. Попробуйте еще раз.')
+    
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '🔄 Попробовать снова', callback_data: 'upload_sign_video' }],
+        [{ text: '⬅️ Назад к меню', callback_data: 'sign_video' }]
+      ]
+    }
+    
+    await sendTelegramMessage(chatId, '🎬 Выберите действие:', true, keyboard)
+  }
+}
+
+async function deleteSignVideo(chatId: number) {
+  try {
+    // Получаем список всех sign видео напрямую из базы данных
+    const videos = await prisma.setting.findMany({
+      where: {
+        key: {
+          startsWith: 'sign_video_'
+        }
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
+    
+    if (videos && videos.length > 0) {
+      let message = `🎭 *Выберите видео для удаления:*\n\n📊 Всего видео: ${videos.length}\n\n`
+      
+      const keyboard = {
+        inline_keyboard: [] as any[][]
+      }
+      
+      videos.forEach((video: any, index: number) => {
+        const videoName = video.value.split('/').pop()?.split('.')[0] || 'video'
+        const shortName = videoName.length > 30 ? videoName.substring(0, 30) + '...' : videoName
+        message += `${index + 1}. 🎥 ${shortName}\n`
+        keyboard.inline_keyboard.push([{
+          text: `🗑️ Удалить ${index + 1}`,
+          callback_data: `delete_sign_video_${video.key}`
+        }])
+      })
+      
+      keyboard.inline_keyboard.push([{ text: '⬅️ Назад', callback_data: 'sign_video' }])
+      
+      await sendTelegramMessage(chatId, message, true, keyboard)
+    } else {
+      const emptyKeyboard = {
+        inline_keyboard: [
+          [{ text: '📤 Загрузить видео', callback_data: 'upload_sign_video' }],
+          [{ text: '⬅️ Назад', callback_data: 'sign_video' }]
+        ]
+      }
+      
+      await sendTelegramMessage(chatId, `🎭 *Галерея видео страницы Sing:*\n\n📊 Всего видео: 0\n\n✨ Галерея пуста. Загрузите первое видео!`, true, emptyKeyboard)
+    }
+  } catch (error) {
+    console.error('Error fetching sign videos:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка получения списка видео')
+  }
+}
+
+async function getCurrentSignVideoInfo(chatId: number) {
+  try {
+    // Получаем список всех sign видео напрямую из базы данных
+    const videos = await prisma.setting.findMany({
+      where: {
+        key: {
+          startsWith: 'sign_video_'
+        }
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
+    
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '⬅️ Назад к видео', callback_data: 'sign_video' }]
+      ]
+    }
+    
+    if (videos && videos.length > 0) {
+      let message = `🎭 *Галерея видео страницы Sing:*\n\n📊 Всего видео: ${videos.length}\n\n`
+      
+      videos.forEach((video: any, index: number) => {
+        const videoName = video.value.split('/').pop()?.split('.')[0] || 'video'
+        const shortName = videoName.length > 30 ? videoName.substring(0, 30) + '...' : videoName
+        const createdDate = new Date(video.createdAt).toLocaleString('ru-RU')
+        message += `${index + 1}. 🎥 ${shortName}\n`
+        message += `   📅 ${createdDate}\n`
+        message += `   🔗 ${video.value.length > 50 ? video.value.substring(0, 50) + '...' : video.value}\n\n`
+      })
+      
+      await sendTelegramMessage(chatId, message, true, keyboard)
+    } else {
+      // Галерея пуста - показываем сообщение без автоматической инициализации
+      const emptyKeyboard = {
+        inline_keyboard: [
+          [{ text: '📤 Загрузить видео', callback_data: 'upload_sign_video' }],
+          [{ text: '⬅️ Назад к видео', callback_data: 'sign_video' }]
+        ]
+      }
+      
+      await sendTelegramMessage(chatId, `🎭 *Галерея видео страницы Sing:*\n\n📊 Всего видео: 0\n\n✨ Галерея пуста. Загрузите первое видео!`, true, emptyKeyboard)
+    }
+  } catch (error) {
+    console.error('Error getting sign video info:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка получения информации о видео')
+  }
+}
+
+async function confirmSignVideoDelete(chatId: number, videoId: string) {
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: '✅ Да, удалить', callback_data: `confirm_delete_sign_video_${videoId}` },
+        { text: '❌ Отмена', callback_data: `cancel_delete_sign_video_${videoId}` }
+      ]
+    ]
+  }
+
+  await sendTelegramMessage(
+    chatId,
+    `⚠️ *Подтверждение удаления*\n\nВы действительно хотите удалить это видео из галереи страницы Sing?\n\n🆔 ID: ${videoId}`,
+    true,
+    keyboard
+  )
+}
+
+async function executeSignVideoDelete(chatId: number, videoId: string) {
+  try {
+    await sendTelegramMessage(chatId, '🗑️ Удаляю видео...')
+    await deleteSignVideoFromGallery(videoId)
+    
+    await sendTelegramMessage(chatId, '✅ Видео успешно удалено из галереи страницы Sing!')
+    
+    const keyboard = {
+      inline_keyboard: [
+        [{ text: '🗑️ Удалить еще', callback_data: 'delete_sign_video' }],
+        [{ text: '🎭 Проверить галерею', callback_data: 'current_sign_video' }],
+        [{ text: '⬅️ Назад к меню', callback_data: 'sign_video' }]
+      ]
+    }
+    
+    await sendTelegramMessage(chatId, '🎬 Что делаем дальше?', true, keyboard)
+
+  } catch (error) {
+    console.error('Error deleting sign video:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка удаления видео')
+    await deleteSignVideo(chatId)
+  }
+}
+
+async function deleteSignVideoFromGallery(videoId: string): Promise<void> {
+  try {
+    await saveDebugLog('delete_sign_video_from_gallery_start', {
+      videoId: videoId,
+      method: 'direct_database_delete'
+    })
+    
+    // Удаляем видео напрямую из базы данных, минуя API
+    const deletedVideo = await prisma.setting.delete({
+      where: { key: videoId }
+    })
+    
+    await saveDebugLog('delete_sign_video_from_gallery_success', {
+      videoId: videoId,
+      deletedVideoUrl: deletedVideo.value,
+      message: 'Deleted from sign gallery successfully via direct database access'
+    })
+    
+    console.log('Sign video deleted from gallery:', videoId, 'URL was:', deletedVideo.value)
+  } catch (error) {
+    console.error('Error deleting sign video from gallery:', error)
+    await saveDebugLog('delete_sign_video_from_gallery_error', {
+      error_type: error instanceof Error ? error.name : typeof error,
+      error_message: error instanceof Error ? error.message : String(error)
+    })
+    throw error
+  }
+}
+
+async function addSignVideoToGallery(videoUrl: string): Promise<void> {
+  try {
+    await saveDebugLog('add_sign_video_to_gallery_start', {
+      videoUrl: videoUrl,
+      method: 'direct_database_insert'
+    })
+    
+    // Добавляем видео напрямую в базу данных, минуя API
+    const timestamp = Date.now()
+    const videoKey = `sign_video_${timestamp}`
+    
+    const addedVideo = await prisma.setting.create({
+      data: {
+        key: videoKey,
+        value: videoUrl
+      }
+    })
+    
+    // Подсчитываем общее количество видео
+    const totalVideos = await prisma.setting.count({
+      where: {
+        key: {
+          startsWith: 'sign_video_'
+        }
+      }
+    })
+    
+    await saveDebugLog('add_sign_video_to_gallery_success', {
+      videoUrl: videoUrl,
+      videoId: addedVideo.key,
+      totalVideos: totalVideos,
+      method: 'direct_database_insert'
+    })
+
+  } catch (error) {
+    await saveDebugLog('add_sign_video_to_gallery_error', {
+      videoUrl,
+      error: error instanceof Error ? error.message : String(error)
+    })
+    throw error
   }
 }
 

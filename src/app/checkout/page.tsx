@@ -7,13 +7,8 @@ import { Footer } from '@/components/Footer'
 export type PaymentMethod = 'westernbid_paypal' | 'westernbid_stripe' | null
 
 interface ShippingInfo {
-  firstName: string
-  lastName: string
   email: string
   phone: string
-  address: string
-  city: string
-  postalCode: string
   country: string
   state?: string
 }
@@ -33,15 +28,9 @@ export default function CheckoutPage() {
   console.log('CheckoutPage render - items:', state.items.length, 'mounted:', mounted)
   
   const [shippingInfo, setShippingInfo] = useState<ShippingInfo>({
-    firstName: '',
-    lastName: '',
     email: '',
     phone: '',
-    address: '',
-    city: '',
-    postalCode: '',
-    country: 'US',
-    state: ''
+    country: 'US'
   })
 
   const [paymentInfo, setPaymentInfo] = useState<PaymentInfo>({
@@ -171,8 +160,7 @@ export default function CheckoutPage() {
         console.log('Order created successfully:', order)
         console.log('Payment URL:', order.paymentUrl)
         
-        // Clear cart
-        dispatch({ type: 'CLEAR_CART' })
+        // Cart will be cleared only after successful payment verification
         
         // If form data is provided, create and submit form directly to WesternBid
         if (order.formData && order.targetUrl) {
@@ -331,61 +319,6 @@ export default function CheckoutPage() {
                   Shipping Information
                 </h2>
                 
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: '1rem',
-                  marginBottom: '1rem'
-                }}>
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      color: 'var(--white)',
-                      marginBottom: '0.5rem'
-                    }}>
-                      First Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={shippingInfo.firstName}
-                      onChange={(e) => setShippingInfo({...shippingInfo, firstName: e.target.value})}
-                      style={{
-                        width: '100%',
-                        padding: '1rem',
-                        background: 'rgba(255,255,255,0.1)',
-                        border: '1px solid var(--cyan-accent)',
-                        borderRadius: '8px',
-                        color: 'var(--white)',
-                        fontSize: '1rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      color: 'var(--white)',
-                      marginBottom: '0.5rem'
-                    }}>
-                      Last Name *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={shippingInfo.lastName}
-                      onChange={(e) => setShippingInfo({...shippingInfo, lastName: e.target.value})}
-                      style={{
-                        width: '100%',
-                        padding: '1rem',
-                        background: 'rgba(255,255,255,0.1)',
-                        border: '1px solid var(--cyan-accent)',
-                        borderRadius: '8px',
-                        color: 'var(--white)',
-                        fontSize: '1rem'
-                      }}
-                    />
-                  </div>
-                </div>
 
                 <div style={{ marginBottom: '1rem' }}>
                   <label style={{
@@ -393,13 +326,16 @@ export default function CheckoutPage() {
                     color: 'var(--white)',
                     marginBottom: '0.5rem'
                   }}>
-                    Email *
+                    Email Address *
                   </label>
                   <input
                     type="email"
+                    name="email"
+                    autoComplete="email"
                     required
                     value={shippingInfo.email}
                     onChange={(e) => setShippingInfo({...shippingInfo, email: e.target.value})}
+                    placeholder="your.email@example.com"
                     style={{
                       width: '100%',
                       padding: '1rem',
@@ -418,10 +354,12 @@ export default function CheckoutPage() {
                     color: 'var(--white)',
                     marginBottom: '0.5rem'
                   }}>
-                    Phone *
+                    Phone Number *
                   </label>
                   <input
                     type="tel"
+                    name="phone"
+                    autoComplete="tel"
                     required
                     maxLength={16}
                     value={shippingInfo.phone}
@@ -463,19 +401,21 @@ export default function CheckoutPage() {
                   </p>
                 </div>
 
-                <div style={{ marginBottom: '1rem' }}>
+
+                <div style={{ marginBottom: '2rem' }}>
                   <label style={{
                     display: 'block',
                     color: 'var(--white)',
                     marginBottom: '0.5rem'
                   }}>
-                    Address *
+                    Country *
                   </label>
-                  <input
-                    type="text"
+                  <select
+                    name="country"
+                    autoComplete="country"
                     required
-                    value={shippingInfo.address}
-                    onChange={(e) => setShippingInfo({...shippingInfo, address: e.target.value})}
+                    value={shippingInfo.country}
+                    onChange={(e) => setShippingInfo({...shippingInfo, country: e.target.value})}
                     style={{
                       width: '100%',
                       padding: '1rem',
@@ -485,172 +425,93 @@ export default function CheckoutPage() {
                       color: 'var(--white)',
                       fontSize: '1rem'
                     }}
-                  />
-                </div>
-
-                <div style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr 1fr',
-                  gap: '1rem',
-                  marginBottom: '2rem'
-                }}>
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      color: 'var(--white)',
-                      marginBottom: '0.5rem'
-                    }}>
-                      City *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={shippingInfo.city}
-                      onChange={(e) => setShippingInfo({...shippingInfo, city: e.target.value})}
-                      style={{
-                        width: '100%',
-                        padding: '1rem',
-                        background: 'rgba(255,255,255,0.1)',
-                        border: '1px solid var(--cyan-accent)',
-                        borderRadius: '8px',
-                        color: 'var(--white)',
-                        fontSize: '1rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      color: 'var(--white)',
-                      marginBottom: '0.5rem'
-                    }}>
-                      Postal Code *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={shippingInfo.postalCode}
-                      onChange={(e) => setShippingInfo({...shippingInfo, postalCode: e.target.value})}
-                      style={{
-                        width: '100%',
-                        padding: '1rem',
-                        background: 'rgba(255,255,255,0.1)',
-                        border: '1px solid var(--cyan-accent)',
-                        borderRadius: '8px',
-                        color: 'var(--white)',
-                        fontSize: '1rem'
-                      }}
-                    />
-                  </div>
-                  <div>
-                    <label style={{
-                      display: 'block',
-                      color: 'var(--white)',
-                      marginBottom: '0.5rem'
-                    }}>
-                      Country *
-                    </label>
-                    <select
-                      required
-                      value={shippingInfo.country}
-                      onChange={(e) => setShippingInfo({...shippingInfo, country: e.target.value})}
-                      style={{
-                        width: '100%',
-                        padding: '1rem',
-                        background: 'rgba(255,255,255,0.1)',
-                        border: '1px solid var(--cyan-accent)',
-                        borderRadius: '8px',
-                        color: 'var(--white)',
-                        fontSize: '1rem'
-                      }}
-                    >
-                      {/* Популярные страны первыми */}
-                      <option value="UA">Ukraine</option>
-                      <option value="US">United States</option>
-                      <option value="CA">Canada</option>
-                      <option value="GB">United Kingdom</option>
-                      <option value="DE">Germany</option>
-                      <option value="AU">Australia</option>
-                      
-                      {/* Европа (по алфавиту) */}
-                      <option value="AL">Albania</option>
-                      <option value="AT">Austria</option>
-                      <option value="BE">Belgium</option>
-                      <option value="BA">Bosnia and Herzegovina</option>
-                      <option value="BG">Bulgaria</option>
-                      <option value="HR">Croatia</option>
-                      <option value="CY">Cyprus</option>
-                      <option value="CZ">Czech Republic</option>
-                      <option value="DK">Denmark</option>
-                      <option value="EE">Estonia</option>
-                      <option value="FI">Finland</option>
-                      <option value="FR">France</option>
-                      <option value="GR">Greece</option>
-                      <option value="HU">Hungary</option>
-                      <option value="IS">Iceland</option>
-                      <option value="IE">Ireland</option>
-                      <option value="IT">Italy</option>
-                      <option value="LV">Latvia</option>
-                      <option value="LT">Lithuania</option>
-                      <option value="LU">Luxembourg</option>
-                      <option value="MT">Malta</option>
-                      <option value="MD">Moldova</option>
-                      <option value="ME">Montenegro</option>
-                      <option value="NL">Netherlands</option>
-                      <option value="NO">Norway</option>
-                      <option value="PL">Poland</option>
-                      <option value="PT">Portugal</option>
-                      <option value="RO">Romania</option>
-                      <option value="RS">Serbia</option>
-                      <option value="SK">Slovakia</option>
-                      <option value="SI">Slovenia</option>
-                      <option value="ES">Spain</option>
-                      <option value="SE">Sweden</option>
-                      <option value="CH">Switzerland</option>
-                      
-                      {/* Азия */}
-                      <option value="AM">Armenia</option>
-                      <option value="AZ">Azerbaijan</option>
-                      <option value="CN">China</option>
-                      <option value="GE">Georgia</option>
-                      <option value="HK">Hong Kong</option>
-                      <option value="IN">India</option>
-                      <option value="ID">Indonesia</option>
-                      <option value="IL">Israel</option>
-                      <option value="JP">Japan</option>
-                      <option value="KZ">Kazakhstan</option>
-                      <option value="KG">Kyrgyzstan</option>
-                      <option value="KW">Kuwait</option>
-                      <option value="PK">Pakistan</option>
-                      <option value="QA">Qatar</option>
-                      <option value="SA">Saudi Arabia</option>
-                      <option value="SG">Singapore</option>
-                      <option value="LK">Sri Lanka</option>
-                      <option value="TR">Turkey</option>
-                      <option value="AE">UAE</option>
-                      <option value="UZ">Uzbekistan</option>
-                      
-                      {/* Америка */}
-                      <option value="AR">Argentina</option>
-                      <option value="BR">Brazil</option>
-                      <option value="CL">Chile</option>
-                      <option value="CO">Colombia</option>
-                      <option value="CR">Costa Rica</option>
-                      <option value="MX">Mexico</option>
-                      <option value="PE">Peru</option>
-                      
-                      {/* Африка */}
-                      <option value="EG">Egypt</option>
-                      <option value="ET">Ethiopia</option>
-                      <option value="KE">Kenya</option>
-                      <option value="NG">Nigeria</option>
-                      <option value="ZA">South Africa</option>
-                      <option value="TZ">Tanzania</option>
-                      
-                      {/* Океания */}
-                      <option value="NZ">New Zealand</option>
-                    </select>
-                  </div>
+                  >
+                    {/* Популярные страны первыми */}
+                    <option value="UA">Ukraine</option>
+                    <option value="US">United States</option>
+                    <option value="CA">Canada</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="DE">Germany</option>
+                    <option value="AU">Australia</option>
+                    
+                    {/* Европа (по алфавиту) */}
+                    <option value="AL">Albania</option>
+                    <option value="AT">Austria</option>
+                    <option value="BE">Belgium</option>
+                    <option value="BA">Bosnia and Herzegovina</option>
+                    <option value="BG">Bulgaria</option>
+                    <option value="HR">Croatia</option>
+                    <option value="CY">Cyprus</option>
+                    <option value="CZ">Czech Republic</option>
+                    <option value="DK">Denmark</option>
+                    <option value="EE">Estonia</option>
+                    <option value="FI">Finland</option>
+                    <option value="FR">France</option>
+                    <option value="GR">Greece</option>
+                    <option value="HU">Hungary</option>
+                    <option value="IS">Iceland</option>
+                    <option value="IE">Ireland</option>
+                    <option value="IT">Italy</option>
+                    <option value="LV">Latvia</option>
+                    <option value="LT">Lithuania</option>
+                    <option value="LU">Luxembourg</option>
+                    <option value="MT">Malta</option>
+                    <option value="MD">Moldova</option>
+                    <option value="ME">Montenegro</option>
+                    <option value="NL">Netherlands</option>
+                    <option value="NO">Norway</option>
+                    <option value="PL">Poland</option>
+                    <option value="PT">Portugal</option>
+                    <option value="RO">Romania</option>
+                    <option value="RS">Serbia</option>
+                    <option value="SK">Slovakia</option>
+                    <option value="SI">Slovenia</option>
+                    <option value="ES">Spain</option>
+                    <option value="SE">Sweden</option>
+                    <option value="CH">Switzerland</option>
+                    
+                    {/* Азия */}
+                    <option value="AM">Armenia</option>
+                    <option value="AZ">Azerbaijan</option>
+                    <option value="CN">China</option>
+                    <option value="GE">Georgia</option>
+                    <option value="HK">Hong Kong</option>
+                    <option value="IN">India</option>
+                    <option value="ID">Indonesia</option>
+                    <option value="IL">Israel</option>
+                    <option value="JP">Japan</option>
+                    <option value="KZ">Kazakhstan</option>
+                    <option value="KG">Kyrgyzstan</option>
+                    <option value="KW">Kuwait</option>
+                    <option value="PK">Pakistan</option>
+                    <option value="QA">Qatar</option>
+                    <option value="SA">Saudi Arabia</option>
+                    <option value="SG">Singapore</option>
+                    <option value="LK">Sri Lanka</option>
+                    <option value="TR">Turkey</option>
+                    <option value="AE">UAE</option>
+                    <option value="UZ">Uzbekistan</option>
+                    
+                    {/* Америка */}
+                    <option value="AR">Argentina</option>
+                    <option value="BR">Brazil</option>
+                    <option value="CL">Chile</option>
+                    <option value="CO">Colombia</option>
+                    <option value="CR">Costa Rica</option>
+                    <option value="MX">Mexico</option>
+                    <option value="PE">Peru</option>
+                    
+                    {/* Африка */}
+                    <option value="EG">Egypt</option>
+                    <option value="ET">Ethiopia</option>
+                    <option value="KE">Kenya</option>
+                    <option value="NG">Nigeria</option>
+                    <option value="ZA">South Africa</option>
+                    <option value="TZ">Tanzania</option>
+                    
+                    {/* Океания */}
+                    <option value="NZ">New Zealand</option>
+                  </select>
                 </div>
 
                 {/* State/Province field - показывать только для US и Canada */}
@@ -666,6 +527,8 @@ export default function CheckoutPage() {
                     </label>
                     <input
                       type="text"
+                      name="state"
+                      autoComplete="address-level1"
                       required
                       value={shippingInfo.state}
                       onChange={(e) => setShippingInfo({...shippingInfo, state: e.target.value})}
@@ -847,11 +710,15 @@ export default function CheckoutPage() {
                     Shipping Address
                   </h3>
                   <div style={{ color: 'rgba(255,255,255,0.8)', lineHeight: '1.6' }}>
-                    <p>{shippingInfo.firstName} {shippingInfo.lastName}</p>
-                    <p>{shippingInfo.address}</p>
-                    <p>{shippingInfo.city}, {shippingInfo.postalCode}</p>
-                    <p>{shippingInfo.country}</p>
-                    <p>{shippingInfo.email} • {shippingInfo.phone}</p>
+                    <p><strong>Email:</strong> {shippingInfo.email}</p>
+                    <p><strong>Phone:</strong> {shippingInfo.phone}</p>
+                    <p><strong>Country:</strong> {shippingInfo.country}</p>
+                    {shippingInfo.state && (
+                      <p><strong>State/Province:</strong> {shippingInfo.state}</p>
+                    )}
+                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
+                      Full shipping details will be collected after payment
+                    </p>
                   </div>
                 </div>
 

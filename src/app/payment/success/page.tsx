@@ -3,11 +3,13 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import { useRouter } from 'next/navigation'
+import { useCart } from '@/contexts/CartContext'
 import { Footer } from '@/components/Footer'
 
 function PaymentSuccessContent() {
   const searchParams = useSearchParams()
   const router = useRouter()
+  const { dispatch } = useCart()
   const [verifying, setVerifying] = useState(true)
   const [verified, setVerified] = useState(false)
   const [orderId, setOrderId] = useState('')
@@ -42,6 +44,10 @@ function PaymentSuccessContent() {
         const result = await response.json()
         if (result.success) {
           setVerified(true)
+          
+          // Clear cart only after successful payment verification
+          dispatch({ type: 'CLEAR_CART' })
+          
           // Auto-redirect based on order type
           setTimeout(() => {
             if (orderType === 'sign') {

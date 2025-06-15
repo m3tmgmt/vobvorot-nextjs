@@ -1,70 +1,214 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
-// GET - получить видео для страницы sign
+// Получить все sign видео
 export async function GET() {
   try {
-    const setting = await prisma.setting.findUnique({
+    // Получаем все видео из настроек для галереи (новый формат)
+    const newVideoSettings = await prisma.setting.findMany({
+      where: {
+        key: {
+          startsWith: 'sign_video_'
+        }
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
+    
+    // Проверяем старый формат видео для миграции
+    const oldVideoSetting = await prisma.setting.findUnique({
       where: { key: 'sign_page_videos' }
     })
-
-    if (!setting || !setting.value) {
-      return NextResponse.json({ videos: [] })
+    
+    // Если есть старое видео, но нет новых видео, мигрируем его
+    if (oldVideoSetting && oldVideoSetting.value && oldVideoSetting.value.trim() !== '' && newVideoSettings.length === 0) {
+      console.log('Migrating old sign videos to new gallery format:', oldVideoSetting.value)
+      
+      try {
+        const oldVideos = JSON.parse(oldVideoSetting.value)
+        if (Array.isArray(oldVideos)) {
+          // Создаем новые видео в формате галереи
+          for (let i = 0; i < oldVideos.length; i++) {
+            const video = oldVideos[i]
+            if (video && typeof video === 'object' && video.url) {
+              const migratedVideo = await prisma.setting.create({
+                data: {
+                  key: `sign_video_${Date.now()}_${i}`,
+                  value: video.url
+                }
+              })
+              newVideoSettings.push(migratedVideo)
+            }
+          }
+        }
+      } catch (parseError) {
+        console.error('Failed to parse old sign videos:', parseError)
+      }
     }
-
-    const videos = JSON.parse(setting.value)
-    return NextResponse.json({ videos })
+    
+    const videos = newVideoSettings
+      .filter(setting => setting.value && setting.value.trim() !== '')
+      .map((setting, index) => ({
+        id: setting.key,
+        url: setting.value,
+        order: index,
+        createdAt: setting.createdAt
+      }))
+    
+    return NextResponse.json({
+      videos,
+      count: videos.length,
+      message: videos.length > 0 ? `Found ${videos.length} sign videos` : 'No sign videos configured'
+    })
   } catch (error) {
-    console.error('Failed to fetch sign page videos:', error)
-    return NextResponse.json({ videos: [] })
+    console.error('Error reading sign videos:', error)
+    return NextResponse.json(
+      { error: 'Failed to read sign videos' },
+      { status: 500 }
+    )
   }
 }
 
-// POST - обновить видео (только для админа)
+// Добавить новое видео в галерею
 export async function POST(request: NextRequest) {
   try {
-    // Проверяем админские права
+    // Проверка авторизации
     const authHeader = request.headers.get('authorization')
-    const adminApiKey = process.env.ADMIN_API_KEY
+    const expectedToken = `Bearer ${process.env.ADMIN_API_KEY}`
     
-    if (!authHeader || !adminApiKey || authHeader !== `Bearer ${adminApiKey}`) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      )
+    if (authHeader !== expectedToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { videos } = await request.json()
+    const { videoUrl } = await request.json()
 
-    if (!Array.isArray(videos)) {
-      return NextResponse.json(
-        { error: 'Videos must be an array' },
-        { status: 400 }
-      )
+    if (!videoUrl || videoUrl.trim() === '') {
+      return NextResponse.json({ error: 'Video URL is required' }, { status: 400 })
     }
 
-    // Сохраняем в базу данных
-    await prisma.setting.upsert({
-      where: { key: 'sign_page_videos' },
-      update: {
-        value: JSON.stringify(videos),
-        updatedAt: new Date()
+    // Создаем уникальный ключ для нового видео
+    const timestamp = Date.now()
+    const videoKey = `sign_video_${timestamp}`
+
+    // Добавляем новое видео
+    await prisma.setting.create({
+      data: {
+        key: videoKey,
+        value: videoUrl.trim()
+      }
+    })
+    
+    console.log('New sign video added:', videoKey, videoUrl)
+
+    // Получаем обновленный список всех видео
+    const allVideos = await prisma.setting.findMany({
+      where: {
+        key: {
+          startsWith: 'sign_video_'
+        }
       },
-      create: {
-        key: 'sign_page_videos',
-        value: JSON.stringify(videos)
+      orderBy: {
+        createdAt: 'asc'
       }
     })
 
-    return NextResponse.json({ 
-      success: true, 
+    const videos = allVideos
+      .filter(setting => setting.value && setting.value.trim() !== '')
+      .map((setting, index) => ({
+        id: setting.key,
+        url: setting.value,
+        order: index,
+        createdAt: setting.createdAt
+      }))
+
+    return NextResponse.json({
+      success: true,
+      addedVideo: {
+        id: videoKey,
+        url: videoUrl,
+        order: videos.length - 1
+      },
       videos,
-      message: 'Sign page videos updated successfully' 
+      count: videos.length,
+      message: 'Video added to sign gallery successfully'
     })
+
   } catch (error) {
-    console.error('Failed to update sign page videos:', error)
+    console.error('Error adding sign video:', error)
     return NextResponse.json(
-      { error: 'Failed to update videos' },
+      { error: 'Failed to add sign video' },
+      { status: 500 }
+    )
+  }
+}
+
+// Удалить видео из галереи по ID
+export async function DELETE(request: NextRequest) {
+  try {
+    // Проверка авторизации
+    const authHeader = request.headers.get('authorization')
+    const expectedToken = `Bearer ${process.env.ADMIN_API_KEY}`
+    
+    if (authHeader !== expectedToken) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
+    const { videoId } = await request.json()
+
+    if (!videoId) {
+      return NextResponse.json({ error: 'Video ID is required' }, { status: 400 })
+    }
+
+    // Проверяем, существует ли видео
+    const existingVideo = await prisma.setting.findUnique({
+      where: { key: videoId }
+    })
+
+    if (!existingVideo) {
+      return NextResponse.json({ error: 'Video not found' }, { status: 404 })
+    }
+
+    // Удаляем видео
+    await prisma.setting.delete({
+      where: { key: videoId }
+    })
+    
+    console.log('Sign video deleted:', videoId)
+
+    // Получаем обновленный список всех видео
+    const allVideos = await prisma.setting.findMany({
+      where: {
+        key: {
+          startsWith: 'sign_video_'
+        }
+      },
+      orderBy: {
+        createdAt: 'asc'
+      }
+    })
+
+    const videos = allVideos
+      .filter(setting => setting.value && setting.value.trim() !== '')
+      .map((setting, index) => ({
+        id: setting.key,
+        url: setting.value,
+        order: index,
+        createdAt: setting.createdAt
+      }))
+
+    return NextResponse.json({
+      success: true,
+      deletedVideoId: videoId,
+      videos,
+      count: videos.length,
+      message: 'Video deleted from sign gallery successfully'
+    })
+
+  } catch (error) {
+    console.error('Error deleting sign video:', error)
+    return NextResponse.json(
+      { error: 'Failed to delete sign video' },
       { status: 500 }
     )
   }

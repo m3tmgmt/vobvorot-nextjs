@@ -46,7 +46,9 @@ const mainMenu = new Menu<MyContext>('main-menu')
   .text('📊 Статистика', (ctx) => ctx.conversation.enter('viewStats'))
   .text('🎬 Видео главной', (ctx) => ctx.conversation.enter('manageHomeVideo'))
   .row()
+  .text('✍️ Видео подписи', (ctx) => ctx.conversation.enter('manageSignVideos'))
   .text('💬 Отзывы', (ctx) => ctx.conversation.enter('manageReviews'))
+  .row()
   .text('👥 Клиенты', (ctx) => ctx.conversation.enter('manageCustomers'))
 
 bot.use(mainMenu)
@@ -341,6 +343,166 @@ async function manageHomeVideo(conversation: any, ctx: MyContext) {
   await ctx.editMessageReplyMarkup({ reply_markup: videoMenu })
 }
 
+// Конверсация для управления видео на странице подписи
+async function manageSignVideos(conversation: any, ctx: MyContext) {
+  await ctx.reply('✍️ *Управление видео страницы "Your Name, My Pic"*', { parse_mode: 'Markdown' })
+  
+  // Получаем текущие видео
+  const currentVideos = await getSignVideos()
+  
+  if (currentVideos.length > 0) {
+    await ctx.reply(
+      `📹 Текущие видео (${currentVideos.length}):\n\n` +
+      currentVideos.map((video: any, index: number) => 
+        `${index + 1}. ${video.title || `Видео ${index + 1}`}\n🔗 ${video.url}`
+      ).join('\n\n'),
+      { parse_mode: 'Markdown' }
+    )
+  } else {
+    await ctx.reply('📭 Нет загруженных видео для страницы подписи')
+  }
+  
+  const signVideoMenu = new Menu<MyContext>('sign-video-menu')
+    .text('➕ Добавить видео', async (ctx) => {
+      await ctx.reply('Отправьте видео для страницы подписи:')
+      const response = await conversation.wait()
+      
+      if (response.message?.video || response.message?.document) {
+        try {
+          const video = response.message.video || response.message.document
+          await ctx.reply('🎬 Загружаю видео...')
+          
+          const file = await bot.api.getFile(video.file_id)
+          if (!file.file_path) throw new Error('Не удалось получить путь к файлу')
+          
+          const fileUrl = `https://api.telegram.org/file/bot${BOT_TOKEN}/${file.file_path}`
+          
+          // Загружаем видео в Cloudinary
+          const uploadResult = await cloudinaryService.uploadFromUrl(fileUrl, {
+            resource_type: 'video',
+            folder: 'sign-page',
+            public_id: `sign-video-${Date.now()}`,
+            transformation: [
+              { width: 1920, height: 1080, crop: 'fill' },
+              { quality: 'auto:good' }
+            ]
+          })
+          
+          // Спрашиваем название для видео
+          await ctx.reply('Введите название для этого видео (или отправьте "-" для пропуска):')
+          const titleResponse = await conversation.wait()
+          const title = titleResponse.message?.text === '-' ? null : titleResponse.message?.text
+          
+          // Добавляем видео в список
+          const videos = await getSignVideos()
+          videos.push({
+            url: uploadResult.secure_url,
+            title: title || `Видео ${videos.length + 1}`
+          })
+          
+          await updateSignVideos(videos)
+          
+          await ctx.reply(
+            `✅ Видео добавлено!\n` +
+            `📹 Название: ${title || `Видео ${videos.length}`}\n` +
+            `🔗 URL: ${uploadResult.secure_url}\n` +
+            `📐 Размер: ${uploadResult.width}x${uploadResult.height}`
+          )
+        } catch (error: any) {
+          await ctx.reply(`❌ Ошибка: ${error.message}`)
+        }
+      } else {
+        await ctx.reply('❌ Пожалуйста, отправьте видео файл')
+      }
+    })
+    .text('📋 Список видео', async (ctx) => {
+      const videos = await getSignVideos()
+      if (videos.length === 0) {
+        await ctx.reply('📭 Нет загруженных видео')
+      } else {
+        await ctx.reply(
+          `📹 Все видео (${videos.length}):\n\n` +
+          videos.map((video: any, index: number) => 
+            `${index + 1}. ${video.title}\n🔗 ${video.url}`
+          ).join('\n\n'),
+          { parse_mode: 'Markdown' }
+        )
+      }
+    })
+    .row()
+    .text('🗑️ Удалить видео', async (ctx) => {
+      const videos = await getSignVideos()
+      if (videos.length === 0) {
+        await ctx.reply('📭 Нет видео для удаления')
+        return
+      }
+      
+      await ctx.reply(
+        `Выберите видео для удаления:\n\n` +
+        videos.map((video: any, index: number) => 
+          `${index + 1}. ${video.title}`
+        ).join('\n') +
+        '\n\nВведите номер видео:'
+      )
+      
+      const response = await conversation.wait()
+      const index = parseInt(response.message?.text || '0') - 1
+      
+      if (index >= 0 && index < videos.length) {
+        const removed = videos.splice(index, 1)[0]
+        await updateSignVideos(videos)
+        await ctx.reply(`✅ Видео "${removed.title}" удалено`)
+      } else {
+        await ctx.reply('❌ Неверный номер видео')
+      }
+    })
+    .text('🔄 Изменить порядок', async (ctx) => {
+      const videos = await getSignVideos()
+      if (videos.length < 2) {
+        await ctx.reply('❌ Недостаточно видео для изменения порядка')
+        return
+      }
+      
+      await ctx.reply(
+        `Текущий порядок:\n\n` +
+        videos.map((video: any, index: number) => 
+          `${index + 1}. ${video.title}`
+        ).join('\n') +
+        '\n\nВведите новый порядок через запятую (например: 3,1,2):'
+      )
+      
+      const response = await conversation.wait()
+      const newOrder = response.message?.text?.split(',').map((n: string) => parseInt(n.trim()) - 1)
+      
+      if (newOrder && newOrder.length === videos.length) {
+        const reorderedVideos = newOrder.map((i: number) => videos[i]).filter(Boolean)
+        if (reorderedVideos.length === videos.length) {
+          await updateSignVideos(reorderedVideos)
+          await ctx.reply('✅ Порядок видео изменен')
+        } else {
+          await ctx.reply('❌ Неверный формат порядка')
+        }
+      } else {
+        await ctx.reply('❌ Неверный формат порядка')
+      }
+    })
+    .row()
+    .text('🗑️ Удалить все', async (ctx) => {
+      await ctx.reply('⚠️ Вы уверены, что хотите удалить все видео? Отправьте "ДА" для подтверждения:')
+      const response = await conversation.wait()
+      
+      if (response.message?.text?.toUpperCase() === 'ДА') {
+        await updateSignVideos([])
+        await ctx.reply('✅ Все видео страницы подписи удалены')
+      } else {
+        await ctx.reply('❌ Удаление отменено')
+      }
+    })
+    .text('⬅️ Назад', (ctx) => ctx.reply('Главное меню', { reply_markup: mainMenu }))
+
+  await ctx.editMessageReplyMarkup({ reply_markup: signVideoMenu })
+}
+
 // Конверсация для просмотра статистики
 async function viewStats(conversation: any, ctx: MyContext) {
   await ctx.reply('📊 *Статистика магазина*', { parse_mode: 'Markdown' })
@@ -389,6 +551,7 @@ bot.use(createConversation(manageOrders))
 bot.use(createConversation(manageProducts))
 bot.use(createConversation(addProduct))
 bot.use(createConversation(manageHomeVideo))
+bot.use(createConversation(manageSignVideos))
 bot.use(createConversation(viewStats))
 bot.use(createConversation(manageReviews))
 bot.use(createConversation(manageCustomers))
@@ -494,6 +657,29 @@ async function updateHomeVideo(videoUrl: string | null) {
       'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
     },
     body: JSON.stringify({ videoUrl })
+  })
+  return response.json()
+}
+
+async function getSignVideos(): Promise<any[]> {
+  try {
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/site/sign-videos`)
+    const data = await response.json()
+    return data.videos || []
+  } catch (error) {
+    console.error('Error fetching sign videos:', error)
+    return []
+  }
+}
+
+async function updateSignVideos(videos: any[]) {
+  const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/site/sign-videos`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
+    },
+    body: JSON.stringify({ videos })
   })
   return response.json()
 }

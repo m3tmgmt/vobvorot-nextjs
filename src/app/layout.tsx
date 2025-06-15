@@ -28,6 +28,7 @@ export const metadata: Metadata = {
     template: "%s | VobVorot"
   },
   description: "Discover unique vintage pieces and custom designs from Ukraine. VobVorot offers authentic vintage cameras, handmade accessories, custom Adidas, and exclusive fashion with worldwide shipping.",
+  viewport: "width=device-width, initial-scale=1, maximum-scale=5",
   keywords: [
     "vintage fashion", "custom designs", "Ukrainian fashion", "vintage cameras", 
     "handmade accessories", "custom adidas", "authentic vintage", "luxury vintage",

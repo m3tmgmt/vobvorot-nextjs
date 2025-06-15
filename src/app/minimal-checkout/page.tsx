@@ -115,8 +115,7 @@ export default function MinimalCheckoutPage() {
 
       const order = await response.json()
 
-      // Clear cart
-      dispatch({ type: 'CLEAR_CART' })
+      // Cart will be cleared only after successful payment verification
 
       // Redirect to payment with order ID
       if (paymentInfo.method?.startsWith('westernbid_')) {

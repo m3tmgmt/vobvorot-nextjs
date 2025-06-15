@@ -2,6 +2,7 @@
 
 import { createTelegramCRM, Customer, Order } from './telegram-crm';
 import { analytics } from '@/components/analytics/GoogleAnalytics';
+import { prisma } from './prisma';
 
 export class CRMIntegration {
   private telegramCRM: any;
@@ -130,17 +131,8 @@ export class CRMIntegration {
     if (!this.telegramCRM) return;
 
     try {
-      // This would typically fetch from your database
-      const analyticsData = {
-        orders_today: 5,
-        revenue_today: 250.00,
-        new_customers: 2,
-        pending_orders: 3,
-        top_products: [
-          { name: 'Vintage Camera', sales: 2 },
-          { name: 'Custom Adidas', sales: 1 }
-        ]
-      };
+      // Fetch real data from database
+      const analyticsData = await this.getRealDailyData();
 
       await this.telegramCRM.sendDailyReport(analyticsData);
 
@@ -153,6 +145,102 @@ export class CRMIntegration {
 
     } catch (error) {
       console.error('Failed to send daily analytics:', error);
+    }
+  }
+
+  // Fetch real daily data from database
+  async getRealDailyData() {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      // Get today's orders
+      const ordersToday = await prisma.order.findMany({
+        where: {
+          createdAt: {
+            gte: today,
+            lt: tomorrow
+          }
+        },
+        include: {
+          items: {
+            include: {
+              sku: {
+                include: {
+                  product: true
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // Calculate revenue today (only completed/confirmed orders)
+      const revenueToday = ordersToday
+        .filter(order => ['COMPLETED', 'CONFIRMED'].includes(order.paymentStatus))
+        .reduce((sum, order) => sum + parseFloat(order.total.toString()), 0);
+
+      // Get new customers today
+      const newCustomersToday = await prisma.order.groupBy({
+        by: ['userId'],
+        where: {
+          createdAt: {
+            gte: today,
+            lt: tomorrow
+          },
+          userId: {
+            not: null
+          }
+        },
+        _count: {
+          userId: true
+        }
+      });
+
+      // Get pending orders
+      const pendingOrders = await prisma.order.count({
+        where: {
+          status: 'PENDING'
+        }
+      });
+
+      // Get top products (best-selling today)
+      const topProducts = [];
+      const productSales = new Map();
+
+      ordersToday.forEach(order => {
+        order.items.forEach(item => {
+          const productName = item.sku?.product?.name || 'Unknown Product';
+          const current = productSales.get(productName) || 0;
+          productSales.set(productName, current + item.quantity);
+        });
+      });
+
+      // Convert to array and sort
+      for (const [name, sales] of productSales.entries()) {
+        topProducts.push({ name, sales });
+      }
+      topProducts.sort((a, b) => b.sales - a.sales);
+
+      return {
+        orders_today: ordersToday.length,
+        revenue_today: Math.round(revenueToday * 100) / 100,
+        new_customers: newCustomersToday.length,
+        pending_orders: pendingOrders,
+        top_products: topProducts.slice(0, 3) // Top 3 products
+      };
+    } catch (error) {
+      console.error('Failed to fetch real daily data:', error);
+      // Fallback to basic data if database fails
+      return {
+        orders_today: 0,
+        revenue_today: 0,
+        new_customers: 0,
+        pending_orders: 0,
+        top_products: []
+      };
     }
   }
 

@@ -125,18 +125,13 @@ export default function LettersToFuture() {
   return (
     <>
       {/* Card */}
-      <div className="product-card" style={{ 
-        textAlign: 'center', 
-        display: 'flex', 
-        flexDirection: 'column', 
-        justifyContent: 'space-between'
-      }}>
+      <div className="product-card feature-card">
         <div>
-          <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>💌</div>
-          <h3 style={{ color: 'var(--pink-main)', marginBottom: '1rem' }}>
+          <div className="feature-card-icon">💌</div>
+          <h3 className="feature-card-title" style={{ color: 'var(--pink-main)' }}>
             Letters to Future
           </h3>
-          <p style={{ marginBottom: '1.5rem', color: 'rgba(255,255,255,0.8)' }}>
+          <p className="feature-card-description">
             Write a message to your future self and we'll send it when the time is right...
           </p>
         </div>
