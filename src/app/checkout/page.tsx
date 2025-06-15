@@ -20,7 +20,7 @@ interface PaymentInfo {
 export default function CheckoutPage() {
   const { state, dispatch } = useCart()
   const router = useRouter()
-  const [step, setStep] = useState(1) // 1: Shipping, 2: Payment, 3: Review
+  const [step, setStep] = useState(1) // 1: Shipping, 2: Payment (Review step removed)
   const [loading, setLoading] = useState(false)
   const [shippingCost, setShippingCost] = useState(0)
   const [mounted, setMounted] = useState(false)
@@ -115,10 +115,6 @@ export default function CheckoutPage() {
     setStep(2)
   }
 
-  const handlePaymentSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    setStep(3)
-  }
 
   const handleFinalSubmit = async () => {
     setLoading(true)
@@ -262,8 +258,7 @@ export default function CheckoutPage() {
           }}>
             {[
               { num: 1, label: 'Shipping' },
-              { num: 2, label: 'Payment' },
-              { num: 3, label: 'Review' }
+              { num: 2, label: 'Payment' }
             ].map((stepItem) => (
               <div key={stepItem.num} style={{
                 display: 'flex',
@@ -659,118 +654,12 @@ export default function CheckoutPage() {
                     Back to Shipping
                   </button>
                   <button
-                    type="button"
-                    onClick={() => {
-                      if (paymentInfo.method) {
-                        setStep(3)
-                      }
-                    }}
-                    disabled={!paymentInfo.method}
-                    style={{
-                      flex: 2,
-                      padding: '1rem',
-                      background: paymentInfo.method
-                        ? 'linear-gradient(45deg, var(--pink-main), var(--cyan-accent))'
-                        : 'rgba(255,255,255,0.2)',
-                      border: 'none',
-                      borderRadius: '8px',
-                      color: 'var(--white)',
-                      fontSize: '1.1rem',
-                      fontWeight: '600',
-                      cursor: paymentInfo.method ? 'pointer' : 'not-allowed',
-                      opacity: paymentInfo.method ? 1 : 0.5
-                    }}
-                  >
-                    Continue to Review
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Order Review */}
-            {step === 3 && (
-              <div>
-                <h2 style={{
-                  color: 'var(--cyan-accent)',
-                  fontSize: '1.8rem',
-                  marginBottom: '2rem'
-                }}>
-                  Order Review
-                </h2>
-
-                {/* Shipping Address */}
-                <div style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid var(--cyan-accent)',
-                  borderRadius: '8px',
-                  padding: '1.5rem',
-                  marginBottom: '2rem'
-                }}>
-                  <h3 style={{ color: 'var(--white)', marginBottom: '1rem' }}>
-                    Shipping Address
-                  </h3>
-                  <div style={{ color: 'rgba(255,255,255,0.8)', lineHeight: '1.6' }}>
-                    <p><strong>Email:</strong> {shippingInfo.email}</p>
-                    <p><strong>Phone:</strong> {shippingInfo.phone}</p>
-                    <p><strong>Country:</strong> {shippingInfo.country}</p>
-                    {shippingInfo.state && (
-                      <p><strong>State/Province:</strong> {shippingInfo.state}</p>
-                    )}
-                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.9rem', marginTop: '0.5rem' }}>
-                      Full shipping details will be collected after payment
-                    </p>
-                  </div>
-                </div>
-
-                {/* Payment Method */}
-                <div style={{
-                  background: 'rgba(255,255,255,0.05)',
-                  border: '1px solid var(--pink-main)',
-                  borderRadius: '8px',
-                  padding: '1.5rem',
-                  marginBottom: '2rem'
-                }}>
-                  <h3 style={{ color: 'var(--white)', marginBottom: '1rem' }}>
-                    Payment Method
-                  </h3>
-                  <div style={{ color: 'rgba(255,255,255,0.8)' }}>
-                    {paymentInfo.method ? (
-                      paymentInfo.method === 'westernbid_stripe' 
-                        ? <>💳 Credit/Debit Card - Pay securely with <strong>STRIPE</strong></>
-                        : '💰 PayPal - Pay with PayPal account'
-                    ) : (
-                      '💳 Payment method not selected'
-                    )}
-                  </div>
-                </div>
-
-                <div style={{
-                  display: 'flex',
-                  gap: '1rem'
-                }}>
-                  <button
-                    type="button"
-                    onClick={() => setStep(2)}
-                    style={{
-                      flex: 1,
-                      padding: '1rem',
-                      background: 'rgba(255,255,255,0.1)',
-                      border: '1px solid var(--cyan-accent)',
-                      borderRadius: '8px',
-                      color: 'var(--white)',
-                      fontSize: '1rem',
-                      cursor: 'pointer'
-                    }}
-                  >
-                    Back
-                  </button>
-                  <button
                     onClick={handleFinalSubmit}
-                    disabled={loading}
+                    disabled={loading || !paymentInfo.method}
                     style={{
                       flex: 2,
                       padding: '1rem',
-                      background: loading 
+                      background: (loading || !paymentInfo.method)
                         ? 'rgba(255,255,255,0.2)' 
                         : 'linear-gradient(45deg, var(--green-neon), var(--pink-main))',
                       border: 'none',
@@ -778,8 +667,8 @@ export default function CheckoutPage() {
                       color: 'var(--white)',
                       fontSize: '1.1rem',
                       fontWeight: '600',
-                      cursor: loading ? 'not-allowed' : 'pointer',
-                      opacity: loading ? 0.7 : 1
+                      cursor: (loading || !paymentInfo.method) ? 'not-allowed' : 'pointer',
+                      opacity: (loading || !paymentInfo.method) ? 0.5 : 1
                     }}
                   >
                     {loading ? 'Creating Order...' : '🔒 Proceed to Secure Payment'}
@@ -787,6 +676,7 @@ export default function CheckoutPage() {
                 </div>
               </div>
             )}
+
           </div>
 
           {/* Order Summary */}
