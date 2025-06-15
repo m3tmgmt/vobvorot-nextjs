@@ -263,10 +263,29 @@ async function getProductsHandler(request: NextRequest) {
         isActive: p.isActive
       })))
 
+      // Map category names to emojis
+      const categoryEmojiMap: Record<string, string> = {
+        "Shoes": "👠",
+        "Accessories": "💍", 
+        "Hats": "🎩",
+        "EXVICPMOUR": "✨",
+        "Bags": "👜",
+        "Clothing": "👕"
+      };
+
+      // Enhance products with emoji data for categories
+      const enhancedProducts = products.map(product => ({
+        ...product,
+        category: product.category ? {
+          ...product.category,
+          emoji: categoryEmojiMap[product.category.name] || "📦"
+        } : null
+      }));
+
       return NextResponse.json({
         success: true,
-        products,
-        total: products.length
+        products: enhancedProducts,
+        total: enhancedProducts.length
       })
     } catch (dbError) {
       console.error('Database connection failed, using mock data:', dbError)
