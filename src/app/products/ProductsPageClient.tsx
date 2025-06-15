@@ -12,13 +12,14 @@ interface Product {
   brand?: string
   images: { url: string; alt?: string; isPrimary: boolean }[]
   skus: { id: string; price: any; stock: number; size?: string; color?: string }[]
-  category: { name: string; slug: string }
+  category: { name: string; slug: string; emoji?: string }
 }
 
 interface Category {
   id: string
   name: string
   slug: string
+  emoji?: string
 }
 
 export default function ProductsPageClient() {
@@ -29,43 +30,69 @@ export default function ProductsPageClient() {
   const [activeCategory, setActiveCategory] = useState('all')
 
   useEffect(() => {
-    // Fetch products only (categories endpoint disabled)
-    fetch('/api/products')
-      .then(res => {
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`)
-        }
-        return res.json()
-      })
-      .then((productsData) => {
+    // Fetch both products and categories
+    Promise.all([
+      fetch('/api/products').then(res => res.json()),
+      fetch('/api/categories').then(res => res.json())
+    ])
+      .then(([productsData, categoriesData]) => {
         const productsList = productsData.data?.products || productsData.products || []
         setAllProducts(productsList)
         setProducts(productsList)
         
-        // Extract unique categories from products - only categories that have products
-        const uniqueCategories = Array.from(
-          new Set(productsList.map((p: Product) => p.category.slug))
-        ).map(slug => {
-          const product = productsList.find((p: Product) => p.category.slug === slug)
-          return product ? { id: slug, name: product.category.name, slug } : null
-        }).filter((cat): cat is Category => cat !== null)
+        // Use categories from API with emoji data
+        const apiCategories = Array.isArray(categoriesData) ? categoriesData : []
         
-        // Only show "All Products" and categories that actually have products
+        // Only show categories that have products
         const categoriesWithProducts = [{ id: 'all', name: 'All Products', slug: 'all' }]
-        if (uniqueCategories.length > 0) {
-          categoriesWithProducts.push(...uniqueCategories)
-        }
+        
+        apiCategories.forEach((category: any) => {
+          const hasProducts = productsList.some((p: Product) => p.category.slug === category.slug)
+          if (hasProducts) {
+            categoriesWithProducts.push({
+              id: category.id,
+              name: category.name,
+              slug: category.slug,
+              emoji: category.emoji || '✨'
+            })
+          }
+        })
         
         setCategories(categoriesWithProducts)
         setIsLoading(false)
       })
       .catch(err => {
-        console.error('Failed to fetch products:', err)
-        // Fallback to empty state
-        setAllProducts([])
-        setProducts([])
-        setCategories([{ id: 'all', name: 'All Products', slug: 'all' }])
-        setIsLoading(false)
+        console.error('Failed to fetch data:', err)
+        // Fallback to products only
+        fetch('/api/products')
+          .then(res => res.json())
+          .then((productsData) => {
+            const productsList = productsData.data?.products || productsData.products || []
+            setAllProducts(productsList)
+            setProducts(productsList)
+            
+            // Extract unique categories from products as fallback
+            const uniqueCategories = Array.from(
+              new Set(productsList.map((p: Product) => p.category.slug))
+            ).map(slug => {
+              const product = productsList.find((p: Product) => p.category.slug === slug)
+              return product ? { id: slug, name: product.category.name, slug, emoji: '✨' } : null
+            }).filter((cat): cat is Category => cat !== null)
+            
+            const categoriesWithProducts = [{ id: 'all', name: 'All Products', slug: 'all' }]
+            if (uniqueCategories.length > 0) {
+              categoriesWithProducts.push(...uniqueCategories)
+            }
+            
+            setCategories(categoriesWithProducts)
+            setIsLoading(false)
+          })
+          .catch(() => {
+            setAllProducts([])
+            setProducts([])
+            setCategories([{ id: 'all', name: 'All Products', slug: 'all' }])
+            setIsLoading(false)
+          })
       })
   }, [])
 
@@ -168,17 +195,7 @@ export default function ProductsPageClient() {
                   onClick={() => handleCategoryChange(category.slug)}
                 >
                   <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-                    {category.slug === 'exvicpmour' && '🎨'}
-                    {category.slug === 'shoes' && '👟'}
-                    {category.slug === 'accessories' && '💍'}
-                    {category.slug === 'hats' && '👒'}
-                    {category.slug === 'vintage' && '📼'}
-                    {category.slug === 'y2k' && '💫'}
-                    {category.slug === 'bags' && '👜'}
-                    {category.slug === 'cameras' && '📷'}
-                    {category.slug === 'fashion' && '👗'}
-                    {category.slug === 'custom' && '🎨'}
-                    {!['exvicpmour', 'shoes', 'accessories', 'hats', 'vintage', 'y2k', 'bags', 'cameras', 'fashion', 'custom'].includes(category.slug) && '✨'}
+                    {category.emoji || '✨'}
                   </div>
                   <h3 style={{ color: 'var(--cyan-accent)', marginBottom: '1rem' }}>
                     {category.name}
