@@ -10,9 +10,49 @@ const mockCategories = [
   { id: "6", name: "Clothing", slug: "clothing", emoji: "👕" }
 ];
 
+// Map category names to emojis
+const categoryEmojiMap: Record<string, string> = {
+  "Shoes": "👠",
+  "Accessories": "💍", 
+  "Hats": "🎩",
+  "EXVICPMOUR": "✨",
+  "Bags": "👜",
+  "Clothing": "👕"
+};
+
 export async function GET() {
   try {
-    return NextResponse.json(mockCategories)
+    // Try to get categories from database first
+    try {
+      const dbCategories = await prisma.category.findMany({
+        where: { isActive: true },
+        select: {
+          id: true,
+          name: true, 
+          slug: true,
+          description: true
+        },
+        orderBy: { sortOrder: 'asc' }
+      });
+
+      if (dbCategories.length > 0) {
+        console.log('Returning database categories with emoji enhancement');
+        
+        // Add emojis to database categories based on name mapping
+        const enhancedCategories = dbCategories.map(category => ({
+          ...category,
+          emoji: categoryEmojiMap[category.name] || "📦" // Default emoji if not found
+        }));
+        
+        return NextResponse.json(enhancedCategories);
+      }
+    } catch (dbError) {
+      console.error('Database connection failed, using mock categories:', dbError);
+    }
+    
+    // Fallback to mock categories
+    console.log('Using mock categories as fallback');
+    return NextResponse.json(mockCategories);
   } catch (error) {
     console.error('Error fetching categories:', error)
     return NextResponse.json(
