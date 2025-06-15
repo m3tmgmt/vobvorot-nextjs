@@ -143,38 +143,7 @@ export async function POST(request: NextRequest) {
         // Don't fail the order if email fails
       }
       
-      // Notify CRM about new sign order
-      if (globalCRM) {
-        try {
-          await globalCRM.notifyNewOrder({
-            orderId: order.id,
-            orderNumber: order.orderNumber,
-            orderType: 'SIGN_PHOTO',
-            customerEmail: order.shippingEmail,
-            customerName: order.shippingName,
-            items: [{
-              name: `Custom Sign Photo: "${order.signOrder?.signName}"`,
-              price: parseFloat(order.total.toString()),
-              quantity: 1,
-              sku: 'SIGN-PHOTO-001'
-            }],
-            total: parseFloat(order.total.toString()),
-            paymentMethod: 'westernbid',
-            shippingAddress: {
-              name: order.shippingName,
-              address1: order.shippingAddress,
-              city: order.shippingCity,
-              country: order.shippingCountry,
-              postalCode: order.shippingZip
-            },
-            notes: order.notes || undefined
-          })
-          
-          logger.info('CRM notification sent for sign order', { orderId })
-        } catch (crmError) {
-          logger.error('CRM notification failed for sign order', { orderId }, crmError instanceof Error ? crmError : new Error(String(crmError)))
-        }
-      }
+      // Note: CRM notifications for sign orders will be sent via webhook after successful payment
       
       // Return the same format as checkout API for direct payment gateway submission
       const response: any = {

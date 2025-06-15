@@ -7,6 +7,7 @@ import { sendTelegramNotification } from '@/lib/telegram-notifications'
 import { logWebhook, logSecurityEvent } from '@/lib/payment-logger'
 import { performSecurityCheck, getClientIP, verifyWebhookSignature } from '@/lib/payment-security'
 import { isSecurityEnabled, getPaymentConfig } from '@/lib/payment-config'
+import { globalCRM } from '@/lib/crm-integration'
 import { logger } from '@/lib/logger'
 
 // Webhook handler for WesternBid payment notifications
@@ -172,7 +173,8 @@ export async function POST(request: NextRequest) {
               }
             }
           }
-        }
+        },
+        signOrder: true // Include sign order data for sign photo orders
       }
     })
 
@@ -381,6 +383,79 @@ async function handlePaymentCompleted(order: any, webhookData: WebhookData) {
         }
       }
     })
+  }
+
+  // Send CRM notifications after successful payment (for all order types)
+  if (globalCRM) {
+    try {
+      // Check if this is a sign order
+      if (updatedOrder.orderType === 'SIGN_PHOTO' && updatedOrder.signOrder) {
+        // Sign order CRM notification
+        await globalCRM.notifyNewOrder({
+          orderId: updatedOrder.id,
+          orderNumber: updatedOrder.orderNumber,
+          orderType: 'SIGN_PHOTO',
+          customerEmail: updatedOrder.shippingEmail,
+          customerName: updatedOrder.shippingName,
+          items: [{
+            name: `Custom Sign Photo: "${updatedOrder.signOrder.signName}"`,
+            price: parseFloat(updatedOrder.total.toString()),
+            quantity: 1,
+            sku: 'SIGN-PHOTO-001'
+          }],
+          total: parseFloat(updatedOrder.total.toString()),
+          paymentMethod: 'westernbid',
+          shippingAddress: {
+            name: updatedOrder.shippingName,
+            address1: updatedOrder.shippingAddress,
+            city: updatedOrder.shippingCity,
+            country: updatedOrder.shippingCountry,
+            postalCode: updatedOrder.shippingZip
+          },
+          notes: updatedOrder.notes || undefined
+        })
+        
+        logger.info('CRM notification sent for sign order after payment', { 
+          orderNumber: updatedOrder.orderNumber,
+          signName: updatedOrder.signOrder.signName
+        })
+      } else {
+        // Regular order CRM notification
+        await globalCRM.notifyNewOrder({
+          orderId: updatedOrder.id,
+          orderNumber: updatedOrder.orderNumber,
+          orderType: 'REGULAR',
+          customerEmail: updatedOrder.shippingEmail,
+          customerName: updatedOrder.shippingName,
+          items: updatedOrder.items.map(item => ({
+            name: item.sku.product.name,
+            price: parseFloat(item.price.toString()),
+            quantity: item.quantity,
+            sku: item.sku.sku
+          })),
+          total: parseFloat(updatedOrder.total.toString()),
+          paymentMethod: 'westernbid',
+          shippingAddress: {
+            name: updatedOrder.shippingName,
+            address1: updatedOrder.shippingAddress,
+            city: updatedOrder.shippingCity,
+            country: updatedOrder.shippingCountry,
+            postalCode: updatedOrder.shippingZip
+          },
+          notes: updatedOrder.notes || undefined
+        })
+        
+        logger.info('CRM notification sent for regular order after payment', { 
+          orderNumber: updatedOrder.orderNumber,
+          itemCount: updatedOrder.items.length
+        })
+      }
+    } catch (crmError) {
+      logger.error('CRM notification failed after payment', { 
+        orderNumber: updatedOrder.orderNumber,
+        orderType: updatedOrder.orderType
+      }, crmError instanceof Error ? crmError : new Error(String(crmError)))
+    }
   }
 
   return updatedOrder
