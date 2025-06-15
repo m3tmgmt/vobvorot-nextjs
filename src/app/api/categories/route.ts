@@ -2,12 +2,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 
 const mockCategories = [
-  { id: "1", name: "Shoes", slug: "shoes" },
-  { id: "2", name: "Accessories", slug: "accessories" },
-  { id: "3", name: "Hats", slug: "hats" },
-  { id: "4", name: "Vintage", slug: "vintage" },
-  { id: "5", name: "Y2K", slug: "y2k" },
-  { id: "6", name: "EXVICPMOUR", slug: "exvicpmour" }
+  { id: "1", name: "Shoes", slug: "shoes", emoji: "👠" },
+  { id: "2", name: "Accessories", slug: "accessories", emoji: "💍" },
+  { id: "3", name: "Hats", slug: "hats", emoji: "🎩" },
+  { id: "4", name: "EXVICPMOUR", slug: "exvicpmour", emoji: "✨" },
+  { id: "5", name: "Bags", slug: "bags", emoji: "👜" },
+  { id: "6", name: "Clothing", slug: "clothing", emoji: "👕" }
 ];
 
 export async function GET() {
