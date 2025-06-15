@@ -337,6 +337,9 @@ bot.command('recent_orders', async (ctx) => {
 
     let message = `🕐 *ПОСЛЕДНИЕ 10 ЗАКАЗОВ*\n\n`
     
+    // Создаем инлайн кнопки для каждого заказа
+    const inlineKeyboards = []
+    
     orders.slice(0, 10).forEach((order: any, index: number) => {
       const statusEmoji = getStatusEmoji(order.status)
       const date = new Date(order.createdAt).toLocaleDateString('ru-RU')
@@ -345,21 +348,24 @@ bot.command('recent_orders', async (ctx) => {
       message += `${index + 1}. ${statusEmoji} #${order.orderNumber || order.id.slice(0, 8)}\n`
       message += `   💰 $${Number(order.total)} | 👤 ${order.shippingName}\n`
       message += `   📅 ${date} ${time}\n\n`
+      
+      // Добавляем кнопку управления для каждого заказа
+      inlineKeyboards.push([
+        { text: `📋 Управлять заказом #${order.orderNumber || order.id.slice(0, 8)}`, callback_data: `view_order_${order.id}` }
+      ])
     })
 
-    // Добавляем кнопки для действий с заказами
-    const keyboard = {
-      inline_keyboard: [
-        [
-          { text: '🔍 Найти заказ', callback_data: 'search_order' },
-          { text: '📊 Статистика', callback_data: 'order_stats' }
-        ]
-      ]
-    }
+    // Добавляем кнопки для общих действий в конец
+    inlineKeyboards.push([
+      { text: '🔍 Найти заказ', callback_data: 'search_order' },
+      { text: '📊 Статистика', callback_data: 'order_stats' }
+    ])
 
     await ctx.reply(message, {
       parse_mode: 'Markdown',
-      reply_markup: keyboard
+      reply_markup: {
+        inline_keyboard: inlineKeyboards
+      }
     })
 
   } catch (error) {
@@ -1252,30 +1258,36 @@ async function handleFilterOrders(ctx: any, status: string) {
     const statusName = getStatusName(status)
     let message = `${statusEmoji} *${statusName.toUpperCase()} ЗАКАЗЫ*\n\n`
     
-    orders.slice(0, 15).forEach((order: any, index: number) => {
+    // Создаем инлайн кнопки для каждого заказа
+    const inlineKeyboards = []
+    
+    orders.slice(0, 10).forEach((order: any, index: number) => {
       const date = new Date(order.createdAt).toLocaleDateString('ru-RU')
       message += `${index + 1}. #${order.orderNumber || order.id.slice(0, 8)}\n`
       message += `   💰 $${Number(order.total)} | 👤 ${order.shippingName}\n`
-      message += `   📅 ${date} | 📧 ${order.shippingEmail}\n\n`
+      message += `   📅 ${date} | ${order.status}\n\n`
+      
+      // Добавляем кнопку управления для каждого заказа
+      inlineKeyboards.push([
+        { text: `📋 Управлять заказом #${order.orderNumber || order.id.slice(0, 8)}`, callback_data: `view_order_${order.id}` }
+      ])
     })
 
-    if (orders.length > 15) {
-      message += `... и еще ${orders.length - 15} заказов\n\n`
+    if (orders.length > 10) {
+      message += `... и еще ${orders.length - 10} заказов\n\n`
     }
 
-    // Добавляем кнопки для действий с заказами
-    const keyboard = {
-      inline_keyboard: [
-        [
-          { text: '🔍 Найти заказ', callback_data: 'search_order' },
-          { text: '📋 Все заказы', callback_data: 'all_orders' }
-        ]
-      ]
-    }
+    // Добавляем кнопки для действий с заказами в конец
+    inlineKeyboards.push([
+      { text: '🔍 Найти заказ', callback_data: 'search_order' },
+      { text: '📋 Все заказы', callback_data: 'all_orders' }
+    ])
 
     await ctx.reply(message, {
       parse_mode: 'Markdown',
-      reply_markup: keyboard
+      reply_markup: {
+        inline_keyboard: inlineKeyboards
+      }
     })
 
   } catch (error) {
