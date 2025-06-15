@@ -255,27 +255,6 @@ bot.command('orders', async (ctx) => {
       return
     }
 
-    // Создаем клавиатуру с фильтрами
-    const keyboard = {
-      inline_keyboard: [
-        [
-          { text: '⏳ В ожидании', callback_data: 'filter_orders_PENDING' },
-          { text: '✅ Подтвержденные', callback_data: 'filter_orders_CONFIRMED' }
-        ],
-        [
-          { text: '🔄 В обработке', callback_data: 'filter_orders_PROCESSING' },
-          { text: '📦 Отправленные', callback_data: 'filter_orders_SHIPPED' }
-        ],
-        [
-          { text: '🎉 Завершенные', callback_data: 'filter_orders_DELIVERED' },
-          { text: '❌ Отмененные', callback_data: 'filter_orders_CANCELLED' }
-        ],
-        [
-          { text: '💸 Возвращенные', callback_data: 'filter_orders_REFUNDED' }
-        ]
-      ]
-    }
-
     let message = `📋 *УПРАВЛЕНИЕ ЗАКАЗАМИ*\n\n`
     message += `📊 Всего заказов: ${orders.length}\n`
     
@@ -293,11 +272,53 @@ bot.command('orders', async (ctx) => {
     message += `❌ Отмененные: ${statusCounts.CANCELLED || 0}\n`
     message += `💸 Возвращенные: ${statusCounts.REFUNDED || 0}\n\n`
     
-    message += `Выберите фильтр для просмотра заказов:`
+    message += `**ПОСЛЕДНИЕ 10 ЗАКАЗОВ:**\n\n`
+
+    // Создаем инлайн кнопки для каждого заказа
+    const inlineKeyboards = []
+    
+    orders.slice(0, 10).forEach((order: any, index: number) => {
+      const statusEmoji = getStatusEmoji(order.status)
+      const date = new Date(order.createdAt).toLocaleDateString('ru-RU')
+      
+      message += `${index + 1}. ${statusEmoji} #${order.orderNumber || order.id.slice(0, 8)}\n`
+      message += `   💰 $${Number(order.total)} | 👤 ${order.shippingName}\n`
+      message += `   📅 ${date} | ${order.status}\n\n`
+      
+      // Добавляем кнопку управления для каждого заказа
+      inlineKeyboards.push([
+        { text: `📋 Управлять заказом #${order.orderNumber || order.id.slice(0, 8)}`, callback_data: `view_order_${order.id}` }
+      ])
+    })
+
+    if (orders.length > 10) {
+      message += `... и еще ${orders.length - 10} заказов\n\n`
+    }
+
+    // Создаем клавиатуру с фильтрами в конце
+    inlineKeyboards.push([
+      { text: '⏳ В ожидании', callback_data: 'filter_orders_PENDING' },
+      { text: '✅ Подтвержденные', callback_data: 'filter_orders_CONFIRMED' }
+    ])
+    inlineKeyboards.push([
+      { text: '🔄 В обработке', callback_data: 'filter_orders_PROCESSING' },
+      { text: '📦 Отправленные', callback_data: 'filter_orders_SHIPPED' }
+    ])
+    inlineKeyboards.push([
+      { text: '🎉 Завершенные', callback_data: 'filter_orders_DELIVERED' },
+      { text: '❌ Отмененные', callback_data: 'filter_orders_CANCELLED' }
+    ])
+    inlineKeyboards.push([
+      { text: '💸 Возвращенные', callback_data: 'filter_orders_REFUNDED' }
+    ])
+    
+    message += `Выберите фильтр для просмотра заказов по статусу:`
 
     await ctx.reply(message, {
       parse_mode: 'Markdown',
-      reply_markup: keyboard
+      reply_markup: {
+        inline_keyboard: inlineKeyboards
+      }
     })
 
   } catch (error) {
