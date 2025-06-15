@@ -45,7 +45,15 @@ bot.command('start', async (ctx) => {
 ✅ Бот успешно инициализирован
 ✅ Вы авторизованы как администратор
 
-📺 Доступные команды для управления видео:
+📋 УПРАВЛЕНИЕ ЗАКАЗАМИ:
+/orders - все заказы с фильтрами
+/recent_orders - последние 10 заказов
+/pending_orders - заказы в ожидании
+/processing_orders - заказы в обработке
+/order_stats - статистика заказов за день
+/find_order <ID> - найти заказ по ID
+
+📺 УПРАВЛЕНИЕ ВИДЕО:
 
 🏠 ГЛАВНАЯ СТРАНИЦА:
 /home_videos - управление видео главной страницы
@@ -213,6 +221,242 @@ bot.command('sign_videos', async (ctx) => {
   } catch (error) {
     console.error('❌ Error in sign_videos command:', error)
     await ctx.reply('❌ Ошибка команды')
+  }
+})
+
+// ===== КОМАНДЫ ДЛЯ УПРАВЛЕНИЯ ЗАКАЗАМИ =====
+
+// Команда для отображения всех заказов с фильтрами
+bot.command('orders', async (ctx) => {
+  try {
+    if (!ctx.from || !isAdmin(ctx.from.id)) {
+      await ctx.reply('❌ У вас нет доступа к этой команде')
+      return
+    }
+
+    console.log('📋 Fetching all orders...')
+    
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/orders`, {
+      headers: {
+        'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
+      }
+    })
+    
+    if (!response.ok) {
+      await ctx.reply('❌ Ошибка получения заказов')
+      return
+    }
+    
+    const data = await response.json()
+    const orders = data.orders || []
+    
+    if (orders.length === 0) {
+      await ctx.reply('📋 Заказов не найдено')
+      return
+    }
+
+    // Создаем клавиатуру с фильтрами
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '⏳ В ожидании', callback_data: 'filter_orders_PENDING' },
+          { text: '✅ Подтвержденные', callback_data: 'filter_orders_CONFIRMED' }
+        ],
+        [
+          { text: '🔄 В обработке', callback_data: 'filter_orders_PROCESSING' },
+          { text: '📦 Отправленные', callback_data: 'filter_orders_SHIPPED' }
+        ],
+        [
+          { text: '🎉 Завершенные', callback_data: 'filter_orders_DELIVERED' },
+          { text: '❌ Отмененные', callback_data: 'filter_orders_CANCELLED' }
+        ],
+        [
+          { text: '💸 Возвращенные', callback_data: 'filter_orders_REFUNDED' }
+        ]
+      ]
+    }
+
+    let message = `📋 *УПРАВЛЕНИЕ ЗАКАЗАМИ*\n\n`
+    message += `📊 Всего заказов: ${orders.length}\n`
+    
+    // Группируем по статусам
+    const statusCounts = orders.reduce((acc: any, order: any) => {
+      acc[order.status] = (acc[order.status] || 0) + 1
+      return acc
+    }, {})
+    
+    message += `⏳ В ожидании: ${statusCounts.PENDING || 0}\n`
+    message += `✅ Подтвержденные: ${statusCounts.CONFIRMED || 0}\n`
+    message += `🔄 В обработке: ${statusCounts.PROCESSING || 0}\n`
+    message += `📦 Отправленные: ${statusCounts.SHIPPED || 0}\n`
+    message += `🎉 Завершенные: ${statusCounts.DELIVERED || 0}\n`
+    message += `❌ Отмененные: ${statusCounts.CANCELLED || 0}\n`
+    message += `💸 Возвращенные: ${statusCounts.REFUNDED || 0}\n\n`
+    
+    message += `Выберите фильтр для просмотра заказов:`
+
+    await ctx.reply(message, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    })
+
+  } catch (error) {
+    console.error('❌ Error in orders command:', error)
+    await ctx.reply('❌ Ошибка получения заказов')
+  }
+})
+
+// Команда для последних заказов
+bot.command('recent_orders', async (ctx) => {
+  try {
+    if (!ctx.from || !isAdmin(ctx.from.id)) {
+      await ctx.reply('❌ У вас нет доступа к этой команде')
+      return
+    }
+
+    console.log('🕐 Fetching recent orders...')
+    
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/orders?limit=10&sort=newest`, {
+      headers: {
+        'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
+      }
+    })
+    
+    if (!response.ok) {
+      await ctx.reply('❌ Ошибка получения последних заказов')
+      return
+    }
+    
+    const data = await response.json()
+    const orders = data.orders || []
+    
+    if (orders.length === 0) {
+      await ctx.reply('📋 Последних заказов не найдено')
+      return
+    }
+
+    let message = `🕐 *ПОСЛЕДНИЕ 10 ЗАКАЗОВ*\n\n`
+    
+    orders.slice(0, 10).forEach((order: any, index: number) => {
+      const statusEmoji = getStatusEmoji(order.status)
+      const date = new Date(order.createdAt).toLocaleDateString('ru-RU')
+      const time = new Date(order.createdAt).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })
+      
+      message += `${index + 1}. ${statusEmoji} #${order.orderNumber || order.id.slice(0, 8)}\n`
+      message += `   💰 $${Number(order.total)} | 👤 ${order.shippingName}\n`
+      message += `   📅 ${date} ${time}\n\n`
+    })
+
+    // Добавляем кнопки для действий с заказами
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '🔍 Найти заказ', callback_data: 'search_order' },
+          { text: '📊 Статистика', callback_data: 'order_stats' }
+        ]
+      ]
+    }
+
+    await ctx.reply(message, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    })
+
+  } catch (error) {
+    console.error('❌ Error in recent_orders command:', error)
+    await ctx.reply('❌ Ошибка получения последних заказов')
+  }
+})
+
+// Команда для поиска заказа по ID
+bot.command('find_order', async (ctx) => {
+  try {
+    if (!ctx.from || !isAdmin(ctx.from.id)) {
+      await ctx.reply('❌ У вас нет доступа к этой команде')
+      return
+    }
+
+    const args = ctx.match?.toString().trim()
+    if (!args) {
+      await ctx.reply('❌ Укажите ID заказа. Пример: /find_order ORDER123')
+      return
+    }
+
+    console.log('🔍 Searching for order:', args)
+    
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/orders/${args}`, {
+      headers: {
+        'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
+      }
+    })
+    
+    if (!response.ok) {
+      await ctx.reply(`❌ Заказ "${args}" не найден`)
+      return
+    }
+    
+    const order = await response.json()
+    
+    // Используем существующую функцию просмотра заказа
+    await handleViewOrder(ctx, order.id)
+
+  } catch (error) {
+    console.error('❌ Error in find_order command:', error)
+    await ctx.reply('❌ Ошибка поиска заказа')
+  }
+})
+
+// Команда для заказов в ожидании
+bot.command('pending_orders', async (ctx) => {
+  await handleFilterOrders(ctx, 'PENDING')
+})
+
+// Команда для заказов в обработке  
+bot.command('processing_orders', async (ctx) => {
+  await handleFilterOrders(ctx, 'PROCESSING')
+})
+
+// Команда для статистики заказов
+bot.command('order_stats', async (ctx) => {
+  try {
+    if (!ctx.from || !isAdmin(ctx.from.id)) {
+      await ctx.reply('❌ У вас нет доступа к этой команде')
+      return
+    }
+
+    console.log('📊 Fetching order statistics...')
+    
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/stats`, {
+      headers: {
+        'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
+      }
+    })
+    
+    if (!response.ok) {
+      await ctx.reply('❌ Ошибка получения статистики')
+      return
+    }
+    
+    const stats = await response.json()
+    
+    const message = `📊 *СТАТИСТИКА ЗАКАЗОВ*\n\n` +
+      `📅 *За сегодня:*\n` +
+      `• Заказов: ${stats.today?.orders || 0}\n` +
+      `• Выручка: $${stats.today?.revenue || 0}\n` +
+      `• Средний чек: $${stats.today?.averageOrder || 0}\n\n` +
+      `📈 *За неделю:*\n` +
+      `• Заказов: ${stats.week?.orders || 0}\n` +
+      `• Выручка: $${stats.week?.revenue || 0}\n\n` +
+      `📊 *За месяц:*\n` +
+      `• Заказов: ${stats.month?.orders || 0}\n` +
+      `• Выручка: $${stats.month?.revenue || 0}\n\n` +
+      `⏰ Обновлено: ${new Date().toLocaleString('ru-RU')}`
+
+    await ctx.reply(message, { parse_mode: 'Markdown' })
+
+  } catch (error) {
+    console.error('❌ Error in order_stats command:', error)
+    await ctx.reply('❌ Ошибка получения статистики')
   }
 })
 
@@ -448,6 +692,11 @@ bot.on('callback_query', async (ctx) => {
       const orderId = callbackData.replace('partial_refund_', '')
       await handlePartialRefund(ctx, orderId)
     }
+    // Проверяем фильтры заказов
+    else if (callbackData.includes('filter_orders_')) {
+      const status = callbackData.replace('filter_orders_', '')
+      await handleFilterOrders(ctx, status)
+    }
     // Обработка других callback форматов (оставляем старую логику)
     else {
       const [action, ...params] = callbackData.split('_')
@@ -470,6 +719,26 @@ bot.on('callback_query', async (ctx) => {
           break
         case 'today':
           await handleTodayOrders(ctx)
+          break
+        case 'search':
+          if (entityId === 'order') {
+            await ctx.reply('🔍 Для поиска заказа используйте команду:\n/find_order <ID_заказа>')
+          }
+          break
+        case 'order':
+          if (entityId === 'stats') {
+            // Перенаправляем на команду статистики
+            await ctx.reply('📊 Получение статистики...')
+            const fakeCtx = { ...ctx, match: '' }
+            await bot.handleUpdate({ message: { text: '/order_stats' } } as any)
+          }
+          break
+        case 'all':
+          if (entityId === 'orders') {
+            await ctx.reply('📋 Получение всех заказов...')
+            const fakeCtx = { ...ctx, match: '' }
+            await bot.handleUpdate({ message: { text: '/orders' } } as any)
+          }
           break
         default:
           await ctx.reply(`ℹ️ Функция "${action}" пока не реализована`)
@@ -932,6 +1201,100 @@ async function handleChangeStatus(ctx: any, orderId: string) {
 • CANCELLED - Отменен
 
 Отправьте сообщение в формате: status_${orderId}_НОВЫЙ_СТАТУС`)
+}
+
+// Вспомогательные функции для управления заказами
+
+function getStatusEmoji(status: string): string {
+  const statusEmojis: { [key: string]: string } = {
+    'PENDING': '⏳',
+    'CONFIRMED': '✅', 
+    'PROCESSING': '🔄',
+    'SHIPPED': '📦',
+    'DELIVERED': '🎉',
+    'CANCELLED': '❌',
+    'REFUNDED': '💸',
+    'PARTIALLY_REFUNDED': '💰'
+  }
+  return statusEmojis[status] || '❓'
+}
+
+async function handleFilterOrders(ctx: any, status: string) {
+  try {
+    if (!ctx.from || !isAdmin(ctx.from.id)) {
+      await ctx.reply('❌ У вас нет доступа к этой команде')
+      return
+    }
+
+    console.log(`📋 Fetching orders with status: ${status}`)
+    
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/orders?status=${status}&limit=20`, {
+      headers: {
+        'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
+      }
+    })
+    
+    if (!response.ok) {
+      await ctx.reply('❌ Ошибка получения заказов')
+      return
+    }
+    
+    const data = await response.json()
+    const orders = data.orders || []
+    
+    if (orders.length === 0) {
+      const statusName = getStatusName(status)
+      await ctx.reply(`📋 ${statusName} заказов не найдено`)
+      return
+    }
+
+    const statusEmoji = getStatusEmoji(status)
+    const statusName = getStatusName(status)
+    let message = `${statusEmoji} *${statusName.toUpperCase()} ЗАКАЗЫ*\n\n`
+    
+    orders.slice(0, 15).forEach((order: any, index: number) => {
+      const date = new Date(order.createdAt).toLocaleDateString('ru-RU')
+      message += `${index + 1}. #${order.orderNumber || order.id.slice(0, 8)}\n`
+      message += `   💰 $${Number(order.total)} | 👤 ${order.shippingName}\n`
+      message += `   📅 ${date} | 📧 ${order.shippingEmail}\n\n`
+    })
+
+    if (orders.length > 15) {
+      message += `... и еще ${orders.length - 15} заказов\n\n`
+    }
+
+    // Добавляем кнопки для действий с заказами
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '🔍 Найти заказ', callback_data: 'search_order' },
+          { text: '📋 Все заказы', callback_data: 'all_orders' }
+        ]
+      ]
+    }
+
+    await ctx.reply(message, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    })
+
+  } catch (error) {
+    console.error('❌ Error filtering orders:', error)
+    await ctx.reply('❌ Ошибка получения заказов')
+  }
+}
+
+function getStatusName(status: string): string {
+  const statusNames: { [key: string]: string } = {
+    'PENDING': 'В ожидании',
+    'CONFIRMED': 'Подтвержденные',
+    'PROCESSING': 'В обработке', 
+    'SHIPPED': 'Отправленные',
+    'DELIVERED': 'Завершенные',
+    'CANCELLED': 'Отмененные',
+    'REFUNDED': 'Возвращенные'
+  }
+  return statusNames[status] || status
 }
 
 // Заглушки для функций уведомлений, которые пока не реализованы
