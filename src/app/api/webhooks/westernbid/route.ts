@@ -389,7 +389,7 @@ async function handlePaymentCompleted(order: any, webhookData: WebhookData) {
   if (globalCRM) {
     try {
       // Check if this is a sign order
-      if (updatedOrder.orderType === 'SIGN_PHOTO' && updatedOrder.signOrder) {
+      if (updatedOrder.orderType === 'SIGN_PHOTO' && (updatedOrder as any).signOrder) {
         // Sign order CRM notification
         await globalCRM.notifyNewOrder({
           orderId: updatedOrder.id,
@@ -398,7 +398,7 @@ async function handlePaymentCompleted(order: any, webhookData: WebhookData) {
           customerEmail: updatedOrder.shippingEmail,
           customerName: updatedOrder.shippingName,
           items: [{
-            name: `Custom Sign Photo: "${updatedOrder.signOrder.signName}"`,
+            name: `Custom Sign Photo: "${(updatedOrder as any).signOrder.signName}"`,
             price: parseFloat(updatedOrder.total.toString()),
             quantity: 1,
             sku: 'SIGN-PHOTO-001'
@@ -417,14 +417,14 @@ async function handlePaymentCompleted(order: any, webhookData: WebhookData) {
         
         logger.info('CRM notification sent for sign order after payment', { 
           orderNumber: updatedOrder.orderNumber,
-          signName: updatedOrder.signOrder.signName
+          signName: (updatedOrder as any).signOrder.signName
         })
       } else {
         // Regular order CRM notification
         await globalCRM.notifyNewOrder({
           orderId: updatedOrder.id,
           orderNumber: updatedOrder.orderNumber,
-          orderType: 'REGULAR',
+          orderType: 'PRODUCT',
           customerEmail: updatedOrder.shippingEmail,
           customerName: updatedOrder.shippingName,
           items: updatedOrder.items.map(item => ({
