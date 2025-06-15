@@ -44,7 +44,7 @@ export default function ProductsPageClient() {
         const apiCategories = Array.isArray(categoriesData) ? categoriesData : []
         
         // Only show categories that have products
-        const categoriesWithProducts = [{ id: 'all', name: 'All Products', slug: 'all' }]
+        const categoriesWithProducts: Category[] = [{ id: 'all', name: 'All Products', slug: 'all' }]
         
         apiCategories.forEach((category: any) => {
           const hasProducts = productsList.some((p: Product) => p.category.slug === category.slug)
@@ -54,7 +54,7 @@ export default function ProductsPageClient() {
               name: category.name,
               slug: category.slug,
               emoji: category.emoji || '✨'
-            })
+            } as Category)
           }
         })
         
@@ -76,10 +76,10 @@ export default function ProductsPageClient() {
               new Set(productsList.map((p: Product) => p.category.slug))
             ).map(slug => {
               const product = productsList.find((p: Product) => p.category.slug === slug)
-              return product ? { id: slug, name: product.category.name, slug, emoji: '✨' } : null
+              return product ? { id: slug, name: product.category.name, slug, emoji: '✨' } as Category : null
             }).filter((cat): cat is Category => cat !== null)
             
-            const categoriesWithProducts = [{ id: 'all', name: 'All Products', slug: 'all' }]
+            const categoriesWithProducts: Category[] = [{ id: 'all', name: 'All Products', slug: 'all' }]
             if (uniqueCategories.length > 0) {
               categoriesWithProducts.push(...uniqueCategories)
             }
@@ -90,7 +90,7 @@ export default function ProductsPageClient() {
           .catch(() => {
             setAllProducts([])
             setProducts([])
-            setCategories([{ id: 'all', name: 'All Products', slug: 'all' }])
+            setCategories([{ id: 'all', name: 'All Products', slug: 'all' }] as Category[])
             setIsLoading(false)
           })
       })
