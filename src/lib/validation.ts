@@ -61,7 +61,12 @@ export const createOrderSchema = z.object({
 // Схемы валидации для пользователей
 export const registerSchema = z.object({
   email: z.string().email('Некорректный email'),
-  password: z.string().min(8, 'Пароль должен содержать минимум 8 символов'),
+  password: z.string()
+    .min(8, 'Пароль должен содержать минимум 8 символов')
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+      'Пароль должен содержать заглавную и строчную буквы, цифру и специальный символ'
+    ),
   name: z.string().min(1, 'Имя обязательно').max(100, 'Имя слишком длинное'),
   phone: z.string().optional()
 })
@@ -73,7 +78,12 @@ export const loginSchema = z.object({
 
 export const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Текущий пароль обязателен'),
-  newPassword: z.string().min(8, 'Новый пароль должен содержать минимум 8 символов'),
+  newPassword: z.string()
+    .min(8, 'Новый пароль должен содержать минимум 8 символов')
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+      'Пароль должен содержать заглавную и строчную буквы, цифру и специальный символ'
+    ),
   confirmPassword: z.string().min(1, 'Подтверждение пароля обязательно')
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: 'Пароли не совпадают',
@@ -82,7 +92,12 @@ export const changePasswordSchema = z.object({
 
 export const resetPasswordSchema = z.object({
   token: z.string().min(1, 'Токен сброса обязателен'),
-  password: z.string().min(8, 'Пароль должен содержать минимум 8 символов'),
+  password: z.string()
+    .min(8, 'Пароль должен содержать минимум 8 символов')
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/,
+      'Пароль должен содержать заглавную и строчную буквы, цифру и специальный символ'
+    ),
   confirmPassword: z.string().min(1, 'Подтверждение пароля обязательно')
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Пароли не совпадают',
@@ -257,6 +272,65 @@ export function createServerErrorResponse(message = 'Внутренняя оши
   )
 }
 
+// Схема валидации переменных окружения
+export const envSchema = z.object({
+  // Database
+  DATABASE_URL: z.string().url('DATABASE_URL должен быть валидным URL'),
+  
+  // NextAuth
+  NEXTAUTH_SECRET: z.string().min(32, 'NEXTAUTH_SECRET должен быть минимум 32 символа'),
+  NEXTAUTH_URL: z.string().url('NEXTAUTH_URL должен быть валидным URL'),
+  
+  // Resend
+  RESEND_API_KEY: z.string().min(1, 'RESEND_API_KEY обязателен'),
+  FROM_EMAIL: z.string().email('FROM_EMAIL должен быть валидным email'),
+  ADMIN_EMAIL: z.string().email('ADMIN_EMAIL должен быть валидным email'),
+  
+  // Cloudinary
+  CLOUDINARY_CLOUD_NAME: z.string().min(1, 'CLOUDINARY_CLOUD_NAME обязателен'),
+  CLOUDINARY_API_KEY: z.string().min(1, 'CLOUDINARY_API_KEY обязателен'),
+  CLOUDINARY_API_SECRET: z.string().min(1, 'CLOUDINARY_API_SECRET обязателен'),
+  
+  // Telegram
+  TELEGRAM_BOT_TOKEN: z.string().min(1, 'TELEGRAM_BOT_TOKEN обязателен'),
+  TELEGRAM_BOT_USERNAME: z.string().min(1, 'TELEGRAM_BOT_USERNAME обязателен'),
+  OWNER_TELEGRAM_ID: z.string().min(1, 'OWNER_TELEGRAM_ID обязателен'),
+  ADMIN_API_KEY: z.string().min(32, 'ADMIN_API_KEY должен быть минимум 32 символа'),
+  
+  // WesternBid
+  WESTERNBID_MERCHANT_ID: z.string().min(1, 'WESTERNBID_MERCHANT_ID обязателен'),
+  WESTERNBID_SECRET_KEY: z.string().min(1, 'WESTERNBID_SECRET_KEY обязателен'),
+  WESTERNBID_MOCK_MODE: z.enum(['true', 'false']).optional().default('false'),
+  
+  // Optional
+  NEXT_PUBLIC_GA_ID: z.string().optional(),
+  CLOUDFLARE_API_TOKEN: z.string().optional(),
+  SENTRY_AUTH_TOKEN: z.string().optional(),
+  INTERNAL_API_KEY: z.string().optional(),
+  NEXT_PUBLIC_SITE_URL: z.string().url().optional()
+})
+
+// Функция валидации переменных окружения при запуске
+export function validateEnv() {
+  try {
+    const result = envSchema.safeParse(process.env)
+    if (!result.success) {
+      console.error('❌ Ошибки валидации переменных окружения:')
+      result.error.errors.forEach(err => {
+        console.error(`  ${err.path.join('.')}: ${err.message}`)
+      })
+      if (process.env.NODE_ENV === 'production') {
+        throw new Error('Критические переменные окружения отсутствуют')
+      }
+    }
+  } catch (error) {
+    console.error('Ошибка валидации окружения:', error)
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1)
+    }
+  }
+}
+
 // Экспорт всех схем как объект для удобства
 export const schemas = {
   product: productSchema,
@@ -276,5 +350,6 @@ export const schemas = {
   updateCartItem: updateCartItemSchema,
   adminAuth: adminAuthSchema,
   pagination: paginationSchema,
-  search: searchSchema
+  search: searchSchema,
+  env: envSchema
 } as const

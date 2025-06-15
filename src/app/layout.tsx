@@ -89,13 +89,13 @@ export const metadata: Metadata = {
   category: "fashion",
   icons: {
     icon: [
-      { url: '/favicon.svg', type: 'image/svg+xml' },
-      { url: '/favicon.ico', sizes: 'any' }
+      { url: '/favicon.svg?v=3', type: 'image/svg+xml' },
+      { url: '/vobvorot-icon-new.ico?v=3', sizes: 'any' }
     ],
     apple: [
-      { url: '/favicon.svg', type: 'image/svg+xml', sizes: '180x180' }
+      { url: '/favicon.svg?v=3', type: 'image/svg+xml', sizes: '180x180' }
     ],
-    shortcut: '/favicon.ico',
+    shortcut: '/vobvorot-icon-new.ico?v=3',
   },
 };
 
@@ -139,6 +139,20 @@ export default function RootLayout({
           href="/css/globals.css"
           rel="stylesheet"
         />
+        <link rel="icon" type="image/x-icon" href="/vobvorot-icon-new.ico?v=3" />
+        <link rel="shortcut icon" type="image/x-icon" href="/vobvorot-icon-new.ico?v=3" />
+        <script dangerouslySetInnerHTML={{
+          __html: `
+          // Force favicon refresh
+          (function() {
+            var links = document.querySelectorAll("link[rel*='icon']");
+            links.forEach(function(link) {
+              var href = link.href.split('?')[0] + '?v=' + Date.now();
+              link.href = href;
+            });
+          })();
+          `
+        }} />
         {/* Global Structured Data */}
         <script
           type="application/ld+json"

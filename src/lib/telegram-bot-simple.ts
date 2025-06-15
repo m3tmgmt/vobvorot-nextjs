@@ -379,60 +379,102 @@ bot.on('callback_query', async (ctx) => {
     // Подтверждаем получение callback
     await ctx.answerCallbackQuery()
 
-    // Парсим callback data
-    const [action, ...params] = callbackData.split('_')
-    const entityId = params.join('_')
+    // Парсим callback data для различных форматов
+    console.log(`🔧 Raw callback data: ${callbackData}`)
 
-    console.log(`🔧 Processing callback: action=${action}, entityId=${entityId}`)
+    // Проверяем формат callback_data из уведомлений о заказах
+    if (callbackData.includes('_order_')) {
+      const parts = callbackData.split('_order_')
+      const action = parts[0]
+      const orderId = parts[1]
+      
+      console.log(`🔧 Processing order callback: action=${action}, orderId=${orderId}`)
 
-    switch (action) {
-      case 'confirm':
-        if (params[0] === 'order') {
-          await handleConfirmOrder(ctx, entityId)
-        }
-        break
+      switch (action) {
+        case 'confirm':
+          await handleConfirmOrder(ctx, orderId)
+          break
+        case 'process':
+          await handleProcessOrder(ctx, orderId)
+          break
+        case 'view':
+          await handleViewOrder(ctx, orderId)
+          break
+        case 'cancel':
+          await handleCancelOrder(ctx, orderId)
+          break
+        case 'refund':
+          await handleRefundOrder(ctx, orderId)
+          break
+        default:
+          await ctx.reply(`ℹ️ Функция "${action}" для заказа ${orderId} пока не реализована`)
+          break
+      }
+    }
+    // Проверяем формат callback_data для сообщений клиентам
+    else if (callbackData.includes('_customer_')) {
+      const parts = callbackData.split('_customer_')
+      const action = parts[0] === 'message' ? 'message' : parts[0]
+      const orderId = parts[1]
+      
+      console.log(`🔧 Processing customer callback: action=${action}, orderId=${orderId}`)
+      
+      switch (action) {
+        case 'message':
+          await handleMessageCustomer(ctx, orderId)
+          break
+        case 'contact':
+          await handleContactCustomer(ctx, orderId)
+          break
+        default:
+          await ctx.reply(`ℹ️ Функция "${action}" для клиента пока не реализована`)
+          break
+      }
+    }
+    // Проверяем специальные форматы отмены и возврата
+    else if (callbackData.includes('cancel_no_refund_')) {
+      const orderId = callbackData.replace('cancel_no_refund_', '')
+      await handleCancelNoRefund(ctx, orderId)
+    }
+    else if (callbackData.includes('cancel_with_refund_')) {
+      const orderId = callbackData.replace('cancel_with_refund_', '')
+      await handleCancelWithRefund(ctx, orderId)
+    }
+    else if (callbackData.includes('full_refund_')) {
+      const orderId = callbackData.replace('full_refund_', '')
+      await handleFullRefund(ctx, orderId)
+    }
+    else if (callbackData.includes('partial_refund_')) {
+      const orderId = callbackData.replace('partial_refund_', '')
+      await handlePartialRefund(ctx, orderId)
+    }
+    // Обработка других callback форматов (оставляем старую логику)
+    else {
+      const [action, ...params] = callbackData.split('_')
+      const entityId = params.join('_')
 
-      case 'upload':
-        if (params[0] === 'photo') {
-          await handleUploadPhoto(ctx, entityId)
-        }
-        break
+      console.log(`🔧 Processing generic callback: action=${action}, entityId=${entityId}`)
 
-      case 'send':
-        if (params[0] === 'photo') {
-          await handleSendPhoto(ctx, entityId)
-        }
-        break
-
-      case 'cancel':
-        if (params[0] === 'order') {
-          await handleCancelOrder(ctx, entityId)
-        }
-        break
-
-      case 'customer':
-        await handleCustomerProfile(ctx, entityId)
-        break
-
-      case 'accept':
-        if (params[0] === 'order') {
-          await handleAcceptOrder(ctx, entityId)
-        }
-        break
-
-      case 'reject':
-        if (params[0] === 'order') {
-          await handleRejectOrder(ctx, entityId)
-        }
-        break
-
-      case 'status':
-        await handleChangeStatus(ctx, entityId)
-        break
-
-      default:
-        await ctx.reply(`ℹ️ Функция "${action}" пока не реализована`)
-        break
+      switch (action) {
+        case 'inventory':
+          await handleInventoryStats(ctx)
+          break
+        case 'add':
+          await handleAddInventory(ctx)
+          break
+        case 'plan':
+          await handlePlanRestock(ctx)
+          break
+        case 'detailed':
+          await handleDetailedStats(ctx)
+          break
+        case 'today':
+          await handleTodayOrders(ctx)
+          break
+        default:
+          await ctx.reply(`ℹ️ Функция "${action}" пока не реализована`)
+          break
+      }
     }
 
   } catch (error) {
@@ -452,15 +494,14 @@ async function handleConfirmOrder(ctx: any, orderId: string) {
     console.log('✅ Confirming order:', orderId)
     
     // Обновляем статус заказа в базе данных
-    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/sign-orders/${orderId}`, {
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/orders/${orderId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
       },
       body: JSON.stringify({ 
-        action: 'update_status',
-        status: 'PROCESSING'
+        status: 'CONFIRMED'
       })
     })
 
@@ -473,6 +514,152 @@ async function handleConfirmOrder(ctx: any, orderId: string) {
   } catch (error) {
     console.error('Error confirming order:', error)
     await ctx.reply(`❌ Ошибка подтверждения заказа`)
+  }
+}
+
+async function handleProcessOrder(ctx: any, orderId: string) {
+  try {
+    console.log('📦 Processing order:', orderId)
+    
+    // Обновляем статус заказа на "В обработке"
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/orders/${orderId}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
+      },
+      body: JSON.stringify({ 
+        status: 'PROCESSING'
+      })
+    })
+
+    if (response.ok) {
+      await ctx.reply(`📦 Заказ ${orderId} передан в обработку`)
+    } else {
+      const errorData = await response.json()
+      await ctx.reply(`❌ Ошибка обработки заказа ${orderId}: ${errorData.error || 'Неизвестная ошибка'}`)
+    }
+  } catch (error) {
+    console.error('Error processing order:', error)
+    await ctx.reply(`❌ Ошибка обработки заказа`)
+  }
+}
+
+async function handleViewOrder(ctx: any, orderId: string) {
+  try {
+    console.log('👁️ Viewing order:', orderId)
+    
+    // Получаем детали заказа
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/orders/${orderId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
+      }
+    })
+
+    if (response.ok) {
+      const order = await response.json()
+      
+      const orderDetails = `
+📋 *ДЕТАЛИ ЗАКАЗА* #${order.orderNumber || orderId}
+
+👤 *Клиент:* ${order.shippingName}
+📧 *Email:* ${order.shippingEmail}
+📱 *Телефон:* ${order.shippingPhone || 'Не указан'}
+💰 *Сумма:* $${Number(order.total)}
+📊 *Статус:* ${order.status}
+💳 *Оплата:* ${order.paymentStatus}
+
+🏠 *Адрес доставки:*
+${order.shippingAddress}
+${order.shippingCity}, ${order.shippingCountry}
+${order.shippingZip}
+
+📦 *Товары:*
+${order.items?.map((item: any) => `• ${item.productName} x${item.quantity} - $${Number(item.price)}`).join('\n') || 'Товары не найдены'}
+
+📅 *Создан:* ${new Date(order.createdAt).toLocaleString('ru-RU')}
+      `.trim()
+
+      // Кнопки для дальнейших действий
+      const keyboard = {
+        inline_keyboard: [
+          [
+            { text: '✅ Подтвердить', callback_data: `confirm_order_${orderId}` },
+            { text: '📦 В обработку', callback_data: `process_order_${orderId}` }
+          ],
+          [
+            { text: '❌ Отменить заказ', callback_data: `cancel_order_${orderId}` },
+            { text: '💸 Возврат средств', callback_data: `refund_order_${orderId}` }
+          ]
+        ]
+      }
+
+      await ctx.reply(orderDetails, {
+        parse_mode: 'Markdown',
+        reply_markup: keyboard
+      })
+    } else {
+      await ctx.reply(`❌ Не удалось загрузить детали заказа ${orderId}`)
+    }
+  } catch (error) {
+    console.error('Error viewing order:', error)
+    await ctx.reply(`❌ Ошибка просмотра заказа`)
+  }
+}
+
+async function handleMessageCustomer(ctx: any, orderId: string) {
+  try {
+    console.log('💬 Messaging customer for order:', orderId)
+    
+    await ctx.reply(`💬 Отправка сообщения клиенту по заказу ${orderId}:
+
+Для отправки сообщения клиенту используйте формат:
+\`message_${orderId}_Ваше сообщение здесь\`
+
+Пример:
+\`message_${orderId}_Ваш заказ готов к отправке\``, {
+      parse_mode: 'Markdown'
+    })
+  } catch (error) {
+    console.error('Error messaging customer:', error)
+    await ctx.reply(`❌ Ошибка отправки сообщения`)
+  }
+}
+
+async function handleContactCustomer(ctx: any, orderId: string) {
+  try {
+    console.log('📞 Contacting customer for order:', orderId)
+    
+    // Получаем контактную информацию клиента
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/orders/${orderId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
+      }
+    })
+
+    if (response.ok) {
+      const order = await response.json()
+      
+      await ctx.reply(`📞 *КОНТАКТНАЯ ИНФОРМАЦИЯ КЛИЕНТА*
+
+📋 *Заказ:* #${order.orderNumber || orderId}
+👤 *Имя:* ${order.shippingName}
+📧 *Email:* ${order.shippingEmail}
+📱 *Телефон:* ${order.shippingPhone || 'Не указан'}
+
+🔗 *Быстрые действия:*
+• Email: mailto:${order.shippingEmail}
+${order.shippingPhone ? `• Телефон: tel:${order.shippingPhone}` : ''}`, {
+        parse_mode: 'Markdown'
+      })
+    } else {
+      await ctx.reply(`❌ Не удалось загрузить контактную информацию для заказа ${orderId}`)
+    }
+  } catch (error) {
+    console.error('Error contacting customer:', error)
+    await ctx.reply(`❌ Ошибка получения контактной информации`)
   }
 }
 
@@ -516,27 +703,207 @@ async function handleCancelOrder(ctx: any, orderId: string) {
   try {
     console.log('❌ Cancelling order:', orderId)
     
-    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/sign-orders/${orderId}`, {
+    // Создаем клавиатуру с вариантами отмены
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '❌ Отменить без возврата', callback_data: `cancel_no_refund_${orderId}` },
+          { text: '💸 Отменить с возвратом', callback_data: `cancel_with_refund_${orderId}` }
+        ],
+        [
+          { text: '🔙 Назад', callback_data: `view_order_${orderId}` }
+        ]
+      ]
+    }
+
+    await ctx.reply(`❌ *ОТМЕНА ЗАКАЗА* #${orderId}
+
+Выберите тип отмены:
+
+❌ *Без возврата* - заказ отменяется, средства не возвращаются
+💸 *С возвратом* - заказ отменяется, средства возвращаются клиенту
+
+⚠️ Отмена с возвратом запустит процесс возврата средств через WesternBid`, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    })
+  } catch (error) {
+    console.error('Error cancelling order:', error)
+    await ctx.reply(`❌ Ошибка отмены заказа`)
+  }
+}
+
+async function handleCancelNoRefund(ctx: any, orderId: string) {
+  try {
+    console.log('❌ Cancelling order without refund:', orderId)
+    
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/orders/${orderId}`, {
       method: 'PATCH',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
       },
       body: JSON.stringify({ 
-        action: 'update_status',
         status: 'CANCELLED'
       })
     })
 
     if (response.ok) {
-      await ctx.reply(`❌ Заказ ${orderId} отменен`)
+      await ctx.reply(`❌ Заказ ${orderId} отменен без возврата средств`)
     } else {
       const errorData = await response.json()
       await ctx.reply(`❌ Ошибка отмены заказа ${orderId}: ${errorData.error || 'Неизвестная ошибка'}`)
     }
   } catch (error) {
-    console.error('Error cancelling order:', error)
+    console.error('Error cancelling order without refund:', error)
     await ctx.reply(`❌ Ошибка отмены заказа`)
+  }
+}
+
+async function handleCancelWithRefund(ctx: any, orderId: string) {
+  try {
+    console.log('💸 Cancelling order with refund:', orderId)
+    
+    // Отменяем заказ и обрабатываем возврат
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/orders/${orderId}/refund`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
+      },
+      body: JSON.stringify({ 
+        reason: 'Заказ отменен администратором',
+        adminId: ctx.from?.id?.toString() || 'telegram_admin',
+        notifyCustomer: true
+      })
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      await ctx.reply(`💸 Заказ ${orderId} отменен с возвратом средств
+
+✅ *Сумма возврата:* $${result.refundAmount}
+🆔 *ID возврата:* ${result.refundId}
+📧 *Клиент уведомлен по email*
+
+${result.message}`)
+    } else {
+      const errorData = await response.json()
+      await ctx.reply(`❌ Ошибка возврата по заказу ${orderId}: ${errorData.error || 'Неизвестная ошибка'}`)
+    }
+  } catch (error) {
+    console.error('Error cancelling order with refund:', error)
+    await ctx.reply(`❌ Ошибка обработки возврата`)
+  }
+}
+
+async function handleRefundOrder(ctx: any, orderId: string) {
+  try {
+    console.log('💸 Refunding order:', orderId)
+    
+    // Получаем информацию о заказе для расчета возврата
+    const orderResponse = await fetch(`${process.env.NEXTAUTH_URL}/api/orders/${orderId}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
+      }
+    })
+
+    if (!orderResponse.ok) {
+      await ctx.reply(`❌ Не удалось загрузить информацию о заказе ${orderId}`)
+      return
+    }
+
+    const order = await orderResponse.json()
+    
+    // Создаем клавиатуру с вариантами возврата
+    const keyboard = {
+      inline_keyboard: [
+        [
+          { text: '💸 Полный возврат', callback_data: `full_refund_${orderId}` },
+          { text: '💰 Частичный возврат', callback_data: `partial_refund_${orderId}` }
+        ],
+        [
+          { text: '🔙 Назад', callback_data: `view_order_${orderId}` }
+        ]
+      ]
+    }
+
+    await ctx.reply(`💸 *ВОЗВРАТ СРЕДСТВ* по заказу #${order.orderNumber || orderId}
+
+💰 *Сумма заказа:* $${Number(order.total)}
+📊 *Статус:* ${order.status}
+💳 *Оплата:* ${order.paymentStatus}
+
+Выберите тип возврата:
+
+💸 *Полный возврат* - вернуть всю сумму ($${Number(order.total)})
+💰 *Частичный возврат* - вернуть часть суммы
+
+⚠️ Возврат будет обработан через WesternBid, клиент получит уведомление по email`, {
+      parse_mode: 'Markdown',
+      reply_markup: keyboard
+    })
+  } catch (error) {
+    console.error('Error refunding order:', error)
+    await ctx.reply(`❌ Ошибка обработки возврата`)
+  }
+}
+
+async function handleFullRefund(ctx: any, orderId: string) {
+  try {
+    console.log('💸 Processing full refund for order:', orderId)
+    
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/orders/${orderId}/refund`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
+      },
+      body: JSON.stringify({ 
+        reason: 'Полный возврат по решению администратора',
+        adminId: ctx.from?.id?.toString() || 'telegram_admin',
+        notifyCustomer: true
+      })
+    })
+
+    if (response.ok) {
+      const result = await response.json()
+      await ctx.reply(`✅ *ПОЛНЫЙ ВОЗВРАТ ОБРАБОТАН*
+
+💸 *Сумма возврата:* $${result.refundAmount}
+🆔 *ID возврата:* ${result.refundId}
+📧 *Клиент уведомлен по email*
+
+${result.message}`)
+    } else {
+      const errorData = await response.json()
+      await ctx.reply(`❌ Ошибка полного возврата по заказу ${orderId}: ${errorData.error || 'Неизвестная ошибка'}`)
+    }
+  } catch (error) {
+    console.error('Error processing full refund:', error)
+    await ctx.reply(`❌ Ошибка обработки полного возврата`)
+  }
+}
+
+async function handlePartialRefund(ctx: any, orderId: string) {
+  try {
+    console.log('💰 Setting up partial refund for order:', orderId)
+    
+    await ctx.reply(`💰 *ЧАСТИЧНЫЙ ВОЗВРАТ* по заказу #${orderId}
+
+Для обработки частичного возврата отправьте сообщение в формате:
+\`partial_refund_${orderId}_СУММА_ПРИЧИНА\`
+
+*Пример:*
+\`partial_refund_${orderId}_50.00_Возврат за поврежденный товар\`
+
+⚠️ Укажите сумму в долларах с точностью до центов`, {
+      parse_mode: 'Markdown'
+    })
+  } catch (error) {
+    console.error('Error setting up partial refund:', error)
+    await ctx.reply(`❌ Ошибка настройки частичного возврата`)
   }
 }
 
@@ -567,6 +934,27 @@ async function handleChangeStatus(ctx: any, orderId: string) {
 Отправьте сообщение в формате: status_${orderId}_НОВЫЙ_СТАТУС`)
 }
 
+// Заглушки для функций уведомлений, которые пока не реализованы
+async function handleInventoryStats(ctx: any) {
+  await ctx.reply('📊 Статистика склада пока не реализована')
+}
+
+async function handleAddInventory(ctx: any) {
+  await ctx.reply('➕ Добавление товаров пока не реализовано')
+}
+
+async function handlePlanRestock(ctx: any) {
+  await ctx.reply('📝 Планирование закупки пока не реализовано')
+}
+
+async function handleDetailedStats(ctx: any) {
+  await ctx.reply('📊 Подробная статистика пока не реализована')
+}
+
+async function handleTodayOrders(ctx: any) {
+  await ctx.reply('📦 Заказы за день пока не реализованы')
+}
+
 // Обработка всех сообщений
 bot.on('message', async (ctx) => {
   try {
@@ -587,14 +975,13 @@ bot.on('message', async (ctx) => {
         const newStatus = parts[2]
         
         try {
-          const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/sign-orders/${orderId}`, {
+          const response = await fetch(`${process.env.NEXTAUTH_URL}/api/orders/${orderId}`, {
             method: 'PATCH',
             headers: {
               'Content-Type': 'application/json',
               'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
             },
             body: JSON.stringify({ 
-              action: 'update_status',
               status: newStatus 
             })
           })
@@ -607,6 +994,87 @@ bot.on('message', async (ctx) => {
           }
         } catch (error) {
           await ctx.reply(`❌ Ошибка изменения статуса`)
+        }
+        return
+      }
+    }
+
+    // Проверяем на команды частичного возврата
+    if (ctx.message?.text && ctx.message.text.startsWith('partial_refund_')) {
+      const parts = ctx.message.text.split('_')
+      if (parts.length >= 4) {
+        const orderId = parts[2]
+        const amount = parseFloat(parts[3])
+        const reason = parts.slice(4).join(' ') || 'Частичный возврат'
+        
+        if (isNaN(amount) || amount <= 0) {
+          await ctx.reply(`❌ Неверная сумма. Укажите положительное число`)
+          return
+        }
+        
+        try {
+          const response = await fetch(`${process.env.NEXTAUTH_URL}/api/orders/${orderId}/refund`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
+            },
+            body: JSON.stringify({ 
+              amount: amount,
+              reason: reason,
+              adminId: ctx.from?.id?.toString() || 'telegram_admin',
+              notifyCustomer: true
+            })
+          })
+
+          if (response.ok) {
+            const result = await response.json()
+            await ctx.reply(`✅ *ЧАСТИЧНЫЙ ВОЗВРАТ ОБРАБОТАН*
+
+💰 *Сумма возврата:* $${result.refundAmount}
+🆔 *ID возврата:* ${result.refundId}
+📝 *Причина:* ${reason}
+📧 *Клиент уведомлен по email*
+
+${result.message}`)
+          } else {
+            const errorData = await response.json()
+            await ctx.reply(`❌ Ошибка частичного возврата по заказу ${orderId}: ${errorData.error || 'Неизвестная ошибка'}`)
+          }
+        } catch (error) {
+          await ctx.reply(`❌ Ошибка обработки частичного возврата`)
+        }
+        return
+      }
+    }
+
+    // Проверяем на команды отправки сообщения клиенту
+    if (ctx.message?.text && ctx.message.text.startsWith('message_')) {
+      const parts = ctx.message.text.split('_')
+      if (parts.length >= 3) {
+        const orderId = parts[1]
+        const message = parts.slice(2).join(' ')
+        
+        try {
+          const response = await fetch(`${process.env.NEXTAUTH_URL}/api/orders/${orderId}/message`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
+            },
+            body: JSON.stringify({ 
+              message: message
+            })
+          })
+
+          if (response.ok) {
+            await ctx.reply(`✅ Сообщение отправлено клиенту по заказу ${orderId}`)
+          } else {
+            const errorData = await response.json()
+            await ctx.reply(`❌ Ошибка отправки сообщения клиенту: ${errorData.error || 'Неизвестная ошибка'}`)
+          }
+        } catch (error) {
+          await ctx.reply(`❌ Ошибка отправки сообщения`)
         }
         return
       }
