@@ -99,7 +99,8 @@ export async function sendBulkOrderNotifications(
             country: order.shippingCountry,
             zip: order.shippingZip
           },
-          status: order.status
+          status: order.status,
+          language: 'en' // English for customers
         }
 
         if (type === 'confirmation') {

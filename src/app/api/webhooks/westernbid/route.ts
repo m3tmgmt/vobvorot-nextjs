@@ -9,6 +9,11 @@ import { performSecurityCheck, getClientIP, verifyWebhookSignature } from '@/lib
 import { isSecurityEnabled, getPaymentConfig } from '@/lib/payment-config'
 import { globalCRM } from '@/lib/crm-integration'
 import { logger } from '@/lib/logger'
+import { 
+  confirmReservation, 
+  cancelReservation, 
+  hasActiveReservations 
+} from '@/lib/inventory'
 
 // Webhook handler for WesternBid payment notifications
 export async function POST(request: NextRequest) {
@@ -187,6 +192,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 })
     }
 
+    // Idempotency check - проверить не был ли этот webhook уже обработан
+    const webhookLogKey = `webhook_${webhookData.event}_${webhookData.orderId}_${webhookData.paymentId}`
+    const existingWebhookLog = await prisma.setting.findUnique({
+      where: { key: webhookLogKey }
+    })
+
+    if (existingWebhookLog) {
+      const logData = JSON.parse(existingWebhookLog.value)
+      logger.info('Webhook already processed - returning cached result', {
+        orderId: webhookData.orderId,
+        event: webhookData.event,
+        paymentId: webhookData.paymentId,
+        previouslyProcessedAt: logData.processedAt
+      })
+      
+      return NextResponse.json({ 
+        success: true,
+        message: 'Webhook already processed',
+        orderId: webhookData.orderId,
+        event: webhookData.event,
+        processedAt: logData.processedAt
+      })
+    }
+
     // Process webhook based on event type
     let updatedOrder
     
@@ -232,18 +261,36 @@ export async function POST(request: NextRequest) {
       // Don't fail the webhook for notification errors
     }
 
+    // Записать успешную обработку для idempotency
+    const processedAt = new Date().toISOString()
+    await prisma.setting.create({
+      data: {
+        key: webhookLogKey,
+        value: JSON.stringify({
+          event: webhookData.event,
+          orderId: webhookData.orderId,
+          paymentId: webhookData.paymentId,
+          processedAt,
+          orderStatus: updatedOrder.status,
+          paymentStatus: updatedOrder.paymentStatus
+        })
+      }
+    })
+
     logger.info('WesternBid webhook processed successfully', {
       event: webhookData.event,
       orderId: webhookData.orderId,
       newStatus: updatedOrder.status,
-      newPaymentStatus: updatedOrder.paymentStatus
+      newPaymentStatus: updatedOrder.paymentStatus,
+      processedAt
     })
 
     return NextResponse.json({ 
       success: true,
       message: 'Webhook processed successfully',
       orderId: webhookData.orderId,
-      event: webhookData.event
+      event: webhookData.event,
+      processedAt
     })
 
   } catch (error) {
@@ -350,19 +397,34 @@ async function handlePaymentCompleted(order: any, webhookData: WebhookData) {
     })
   }
   
-  const updatedOrder = await prisma.order.update({
-    where: { id: order.id },
-    data: updateData,
-    include: {
-      items: {
-        include: {
-          sku: {
-            include: {
-              product: {
-                include: {
-                  images: {
-                    where: { isPrimary: true },
-                    take: 1
+  // Step 1: Проверить и подтвердить резервирование
+  const hasReservations = await hasActiveReservations(order.id)
+  
+  if (!hasReservations) {
+    logger.warn('No active reservations found for paid order - this may indicate a problem', {
+      orderNumber: order.orderNumber,
+      orderId: order.id,
+      paymentId: webhookData.paymentId
+    })
+  }
+
+  // Step 2: Атомарное обновление заказа и подтверждение резервирования
+  const result = await prisma.$transaction(async (tx) => {
+    // Обновить заказ
+    const updatedOrder = await tx.order.update({
+      where: { id: order.id },
+      data: updateData,
+      include: {
+        items: {
+          include: {
+            sku: {
+              include: {
+                product: {
+                  include: {
+                    images: {
+                      where: { isPrimary: true },
+                      take: 1
+                    }
                   }
                 }
               }
@@ -370,20 +432,63 @@ async function handlePaymentCompleted(order: any, webhookData: WebhookData) {
           }
         }
       }
+    })
+
+    // Подтвердить резервирование (конвертировать в продажу)
+    const confirmResult = await confirmReservation(order.id)
+    
+    if (!confirmResult.success) {
+      throw new Error(`Failed to confirm reservation: ${confirmResult.error}`)
     }
+
+    // Проверить какие товары нужно архивировать
+    const productsToCheck = new Set<string>()
+    for (const item of order.items) {
+      productsToCheck.add(item.sku.productId)
+    }
+
+    // Проверить и архивировать товары с нулевым доступным остатком
+    for (const productId of productsToCheck) {
+      const productSkus = await tx.productSku.findMany({
+        where: { productId }
+      })
+      
+      const allOutOfStock = productSkus.every(sku => 
+        (sku.stock - sku.reservedStock) <= 0
+      )
+      
+      if (allOutOfStock) {
+        await tx.product.update({
+          where: { id: productId },
+          data: { isActive: false }
+        })
+        
+        logger.info('Product automatically archived due to zero available stock', {
+          productId,
+          orderNumber: order.orderNumber,
+          skuStats: productSkus.map(sku => ({
+            skuId: sku.id,
+            stock: sku.stock,
+            reserved: sku.reservedStock,
+            available: sku.stock - sku.reservedStock
+          }))
+        })
+      }
+    }
+
+    return updatedOrder
+  }, {
+    isolationLevel: 'Serializable',
+    timeout: 15000
   })
 
-  // Update inventory if needed
-  for (const item of order.items) {
-    await prisma.productSku.update({
-      where: { id: item.skuId },
-      data: {
-        stock: {
-          decrement: item.quantity
-        }
-      }
-    })
-  }
+  const updatedOrder = result
+
+  logger.info('✅ Payment completed - inventory updated atomically', {
+    orderNumber: order.orderNumber,
+    orderId: order.id,
+    itemsCount: order.items.length
+  })
 
   // Sync inventory changes with shared-data for CRM/Bot consistency
   try {
@@ -494,6 +599,21 @@ async function handlePaymentFailed(order: any, webhookData: WebhookData) {
     failureReason: webhookData.metadata?.failure_reason
   })
   
+  // Отменить резервирование
+  const cancelResult = await cancelReservation(order.id)
+  if (!cancelResult.success) {
+    logger.error('Failed to cancel reservation for failed payment', {
+      orderNumber: order.orderNumber,
+      orderId: order.id,
+      error: cancelResult.error
+    })
+  } else {
+    logger.info('✅ Reservation cancelled for failed payment', {
+      orderNumber: order.orderNumber,
+      orderId: order.id
+    })
+  }
+  
   return await prisma.order.update({
     where: { id: order.id },
     data: {
@@ -530,6 +650,21 @@ async function handlePaymentCancelled(order: any, webhookData: WebhookData) {
     orderId: order.id,
     paymentId: webhookData.paymentId
   })
+  
+  // Отменить резервирование
+  const cancelResult = await cancelReservation(order.id)
+  if (!cancelResult.success) {
+    logger.error('Failed to cancel reservation for cancelled payment', {
+      orderNumber: order.orderNumber,
+      orderId: order.id,
+      error: cancelResult.error
+    })
+  } else {
+    logger.info('✅ Reservation cancelled for cancelled payment', {
+      orderNumber: order.orderNumber,
+      orderId: order.id
+    })
+  }
   
   return await prisma.order.update({
     where: { id: order.id },
@@ -687,7 +822,8 @@ async function sendNotifications(order: any, webhookData: WebhookData) {
           signName: (order as any).signOrder.signName,
           extraNotes: (order as any).signOrder.extraNotes || '',
           amount: parseFloat(order.total.toString()),
-          estimatedDelivery: '2-7 days'
+          estimatedDelivery: '2-7 days',
+          language: 'en' // English for customers
         })
         
         logger.info('Sign order confirmation email sent after payment', {
@@ -718,7 +854,8 @@ async function sendNotifications(order: any, webhookData: WebhookData) {
             city: order.shippingCity,
             country: order.shippingCountry,
             zip: order.shippingZip
-          }
+          },
+          language: 'en' // English for customers
         }
 
         await emailService.sendOrderConfirmation(emailData)

@@ -88,60 +88,73 @@ export interface SignOrderEmailData {
   language?: 'en' | 'ru'
 }
 
+export interface DigitalFilesEmailData {
+  orderNumber: string
+  customerName: string
+  customerEmail: string
+  files: Array<{
+    fileName: string
+    fileType: string
+    fileId?: string
+    uploadedAt: string
+  }>
+  language?: 'en' | 'ru'
+}
+
 // Localization texts
 const translations = {
   en: {
     // Order Confirmation
-    orderConfirmation: 'Order Confirmation',
-    thankYou: 'Thank you for your order!',
-    orderDetails: 'Order Details',
-    orderNumber: 'Order Number',
-    customer: 'Customer',
+    orderConfirmation: 'Your order is confirmed! 🎉',
+    thankYou: 'Thanks! Your order is on the way',
+    orderDetails: 'Quick details',
+    orderNumber: 'Order',
+    customer: 'Name',
     email: 'Email',
-    itemsOrdered: 'Items Ordered',
+    itemsOrdered: 'What you ordered',
     item: 'Item',
     quantity: 'Qty',
     price: 'Price',
     total: 'Total',
     subtotal: 'Subtotal',
     shipping: 'Shipping',
-    shippingAddress: 'Shipping Address',
-    estimatedDelivery: 'Estimated Delivery',
-    shippingConfirmation: "We'll send you a shipping confirmation email when your order is on its way.",
-    questions: 'Questions? Contact us at',
-    copyright: '© 2024 EXVICPMOUR. All rights reserved.',
+    shippingAddress: 'Shipping to',
+    estimatedDelivery: 'Expected delivery',
+    shippingConfirmation: "We'll email you when it ships!",
+    questions: 'Questions? Just email us:',
+    copyright: '© 2024 EXVICPMOUR',
     
     // Order Status Update
-    orderUpdate: 'Order Update',
-    orderStatus: 'Order Status',
-    trackingNumber: 'Tracking Number',
-    trackPackage: 'Track Your Package',
+    orderUpdate: 'Quick update on your order 📦',
+    orderStatus: 'Status',
+    trackingNumber: 'Tracking',
+    trackPackage: 'Track package',
     
     // Status messages
-    pending: 'Your order is being processed',
-    confirmed: 'Your order has been confirmed',
-    processing: 'Your order is being prepared',
-    shipped: 'Your order has been shipped',
-    delivered: 'Your order has been delivered',
-    cancelled: 'Your order has been cancelled',
+    pending: 'Processing your order...',
+    confirmed: 'Order confirmed!',
+    processing: 'Getting your order ready',
+    shipped: 'Your order is on the way!',
+    delivered: 'Delivered! 🎉',
+    cancelled: 'Order cancelled',
     
     // Welcome Email
-    welcome: 'Welcome to EXVICPMOUR!',
-    welcomeMessage: 'Thank you for joining our exclusive community of fashion enthusiasts.',
-    exploreCollection: 'Explore Our Collection',
-    getStarted: 'Get started by browsing our latest arrivals and exclusive pieces.',
-    benefits: 'As a member, you enjoy:',
-    exclusiveAccess: 'Exclusive access to new collections',
-    memberDiscounts: 'Member-only discounts and offers',
-    freeShipping: 'Free shipping on orders over $100',
-    prioritySupport: 'Priority customer support',
+    welcome: 'Hey there! Welcome to EXVICPMOUR ✨',
+    welcomeMessage: 'So excited to have you here!',
+    exploreCollection: 'Browse our stuff',
+    getStarted: 'Check out our latest drops and exclusive pieces.',
+    benefits: 'Cool perks for you:',
+    exclusiveAccess: 'First access to new drops',
+    memberDiscounts: 'Member discounts',
+    freeShipping: 'Free shipping over $100',
+    prioritySupport: 'Fast support',
     
     // Password Reset
-    passwordReset: 'Reset Your Password',
-    passwordResetMessage: 'You requested to reset your password. Click the button below to create a new password.',
-    resetPassword: 'Reset Password',
-    linkExpires: 'This link will expire in 24 hours.',
-    notRequested: "If you didn't request this, please ignore this email.",
+    passwordReset: 'Reset your password',
+    passwordResetMessage: 'Need to reset your password? No worries! Just click below.',
+    resetPassword: 'Reset password',
+    linkExpires: 'Link expires in 24 hours.',
+    notRequested: "Didn't request this? Just ignore this email.",
     
     // Low Stock Admin
     lowStockAlert: 'Low Stock Alert',
@@ -153,16 +166,28 @@ const translations = {
     viewProduct: 'View Product',
     
     // Shipping Notification
-    orderShipped: 'Order Shipped',
-    orderShippedMessage: 'Your order has been shipped and is on its way to you!',
-    hello: 'Hello',
+    orderShipped: 'Your order is on the way! 📦',
+    orderShippedMessage: 'Your package is headed your way!',
+    hello: 'Hey',
     carrier: 'Carrier',
     status: 'Status',
-    deliveryInfo: 'Delivery Information',
-    deliveryTime: 'Standard delivery takes 3-7 business days',
-    deliveryInstructions: 'Please ensure someone is available to receive the package',
-    contactSupport: 'Contact support if you have any questions about your delivery',
-    contactUs: 'Contact us'
+    deliveryInfo: 'Delivery info',
+    deliveryTime: 'Usually takes 3-7 days',
+    deliveryInstructions: 'Make sure someone can receive it',
+    contactSupport: 'Questions? Just email us',
+    contactUs: 'Email us',
+    
+    // Digital Files Delivery
+    digitalFilesDelivery: 'Your files are ready! 🎉',
+    digitalFiles: 'Digital Files',
+    filesIncluded: 'Your Files',
+    fileName: 'File',
+    fileType: 'Type',
+    uploadedAt: 'Date',
+    digitalOrderComplete: 'Hey! Your custom photos are ready to download.',
+    downloadInstructions: 'Just click the download buttons below to save your files.',
+    filesExpiry: 'Download links expire in 30 days.',
+    enjoyFiles: 'Enjoy! ✨'
   },
   ru: {
     // Order Confirmation
@@ -236,7 +261,19 @@ const translations = {
     deliveryTime: 'Стандартная доставка занимает 3-7 рабочих дней',
     deliveryInstructions: 'Пожалуйста, убедитесь, что кто-то будет готов принять посылку',
     contactSupport: 'Обратитесь в службу поддержки, если у вас есть вопросы о доставке',
-    contactUs: 'Связаться с нами'
+    contactUs: 'Связаться с нами',
+    
+    // Digital Files Delivery
+    digitalFilesDelivery: 'Ваши цифровые файлы готовы!',
+    digitalFiles: 'Цифровые файлы',
+    filesIncluded: 'Включенные файлы',
+    fileName: 'Имя файла',
+    fileType: 'Тип',
+    uploadedAt: 'Загружено',
+    digitalOrderComplete: 'Ваш цифровой заказ выполнен и файлы готовы для скачивания.',
+    downloadInstructions: 'Нажмите на кнопки "Скачать" в таблице выше, чтобы сохранить каждый файл на ваше устройство.',
+    filesExpiry: 'Эти ссылки для скачивания будут действительны в течение 30 дней.',
+    enjoyFiles: 'Наслаждайтесь вашим цифровым контентом!'
   }
 }
 
@@ -573,6 +610,22 @@ export const emailService = {
       `,
       text: 'This is a test email from EXVICPMOUR. If you received this, email service is working correctly!'
     })
+  },
+
+  /**
+   * Send digital files delivery email to customer
+   */
+  async sendDigitalFilesDelivery(data: DigitalFilesEmailData): Promise<void> {
+    const template = generateDigitalFilesDeliveryTemplate(data)
+    const client = getResendClient()
+    
+    await client.emails.send({
+      from: process.env.FROM_EMAIL || 'noreply@vobvorot.com',
+      to: data.customerEmail,
+      subject: template.subject,
+      html: template.html,
+      text: template.text
+    })
   }
 }
 
@@ -621,25 +674,8 @@ function generateOrderConfirmationTemplate(orderData: OrderEmailData): EmailTemp
           <div style="text-align: center; margin-bottom: 32px;">
             <h2 style="color: #1a1a1a; font-size: 24px; margin: 0 0 8px 0;">${t.thankYou}</h2>
             <p style="color: #6b7280; font-size: 16px; margin: 0;">Order #${orderData.orderNumber}</p>
-          </div>
-
-          <div class="card">
-            <h3 style="color: #1a1a1a; margin: 0 0 16px 0; font-size: 18px;">${t.orderDetails}</h3>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
-              <div>
-                <p style="margin: 8px 0; color: #6b7280; font-size: 14px;">${t.orderNumber}</p>
-                <p style="margin: 0; font-weight: 600; color: #1a1a1a;">${orderData.orderNumber}</p>
-              </div>
-              <div>
-                <p style="margin: 8px 0; color: #6b7280; font-size: 14px;">${t.customer}</p>
-                <p style="margin: 0; font-weight: 600; color: #1a1a1a;">${orderData.customerName}</p>
-              </div>
-            </div>
             ${orderData.estimatedDelivery ? `
-              <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-                <p style="margin: 0; color: #6b7280; font-size: 14px;">${t.estimatedDelivery}</p>
-                <p style="margin: 4px 0 0 0; font-weight: 600; color: #059669;">${orderData.estimatedDelivery}</p>
-              </div>
+              <p style="margin: 16px 0 0 0; font-weight: 600; color: #059669;">${t.estimatedDelivery}: ${orderData.estimatedDelivery}</p>
             ` : ''}
           </div>
 
@@ -704,15 +740,7 @@ function generateOrderConfirmationTemplate(orderData: OrderEmailData): EmailTemp
         </div>
         
         <div class="footer">
-          <div class="social-links">
-            <a href="#" style="text-decoration: none;">📧</a>
-            <a href="#" style="text-decoration: none;">📱</a>
-            <a href="#" style="text-decoration: none;">🌐</a>
-          </div>
-          <p style="margin: 0; font-size: 14px;">${t.copyright}</p>
-          <p style="margin: 8px 0 0 0; font-size: 12px;">
-            EXVICPMOUR - Luxury Fashion Redefined
-          </p>
+          <p style="margin: 0; font-size: 14px; text-align: center;">${t.copyright}</p>
         </div>
       </div>
     </body>
@@ -981,15 +1009,7 @@ function generateOrderStatusUpdateTemplate(orderData: OrderEmailData): EmailTemp
         </div>
         
         <div class="footer">
-          <div class="social-links">
-            <a href="#" style="text-decoration: none;">📧</a>
-            <a href="#" style="text-decoration: none;">📱</a>
-            <a href="#" style="text-decoration: none;">🌐</a>
-          </div>
-          <p style="margin: 0; font-size: 14px;">${t.copyright}</p>
-          <p style="margin: 8px 0 0 0; font-size: 12px;">
-            EXVICPMOUR - Luxury Fashion Redefined
-          </p>
+          <p style="margin: 0; font-size: 14px; text-align: center;">${t.copyright}</p>
         </div>
       </div>
     </body>
@@ -1103,15 +1123,7 @@ function generateWelcomeEmailTemplate(data: WelcomeEmailData): EmailTemplate {
         </div>
         
         <div class="footer">
-          <div class="social-links">
-            <a href="#" style="text-decoration: none;">📧</a>
-            <a href="#" style="text-decoration: none;">📱</a>
-            <a href="#" style="text-decoration: none;">🌐</a>
-          </div>
-          <p style="margin: 0; font-size: 14px;">${t.copyright}</p>
-          <p style="margin: 8px 0 0 0; font-size: 12px;">
-            EXVICPMOUR - Luxury Fashion Redefined
-          </p>
+          <p style="margin: 0; font-size: 14px; text-align: center;">${t.copyright}</p>
         </div>
       </div>
     </body>
@@ -1214,15 +1226,7 @@ function generatePasswordResetTemplate(data: PasswordResetData): EmailTemplate {
         </div>
         
         <div class="footer">
-          <div class="social-links">
-            <a href="#" style="text-decoration: none;">📧</a>
-            <a href="#" style="text-decoration: none;">📱</a>
-            <a href="#" style="text-decoration: none;">🌐</a>
-          </div>
-          <p style="margin: 0; font-size: 14px;">${t.copyright}</p>
-          <p style="margin: 8px 0 0 0; font-size: 12px;">
-            EXVICPMOUR - Luxury Fashion Redefined
-          </p>
+          <p style="margin: 0; font-size: 14px; text-align: center;">${t.copyright}</p>
         </div>
       </div>
     </body>
@@ -1511,6 +1515,145 @@ EXVICPMOUR - Your Name, My Pic
 
   return {
     subject: `✍️ Your custom sign "${data.signName}" is being created!`,
+    html,
+    text
+  }
+}
+
+/**
+ * Generate digital files delivery email template
+ */
+function generateDigitalFilesDeliveryTemplate(data: DigitalFilesEmailData): EmailTemplate {
+  const lang = data.language || 'en'
+  const t = translations[lang]
+  
+  const filesHtml = data.files.map(file => {
+    const downloadUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/api/files/download/${file.fileId}`
+    const fileIcon = file.fileType === 'photo' ? '📸' : file.fileType === 'video' ? '🎬' : '📄'
+    
+    return `
+    <tr>
+      <td style="text-align: left;">
+        <div style="display: flex; align-items: center;">
+          <span style="font-size: 24px; margin-right: 12px;">${fileIcon}</span>
+          <span style="font-weight: 600; color: #333;">${file.fileName}</span>
+        </div>
+      </td>
+      <td style="text-align: center;">
+        <a href="${downloadUrl}" class="download-btn" style="background: #667eea; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: 600; display: inline-block;">
+          📥 Download
+        </a>
+      </td>
+    </tr>
+    `
+  }).join('')
+
+  const html = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>${t.digitalFilesDelivery}</title>
+      ${getBaseEmailStyles()}
+      <style>
+        .simple-header {
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          padding: 30px;
+          text-align: center;
+        }
+        .simple-content {
+          padding: 30px;
+          text-align: center;
+        }
+        .files-table {
+          width: 100%;
+          border-collapse: collapse;
+          margin: 20px 0;
+          background: #ffffff;
+          border-radius: 12px;
+          overflow: hidden;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .files-table th {
+          background: #667eea;
+          color: white;
+          padding: 16px;
+          font-size: 14px;
+          font-weight: 600;
+        }
+        .files-table td {
+          padding: 16px;
+          border-bottom: 1px solid #f0f0f0;
+        }
+        .download-btn {
+          background: #667eea;
+          color: white;
+          padding: 10px 20px;
+          border-radius: 8px;
+          text-decoration: none;
+          font-size: 14px;
+          font-weight: 600;
+          display: inline-block;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="email-container">
+        <div class="simple-header">
+          <h1 style="color: white; margin: 0; font-size: 32px;">📸 ${t.digitalFilesDelivery}</h1>
+        </div>
+        
+        <div class="simple-content">
+          <p style="font-size: 18px; color: #333; margin-bottom: 30px;">
+            ${t.digitalOrderComplete}
+          </p>
+
+          <table class="files-table">
+            <thead>
+              <tr>
+                <th>${t.fileName}</th>
+                <th>Download</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${filesHtml}
+            </tbody>
+          </table>
+
+          <p style="color: #666; font-size: 14px; margin: 30px 0 10px 0;">
+            ${t.filesExpiry}
+          </p>
+          
+          <p style="font-size: 20px; margin: 20px 0;">
+            ${t.enjoyFiles}
+          </p>
+        </div>
+      </div>
+    </body>
+    </html>
+  `
+
+  const text = `
+${t.digitalFilesDelivery}
+
+${t.digitalOrderComplete}
+
+${t.filesIncluded}:
+${data.files.map(file => {
+  const downloadUrl = `${process.env.NEXT_PUBLIC_SITE_URL}/api/files/download/${file.fileId}`
+  return `📸 ${file.fileName}\nDownload: ${downloadUrl}`
+}).join('\n\n')}
+
+${t.filesExpiry}
+
+${t.enjoyFiles}
+
+Questions? Reply to this email.
+  `
+
+  return {
+    subject: `📸 ${t.digitalFilesDelivery}`,
     html,
     text
   }

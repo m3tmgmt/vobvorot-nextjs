@@ -155,27 +155,30 @@ model ProductImage {
 }
 
 model ProductSku {
-  id                String      @id @default(cuid())
-  sku               String      @unique
+  id                String            @id @default(cuid())
+  sku               String            @unique
   size              String?
   color             String?
-  price             Decimal     @db.Decimal(10, 2)
-  compareAtPrice    Decimal?    @db.Decimal(10, 2)
-  stock             Int         @default(0)
-  lowStockThreshold Int?        @default(5)
+  price             Decimal           @db.Decimal(10, 2)
+  compareAtPrice    Decimal?          @db.Decimal(10, 2)
+  stock             Int               @default(0)
+  reservedStock     Int               @default(0)
+  lowStockThreshold Int?              @default(5)
   productId         String
-  isActive          Boolean     @default(true)
-  weight            Decimal?    @db.Decimal(8, 3)
+  isActive          Boolean           @default(true)
+  weight            Decimal?          @db.Decimal(8, 3)
   dimensions        String?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
   orderItems        OrderItem[]
-  product           Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product           Product           @relation(fields: [productId], references: [id], onDelete: Cascade)
+  reservations      StockReservation[]
 
   @@index([productId])
   @@index([sku])
   @@index([isActive])
   @@index([stock])
+  @@index([reservedStock])
   @@map("product_skus")
 }
 
@@ -225,6 +228,7 @@ model Order {
   user            User?         @relation(fields: [userId], references: [id])
   payment         Payment?
   signOrder       SignOrder?
+  reservations    StockReservation[]
 
   @@index([userId])
   @@index([orderNumber])
@@ -303,6 +307,25 @@ model SignOrder {
 
   @@index([orderId])
   @@map("sign_orders")
+}
+
+model StockReservation {
+  id        String      @id @default(cuid())
+  skuId     String
+  orderId   String
+  quantity  Int
+  expiresAt DateTime
+  status    ReservationStatus @default(ACTIVE)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  sku       ProductSku  @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  order     Order       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([skuId])
+  @@index([orderId])
+  @@index([expiresAt])
+  @@index([status])
+  @@map("stock_reservations")
 }
 
 model Review {
@@ -434,4 +457,11 @@ enum PaymentStatus {
 enum OrderType {
   PRODUCT
   SIGN_PHOTO
+}
+
+enum ReservationStatus {
+  ACTIVE
+  EXPIRED
+  CONFIRMED
+  CANCELLED
 }

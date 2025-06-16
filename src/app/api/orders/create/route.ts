@@ -8,6 +8,12 @@ import { logPaymentCreation, logPaymentFailure } from '@/lib/payment-logger'
 import { getWesternBidConfig, isFeatureEnabled } from '@/lib/payment-config'
 import { logger } from '@/lib/logger'
 import { normalizePhoneNumber, validatePhoneNumber } from '@/lib/phone-utils'
+import { 
+  reserveInventory, 
+  cancelReservation, 
+  getAvailableStock,
+  type ReservationItem 
+} from '@/lib/inventory'
 
 interface OrderItem {
   product: {
@@ -93,7 +99,49 @@ export async function POST(request: NextRequest) {
     // Generate order number
     const orderNumber = `EXV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
 
-    // Create the order
+    // Step 1: Найти или создать SKU для каждого товара
+    const skuItems: Array<{ skuId: string; quantity: number; price: number; productName: string; productSku: string }> = []
+    const reservationItems: ReservationItem[] = []
+
+    for (const item of orderData.items) {
+      // Find or create SKU for this product variant
+      let sku = await prisma.productSku.findFirst({
+        where: {
+          productId: item.product.id,
+          size: item.selectedSize || null,
+          color: item.selectedColor || null
+        }
+      })
+      
+      if (!sku) {
+        // Create SKU if it doesn't exist
+        sku = await prisma.productSku.create({
+          data: {
+            productId: item.product.id,
+            sku: `${item.product.id}-${item.selectedSize || 'NS'}-${item.selectedColor || 'NC'}`,
+            size: item.selectedSize,
+            color: item.selectedColor,
+            stock: 999, // Default high stock
+            price: Number(item.product.price)
+          }
+        })
+      }
+      
+      skuItems.push({
+        skuId: sku.id,
+        quantity: item.quantity,
+        price: Number(item.product.price),
+        productName: item.product.name,
+        productSku: sku.sku
+      })
+
+      reservationItems.push({
+        skuId: sku.id,
+        quantity: item.quantity
+      })
+    }
+
+    // Step 2: Создать заказ БЕЗ резервирования (сначала)
     const order = await prisma.order.create({
       data: {
         orderNumber,
@@ -118,40 +166,9 @@ export async function POST(request: NextRequest) {
         paymentMethod: orderData.paymentInfo.method,
         paymentStatus: 'PENDING',
         
-        // Order items will be created separately
+        // Order items
         items: {
-          create: await Promise.all(orderData.items.map(async (item) => {
-            // Find or create SKU for this product variant
-            let sku = await prisma.productSku.findFirst({
-              where: {
-                productId: item.product.id,
-                size: item.selectedSize || null,
-                color: item.selectedColor || null
-              }
-            })
-            
-            if (!sku) {
-              // Create SKU if it doesn't exist
-              sku = await prisma.productSku.create({
-                data: {
-                  productId: item.product.id,
-                  sku: `${item.product.id}-${item.selectedSize || 'NS'}-${item.selectedColor || 'NC'}`,
-                  size: item.selectedSize,
-                  color: item.selectedColor,
-                  stock: 999, // Default high stock
-                  price: Number(item.product.price)
-                }
-              })
-            }
-            
-            return {
-              skuId: sku.id,
-              quantity: item.quantity,
-              price: Number(item.product.price),
-              productName: item.product.name,
-              productSku: sku.sku
-            }
-          }))
+          create: skuItems
         }
       },
       include: {
@@ -172,6 +189,56 @@ export async function POST(request: NextRequest) {
           }
         }
       }
+    })
+
+    // Step 3: Попытаться зарезервировать товары
+    const reservationResult = await reserveInventory(order.id, reservationItems)
+
+    if (!reservationResult.success) {
+      // Если резервирование не удалось - удалить заказ
+      await prisma.order.delete({
+        where: { id: order.id }
+      })
+
+      // Вернуть детальную информацию о недостаточных остатках
+      if (reservationResult.insufficientStock && reservationResult.insufficientStock.length > 0) {
+        const insufficientItems = reservationResult.insufficientStock.map(stock => {
+          const item = skuItems.find(item => item.skuId === stock.skuId)
+          return {
+            productName: item?.productName || 'Unknown',
+            requested: stock.requested,
+            available: stock.available
+          }
+        })
+
+        logger.warn('Order creation failed - insufficient stock', {
+          orderNumber,
+          insufficientItems
+        })
+
+        return NextResponse.json({
+          error: 'Insufficient stock',
+          message: 'Some items are no longer available in the requested quantity',
+          insufficientStock: insufficientItems
+        }, { status: 400 })
+      }
+
+      logger.error('Order creation failed - reservation error', {
+        orderNumber,
+        error: reservationResult.error
+      })
+
+      return NextResponse.json({
+        error: 'Unable to reserve inventory',
+        message: reservationResult.error || 'Failed to reserve items for your order'
+      }, { status: 500 })
+    }
+
+    logger.info('✅ Order created with inventory reserved', {
+      orderNumber,
+      orderId: order.id,
+      itemsCount: reservationItems.length,
+      reservationId: reservationResult.reservationId
     })
 
     // Note: Emails will be sent AFTER successful payment creation
@@ -353,7 +420,15 @@ export async function POST(request: NextRequest) {
         duration
       })
 
-      // Payment creation failed
+      // Payment creation failed - отменить резервирование
+      logger.warn('Payment creation failed - cancelling reservation', {
+        orderNumber,
+        orderId: order.id,
+        error: paymentResult.error
+      })
+
+      await cancelReservation(order.id)
+
       await prisma.order.update({
         where: { id: order.id },
         data: {
@@ -380,6 +455,35 @@ export async function POST(request: NextRequest) {
       itemCount: orderData?.items?.length,
       total: orderData?.total
     }, error instanceof Error ? error : new Error(String(error)))
+    
+    // Попытаться отменить резервирование если заказ был создан
+    try {
+      const orderNumber = `EXV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
+      // Найти заказ по номеру если он был создан
+      const existingOrder = await prisma.order.findFirst({
+        where: {
+          shippingEmail: orderData?.shippingInfo?.email,
+          status: 'PENDING',
+          createdAt: {
+            gte: new Date(Date.now() - 60000) // за последнюю минуту
+          }
+        },
+        orderBy: {
+          createdAt: 'desc'
+        }
+      })
+
+      if (existingOrder) {
+        logger.info('Cancelling reservation for failed order', {
+          orderId: existingOrder.id,
+          orderNumber: existingOrder.orderNumber
+        })
+        await cancelReservation(existingOrder.id)
+      }
+    } catch (cleanupError) {
+      logger.error('Failed to cleanup reservation after order creation error', {}, 
+        cleanupError instanceof Error ? cleanupError : new Error(String(cleanupError)))
+    }
     
     return NextResponse.json(
       { error: 'Failed to create order' },

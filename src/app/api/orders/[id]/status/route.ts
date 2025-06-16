@@ -130,7 +130,8 @@ export async function PATCH(
           zip: updatedOrder.shippingZip
         },
         status: updatedOrder.status,
-        trackingNumber
+        trackingNumber,
+        language: 'en' // English for customers
       }
 
       await emailService.sendOrderStatusUpdate(emailData)

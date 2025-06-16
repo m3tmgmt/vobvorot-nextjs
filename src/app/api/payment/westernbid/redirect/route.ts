@@ -218,7 +218,7 @@ export async function GET(request: NextRequest) {
                 </div>
             </div>
             
-            <form id="westernbid-form" action="https://shop.westernbid.info" method="POST">
+            <form id="westernbid-form" action="https://shop.westernbid.com" method="POST">
                 ${Object.entries(formData)
                   .map(([key, value]) => `<input type="hidden" name="${key}" value="${value.replace(/"/g, '&quot;')}" />`)
                   .join('\n                ')}
@@ -239,7 +239,7 @@ export async function GET(request: NextRequest) {
 Payment ID: ${paymentId}
 Merchant: ${formData.wb_login}
 Hash: ${formData.wb_hash?.substring(0, 8)}...
-Target: https://shop.westernbid.info
+Target: https://shop.westernbid.com
 
 Form Data:
 ${Object.entries(formData)

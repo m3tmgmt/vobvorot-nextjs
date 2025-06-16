@@ -7,6 +7,8 @@ export interface Product {
   brand: string
   price: number
   stock: number
+  reservedStock?: number // Зарезервированные остатки
+  availableStock?: number // Доступные остатки (stock - reservedStock)
   weight?: number // Вес в килограммах для расчета доставки
   category: {
     name: string
@@ -245,5 +247,131 @@ export function getProducts(filters?: {
     products: filtered,
     total,
     hasMore: filters?.limit ? (filters.offset || 0) + filters.limit < total : false
+  }
+}
+
+// Функции для работы с резервированием
+export function updateProductStock(id: string, stock: number, reservedStock?: number) {
+  const product = updateProduct(id, { 
+    stock, 
+    reservedStock: reservedStock ?? 0,
+    availableStock: stock - (reservedStock ?? 0)
+  })
+  return product
+}
+
+export function reserveProductStock(id: string, quantity: number) {
+  const product = sharedProducts.find(p => p.id === id)
+  if (!product) {
+    return { success: false, error: 'Product not found' }
+  }
+
+  const currentReserved = product.reservedStock ?? 0
+  const availableStock = product.stock - currentReserved
+
+  if (availableStock < quantity) {
+    return { 
+      success: false, 
+      error: 'Insufficient stock',
+      available: availableStock,
+      requested: quantity
+    }
+  }
+
+  const updatedProduct = updateProduct(id, {
+    reservedStock: currentReserved + quantity,
+    availableStock: product.stock - (currentReserved + quantity)
+  })
+
+  return { success: true, product: updatedProduct }
+}
+
+export function releaseProductReservation(id: string, quantity: number) {
+  const product = sharedProducts.find(p => p.id === id)
+  if (!product) {
+    return { success: false, error: 'Product not found' }
+  }
+
+  const currentReserved = product.reservedStock ?? 0
+  const newReserved = Math.max(0, currentReserved - quantity)
+
+  const updatedProduct = updateProduct(id, {
+    reservedStock: newReserved,
+    availableStock: product.stock - newReserved
+  })
+
+  return { success: true, product: updatedProduct }
+}
+
+export function confirmProductReservation(id: string, quantity: number) {
+  const product = sharedProducts.find(p => p.id === id)
+  if (!product) {
+    return { success: false, error: 'Product not found' }
+  }
+
+  const currentReserved = product.reservedStock ?? 0
+  const newStock = Math.max(0, product.stock - quantity)
+  const newReserved = Math.max(0, currentReserved - quantity)
+
+  const updatedProduct = updateProduct(id, {
+    stock: newStock,
+    reservedStock: newReserved,
+    availableStock: newStock - newReserved
+  })
+
+  return { success: true, product: updatedProduct }
+}
+
+// Синхронизация с базой данных
+export async function syncWithDatabase() {
+  try {
+    // Динамический импорт чтобы избежать циклических зависимостей
+    const { prisma } = await import('@/lib/prisma')
+    
+    // Получить все продукты с их SKU и резервированием
+    const dbProducts = await prisma.product.findMany({
+      include: {
+        skus: {
+          select: {
+            stock: true,
+            reservedStock: true
+          }
+        },
+        images: {
+          where: { isPrimary: true },
+          take: 1
+        }
+      }
+    })
+
+    // Синхронизировать данные
+    for (const dbProduct of dbProducts) {
+      const totalStock = dbProduct.skus.reduce((sum, sku) => sum + sku.stock, 0)
+      const totalReserved = dbProduct.skus.reduce((sum, sku) => sum + sku.reservedStock, 0)
+      
+      const existingProduct = sharedProducts.find(p => p.name === dbProduct.name)
+      
+      if (existingProduct) {
+        updateProduct(existingProduct.id, {
+          stock: totalStock,
+          reservedStock: totalReserved,
+          availableStock: totalStock - totalReserved
+        })
+      }
+    }
+
+    console.log('✅ Shared-data synchronized with database', {
+      syncedProducts: dbProducts.length,
+      syncedAt: new Date().toISOString()
+    })
+
+    return { success: true, syncedProducts: dbProducts.length }
+    
+  } catch (error) {
+    console.error('❌ Failed to sync shared-data with database:', error)
+    return { 
+      success: false, 
+      error: error instanceof Error ? error.message : String(error) 
+    }
   }
 }

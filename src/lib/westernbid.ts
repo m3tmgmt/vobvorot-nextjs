@@ -151,11 +151,11 @@ class WesternBidAPI {
     this.logger = new PaymentLogger()
     
     this.config = {
-      merchantId: process.env.WESTERNBID_MERCHANT_ID || '',
-      secretKey: process.env.WESTERNBID_SECRET_KEY || '',
-      webhookSecret: process.env.WESTERNBID_WEBHOOK_SECRET || '',
-      apiUrl: process.env.WESTERNBID_API_URL || 'https://api.westernbid.com',
-      environment: (process.env.WESTERNBID_ENVIRONMENT as 'sandbox' | 'production') || 'sandbox',
+      merchantId: process.env.WESTERNBID_MERCHANT_ID || '159008',
+      secretKey: process.env.WESTERNBID_SECRET_KEY || 'oVsVCgu',
+      webhookSecret: process.env.WESTERNBID_WEBHOOK_SECRET || 'oVsVCgu',
+      apiUrl: process.env.WESTERNBID_API_URL || 'https://westernbid.com',
+      environment: (process.env.WESTERNBID_ENVIRONMENT as 'sandbox' | 'production') || 'production',
       timeout: parseInt(process.env.WESTERNBID_TIMEOUT || '30000'),
       retryAttempts: parseInt(process.env.WESTERNBID_RETRY_ATTEMPTS || '3')
     }
@@ -353,9 +353,9 @@ class WesternBidAPI {
 
   // Generate WesternBid payment form data according to official documentation
   public generatePaymentFormData(request: PaymentRequest, paymentId: string, preferredGate?: string): Record<string, string> {
-    // Use real merchant ID or fallback for testing - trim whitespace
-    const merchantId = (this.config.merchantId || '159008').trim()
-    const secretKey = (this.config.secretKey || 'oVsVCgu').trim()
+    // Use real merchant ID and secret key - trim whitespace
+    const merchantId = this.config.merchantId.trim()
+    const secretKey = this.config.secretKey.trim()
     const amount = request.amount.toFixed(2)
     
     // WesternBid fields according to official documentation
@@ -371,8 +371,8 @@ class WesternBidAPI {
       cancel_return: request.cancelUrl, // Correct field name
       notify_url: request.webhookUrl || `${process.env.NEXT_PUBLIC_SITE_URL}/api/webhooks/westernbid`, // Correct field name
       
-      // Payment gateway selection - updated based on WesternBid documentation
-      gate: (preferredGate === 'stripe' || preferredGate === 'westernbid_stripe') ? 'stripe.com' : 'paypal.com', // Updated PayPal gateway value
+      // Payment gateway selection for production - WesternBid supports multiple gateways
+      gate: (preferredGate === 'stripe' || preferredGate === 'westernbid_stripe') ? 'stripe.com' : 'paypal.com',
       
       // Customer info - comprehensive autofill fields (15+ variations for maximum compatibility)
       email: request.customerEmail,

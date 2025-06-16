@@ -1,0 +1,44 @@
+# Backups
+*backup*
+FULL-BACKUP-*
+vobvorot-nextjs-backup-*
+*.tar.gz
+
+# Large development files
+.next
+node_modules/.cache
+.cache
+
+# Logs
+*.log
+
+# Environment files (except .env.example)
+.env.local
+.env.production
+.env.railway
+
+# Test files
+test-*.js
+*-test.js
+test/
+tests/
+
+# Documentation
+docs/
+*.md
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/

@@ -67,7 +67,8 @@ export async function POST(request: NextRequest) {
             city: 'Test City',
             country: 'Test Country',
             zip: '12345'
-          }
+          },
+          language: 'en'
         }
         await emailService.sendOrderConfirmation(mockOrderData)
         break
@@ -114,7 +115,8 @@ export async function POST(request: NextRequest) {
             zip: '12345'
           },
           status: 'SHIPPED',
-          trackingNumber: 'TRACK123456789'
+          trackingNumber: 'TRACK123456789',
+          language: 'en'
         }
         await emailService.sendOrderStatusUpdate(mockStatusData)
         break
