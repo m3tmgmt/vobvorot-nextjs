@@ -38,7 +38,7 @@ const globalForProducts = globalThis as unknown as {
   sharedProducts: Product[] | undefined
 }
 
-export const sharedProducts: Product[] = globalForProducts.sharedProducts ?? []
+export const sharedProducts: Product[] = []
 globalForProducts.sharedProducts = sharedProducts
 
 export const categories = [
@@ -101,7 +101,7 @@ const globalForOrders = globalThis as unknown as {
   sharedOrders: Order[] | undefined
 }
 
-export const sharedOrders: Order[] = globalForOrders.sharedOrders ?? []
+export const sharedOrders: Order[] = []
 globalForOrders.sharedOrders = sharedOrders
 
 // Функции для работы с заказами
