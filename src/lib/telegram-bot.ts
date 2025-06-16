@@ -264,15 +264,15 @@ async function addProduct(conversation: any, ctx: MyContext) {
   const weightResponse = await conversation.wait()
   productData.weight = parseFloat(weightResponse.message?.text || '0.5')
   
-  // Размеры (опционально)
-  await ctx.reply('Введите доступные размеры через запятую (или пропустите, отправив "-"):')
-  const sizesResponse = await conversation.wait()
-  productData.sizes = sizesResponse.message?.text === '-' ? [] : sizesResponse.message?.text?.split(',').map((s: string) => s.trim())
+  // Размер товара
+  await ctx.reply('📏 Введите размер товара (например: S, M, L, XL, 42, 44, Standard):\n\n💡 *Если размер не важен для товара, введите "Standard"*', { parse_mode: 'Markdown' })
+  const sizeResponse = await conversation.wait()
+  productData.size = sizeResponse.message?.text || 'Standard'
   
   // Сохранение товара
   try {
     const newProduct = await createProduct(productData)
-    await ctx.reply(`✅ Товар успешно добавлен!\n\n📦 *${newProduct.name}*\n💰 $${newProduct.price}\n📦 Количество: ${newProduct.stock}\n⚖️ Вес: ${newProduct.weight || 0.5} кг`, { parse_mode: 'Markdown' })
+    await ctx.reply(`✅ Товар успешно добавлен!\n\n📦 *${newProduct.name}*\n💰 $${newProduct.price}\n📦 Количество: ${newProduct.stock}\n📏 Размер: ${productData.size}\n⚖️ Вес: ${newProduct.weight || 0.5} кг`, { parse_mode: 'Markdown' })
     
     // Предложение загрузить видео для фона
     await ctx.reply('🎬 Хотите загрузить видео для фона карточки товара? Отправьте видео или нажмите /skip')
@@ -689,22 +689,11 @@ async function searchOrder(ctx: MyContext, query: string) {
 
 async function showProductsList(ctx: MyContext, action: string) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-    const adminApiKey = process.env.ADMIN_API_KEY
-    
-    if (!adminApiKey) {
-      await ctx.reply('❌ Ошибка: API ключ администратора не настроен')
-      return
-    }
-
     await ctx.reply('⏳ Загружаю список товаров...')
 
-    // Fetch products from API
-    const response = await fetch(`${baseUrl}/api/admin/products`, {
-      headers: {
-        'Authorization': `Bearer ${adminApiKey}`
-      }
-    })
+    // Загрузить товары из базы данных (включая архивированные для редактирования)
+    const includeArchived = action === 'edit' ? 'true' : 'false'
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/products-list?includeArchived=${includeArchived}`)
 
     if (!response.ok) {
       await ctx.reply('❌ Ошибка загрузки товаров')
@@ -889,40 +878,40 @@ async function showProductEditMenu(ctx: MyContext, productId: string) {
 
 async function archiveProduct(ctx: MyContext, productId: string) {
   try {
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
-    const adminApiKey = process.env.ADMIN_API_KEY
-    
-    if (!adminApiKey) {
-      await ctx.reply('❌ Ошибка: API ключ администратора не настроен')
-      return
-    }
-
     await ctx.reply('⏳ Архивирую товар...')
 
-    // Set product as inactive
-    const response = await fetch(`${baseUrl}/api/admin/products`, {
-      method: 'PUT',
+    // Архивировать товар через новый API
+    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/archive-product`, {
+      method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${adminApiKey}`
+        'Content-Type': 'application/json'
       },
       body: JSON.stringify({ 
-        productId: productId,
-        status: 'inactive' 
+        productId: productId
       })
     })
 
-    if (response.ok) {
-      await ctx.reply('✅ Товар успешно архивирован!\n\n📝 Товар скрыт с сайта и не отображается клиентам')
-      await showProductEditMenu(ctx, productId)
-    } else {
-      const error = await response.json()
-      await ctx.reply(`❌ Ошибка архивации: ${error.error || 'Неизвестная ошибка'}`)
+    if (!response.ok) {
+      const errorData = await response.json()
+      throw new Error(errorData.error || 'Failed to archive product')
     }
 
-  } catch (error) {
+    const result = await response.json()
+    
+    await ctx.reply(
+      `✅ Товар успешно архивирован!\n\n` +
+      `📦 *${result.data.productName}*\n` +
+      `🗃️ Товар скрыт с сайта и из бота\n` +
+      `📅 Архивирован: ${new Date().toLocaleString('ru-RU')}`,
+      { parse_mode: 'Markdown' }
+    )
+    
+    // Вернуться к списку товаров
+    await showProductsList(ctx, 'edit')
+
+  } catch (error: any) {
     console.error('Error archiving product:', error)
-    await ctx.reply('❌ Произошла ошибка при архивации товара')
+    await ctx.reply(`❌ Ошибка архивации товара: ${error.message}`)
   }
 }
 
@@ -1189,15 +1178,37 @@ async function getCategories() {
 }
 
 async function createProduct(productData: any) {
-  const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/products`, {
+  // Используем API для создания реального товара в базе данных
+  const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/create-product`, {
     method: 'POST',
     headers: { 
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.ADMIN_API_KEY}`
+      'Content-Type': 'application/json'
     },
-    body: JSON.stringify(productData)
+    body: JSON.stringify({
+      name: productData.name,
+      description: productData.description,
+      categorySlug: productData.category || 'general',
+      price: productData.price,
+      stock: productData.stock,
+      brand: productData.brand,
+      size: productData.size // Передаем размер в новый API
+    })
   })
-  return response.json()
+  
+  if (!response.ok) {
+    const errorData = await response.json()
+    throw new Error(errorData.error || 'Failed to create product')
+  }
+  
+  const result = await response.json()
+  return {
+    id: result.data.productId,
+    name: productData.name,
+    price: productData.price,
+    stock: productData.stock,
+    weight: productData.weight,
+    slug: result.data.productName.toLowerCase().replace(/[^a-z0-9]+/g, '-')
+  }
 }
 
 async function updateProductVideo(productId: string, videoUrl: string) {

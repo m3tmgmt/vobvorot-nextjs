@@ -12,7 +12,8 @@ export async function POST(request: NextRequest) {
       stock,
       imageUrl,
       brand,
-      videoUrl
+      videoUrl,
+      size
     } = body
 
     // Валидация обязательных полей
@@ -60,6 +61,7 @@ export async function POST(request: NextRequest) {
       const sku = await tx.productSku.create({
         data: {
           sku: `SKU-${product.id.slice(-8).toUpperCase()}`,
+          size: size || 'Standard', // Добавляем размер
           price: price.toString(),
           stock: parseInt(stock),
           reservedStock: 0,
@@ -97,6 +99,7 @@ export async function POST(request: NextRequest) {
         productId: result.product.id,
         productName: result.product.name,
         sku: result.sku.sku,
+        size: result.sku.size,
         price: result.sku.price,
         stock: result.sku.stock,
         category: result.category.name,
