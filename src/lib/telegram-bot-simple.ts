@@ -682,6 +682,54 @@ bot.on('callback_query', async (ctx) => {
           break
       }
     }
+    // Проверяем новый формат callback_data для кнопок управления заказами
+    else if (callbackData.includes('confirm_order_') || callbackData.includes('process_order_') || 
+             callbackData.includes('cancel_order_') || callbackData.includes('refund_order_') ||
+             callbackData.includes('view_order_')) {
+      
+      let action = ''
+      let orderId = ''
+      
+      if (callbackData.startsWith('confirm_order_')) {
+        action = 'confirm'
+        orderId = callbackData.replace('confirm_order_', '')
+      } else if (callbackData.startsWith('process_order_')) {
+        action = 'process'
+        orderId = callbackData.replace('process_order_', '')
+      } else if (callbackData.startsWith('cancel_order_')) {
+        action = 'cancel'
+        orderId = callbackData.replace('cancel_order_', '')
+      } else if (callbackData.startsWith('refund_order_')) {
+        action = 'refund'
+        orderId = callbackData.replace('refund_order_', '')
+      } else if (callbackData.startsWith('view_order_')) {
+        action = 'view'
+        orderId = callbackData.replace('view_order_', '')
+      }
+      
+      console.log(`🔧 Processing order management callback: action=${action}, orderId=${orderId}`)
+
+      switch (action) {
+        case 'confirm':
+          await handleConfirmOrder(ctx, orderId)
+          break
+        case 'process':
+          await handleProcessOrder(ctx, orderId)
+          break
+        case 'view':
+          await handleViewOrder(ctx, orderId)
+          break
+        case 'cancel':
+          await handleCancelOrder(ctx, orderId)
+          break
+        case 'refund':
+          await handleRefundOrder(ctx, orderId)
+          break
+        default:
+          await ctx.reply(`ℹ️ Функция "${action}" для заказа ${orderId} пока не реализована`)
+          break
+      }
+    }
     // Проверяем формат callback_data для сообщений клиентам
     else if (callbackData.includes('_customer_')) {
       const parts = callbackData.split('_customer_')
