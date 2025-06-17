@@ -239,7 +239,7 @@ function areEqual(prevProps: ProductCardProps, nextProps: ProductCardProps) {
     if (
       prevSku.stock !== nextSku.stock ||
       prevSku.reservedStock !== nextSku.reservedStock ||
-      prevSku.availableStock !== nextSku.availableStock
+      (prevSku as any).availableStock !== (nextSku as any).availableStock
     ) {
       console.log('🔄 ProductCard re-rendering due to stock change:', {
         productName: nextProps.product.name,
@@ -248,8 +248,8 @@ function areEqual(prevProps: ProductCardProps, nextProps: ProductCardProps) {
         nextStock: nextSku.stock,
         prevReserved: prevSku.reservedStock,
         nextReserved: nextSku.reservedStock,
-        prevAvailable: prevSku.availableStock,
-        nextAvailable: nextSku.availableStock
+        prevAvailable: (prevSku as any).availableStock,
+        nextAvailable: (nextSku as any).availableStock
       })
       return false // Re-render
     }
