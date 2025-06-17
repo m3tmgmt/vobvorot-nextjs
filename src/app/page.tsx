@@ -84,11 +84,14 @@ export default function HomePage() {
     return () => clearInterval(interval)
   }, [])
 
+  // Автопереключение видео каждые 8 секунд
   useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentVideoIndex((prev) => (prev + 1) % videos.length)
-    }, 8000)
-    return () => clearInterval(interval)
+    if (videos.length > 1) {
+      const interval = setInterval(() => {
+        setCurrentVideoIndex((prev) => (prev + 1) % videos.length)
+      }, 8000)
+      return () => clearInterval(interval)
+    }
   }, [videos.length])
 
   useEffect(() => {
@@ -188,7 +191,7 @@ export default function HomePage() {
             vobvorot
           </h1>
           <p className="hero-subtitle">
-            digital playground ✨
+            <span className="calligraphy-font">☆ online aura ☆</span>
           </p>
           <div className="hero-button-wrapper">
             <button 
@@ -286,10 +289,10 @@ export default function HomePage() {
             <div>
               <div className="feature-card-icon">🧩</div>
               <h3 className="feature-card-title" style={{ color: 'var(--cyan-accent)' }}>
-                Memory Puzzle
+                Puzzle Hunters
               </h3>
               <p className="feature-card-description">
-                Test your memory with our Y2K-themed puzzle game throughout the site
+                Create your secret code
               </p>
             </div>
             <button 
@@ -302,7 +305,7 @@ export default function HomePage() {
                 }
               }}
             >
-              Play Now
+              CREATE CODE
             </button>
           </div>
 
@@ -342,7 +345,7 @@ export default function HomePage() {
                 Community Hub
               </h3>
               <p className="feature-card-description">
-                Connect with creators and join events
+                Where creators unite & magic happens
               </p>
             </div>
             <button 
@@ -355,7 +358,7 @@ export default function HomePage() {
                 }
               }}
             >
-              Join Community
+              JOIN THE VIBE
             </button>
           </div>
         </div>

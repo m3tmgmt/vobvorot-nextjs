@@ -68,9 +68,10 @@ export default function AboutPage() {
         </div>
         
         <div className="hero-content">
-          <h1 className="hero-title glitch">About vobvorot</h1>
+          <h1 className="hero-title glitch">Inside</h1>
           <p className="hero-subtitle">
-            digital revolution from Ukraine 🇺🇦 • Y2K aesthetic • future nostalgia
+            Personal brand energy.
+            Customs, vintage, and exclusives by ☆ vobvorot ☆
           </p>
           
           <div className="section-intro-card">
@@ -92,24 +93,24 @@ export default function AboutPage() {
           <div className="cards-grid">
             <div className="product-card content-card">
               <h3 style={{ color: 'var(--pink-main)', marginBottom: '1rem' }}>
-                🌐 Digital Playground
+                🌍 Glamour with a Pulse
               </h3>
               <p style={{ lineHeight: '1.6', color: 'rgba(255,255,255,0.8)' }}>
-                We're all about style, sincerity, and real feelings — living in the now, being present, and showing up fully. We want you to feel that with us, no filters.
-                And the pieces you find here?
-                They're meant to be something truly special — just like you.
+                We're into slow glam and meaningful things. The kind of style that says something — and keeps saying it for years.
+                <br />We share the mindset, the mood, the magic.
+                <br />Your style, your finds, your impact — all of it matters.
+                <br />Stay rare, love the planet.
+                <br /><br />Around 92 million tons of clothing end up in landfills and the environment every year.
               </p>
             </div>
 
             <div className="product-card content-card">
               <h3 style={{ color: 'var(--cyan-accent)', marginBottom: '1rem' }}>
-                ✨ Curated Experience
+                🕊️ Every piece comes with a story.
               </h3>
               <p style={{ lineHeight: '1.6', color: 'rgba(255,255,255,0.8)' }}>
-                Every item in our collection is chosen for its story, its quality, 
-                and its ability to spark joy. From Ukrainian handcrafted pieces to 
-                rare vintage finds, we believe in the power of unique objects to 
-                connect us across time and space.
+                You might find a one-of-a-kind handmade design from my brand, a vintage gem with a past, a custom dream, or something totally unexpected.
+                <br />What you choose — that's your story now.
               </p>
             </div>
           </div>
@@ -117,16 +118,16 @@ export default function AboutPage() {
           {/* Stats Section */}
           <div className="stats-grid" style={{ margin: '4rem 0' }}>
             <div className="product-card stats-card">
-              <h3 className="stats-number">500+</h3>
-              <p style={{ color: 'var(--cyan-accent)' }}>Unique Items Curated</p>
+              <h3 className="stats-number calligraphy-font">24/7</h3>
+              <p style={{ color: 'var(--cyan-accent)' }}>God Blessed</p>
             </div>
             <div className="product-card stats-card purple">
-              <h3 className="stats-number purple">2020</h3>
-              <p style={{ color: 'var(--yellow-neon)' }}>Founded in Kyiv</p>
+              <h3 className="stats-number purple calligraphy-font">made with love</h3>
+              <p style={{ color: 'var(--yellow-neon)' }}></p>
             </div>
             <div className="product-card stats-card green">
               <h3 className="stats-number green">24/7</h3>
-              <p style={{ color: 'var(--pink-main)' }}>Digital Experience</p>
+              <p style={{ color: 'var(--pink-main)' }} className="calligraphy-font">Digital Experience</p>
             </div>
           </div>
 
@@ -144,7 +145,7 @@ export default function AboutPage() {
               marginBottom: '2rem',
               fontSize: '1.5rem'
             }}>
-              Timeline of Digital Culture
+              vobvorot'core
             </h3>
             
             <div className="timeline-grid" style={{ gap: '4rem' }}>
@@ -159,33 +160,33 @@ export default function AboutPage() {
                 onMouseEnter={(e) => (e.target as HTMLElement).style.transform = 'scale(1.2)'}
                 onMouseLeave={(e) => (e.target as HTMLElement).style.transform = 'scale(1)'}
                 >
-                  📼
+                  🦢
                 </div>
                 <h4 style={{ color: 'var(--yellow-neon)', marginBottom: '0.5rem' }}>
-                  Y2K Era
+                  Aesthetic Of Weird
                 </h4>
                 <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>
-                  When the future was chrome and dreams were digital
+                  Where beauty glitches, seams speak, and nothing's ever accidental
                 </p>
               </div>
 
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🎮</div>
+                <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🐚</div>
                 <h4 style={{ color: 'var(--green-neon)', marginBottom: '0.5rem' }}>
-                  Gaming Culture
+                  Purity Of Intent
                 </h4>
                 <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>
-                  Pixel art meets high fashion
+                  — unseen but felt.
                 </p>
               </div>
 
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🌈</div>
+                <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>🤍</div>
                 <h4 style={{ color: 'var(--pink-main)', marginBottom: '0.5rem' }}>
-                  Now & Future
+                  Now
                 </h4>
                 <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>
-                  Blending nostalgia with innovation
+                  Not yesterday, not tomorrow
                 </p>
               </div>
             </div>
@@ -194,12 +195,10 @@ export default function AboutPage() {
           {/* Mission Statement */}
           <div className="mission-section">
             <h3 className="mission-title">
-              Our Mission
+              our mission
             </h3>
             <p className="mission-text">
-              To bridge the gap between Ukrainian craftsmanship and global digital culture, 
-              creating a space where tradition meets innovation, where every piece has a story, 
-              and where the Y2K aesthetic lives on through contemporary eyes.
+              to be present in this world — to do what we can, to grow where we're called, to help where we're needed, and to become better, every step of the way.
             </p>
           </div>
 
@@ -215,15 +214,13 @@ export default function AboutPage() {
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text'
               }}>
-                👾
+                🫀
               </div>
               <h3 style={{ color: 'var(--pink-main)', marginBottom: '1rem' }}>
-                Digital Curators
+                The Team
               </h3>
               <p style={{ color: 'rgba(255,255,255,0.8)' }}>
-                We hunt for the unique, the forgotten, and the revolutionary. 
-                Our team spans continents, united by a love for authentic pieces 
-                and digital aesthetics.
+                sensitive souls, synced in vision. We create, evolve, and stay open — always searching for new ways to grow, express, and make goodness real.
               </p>
             </div>
 
@@ -236,15 +233,14 @@ export default function AboutPage() {
                 WebkitTextFillColor: 'transparent',
                 backgroundClip: 'text'
               }}>
-                🎨
+                🐇
               </div>
               <h3 style={{ color: 'var(--yellow-neon)', marginBottom: '1rem' }}>
-                Creative Minds
+                Uncommon Vision
               </h3>
               <p style={{ color: 'rgba(255,255,255,0.8)' }}>
-                From Ukraine to the metaverse, our creators blend traditional 
-                craftsmanship with futuristic vision. Every piece carries their 
-                passion and dedication.
+                We stay open. we see from every angle. What matters most: freedom, always – for people, for animals, for every living thing. We don't glamorize harm. no fur, no leather. We don't wear lives to feel alive.
+                <br />No beauty without respect.
               </p>
             </div>
           </div>

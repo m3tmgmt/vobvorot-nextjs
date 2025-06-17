@@ -2,7 +2,7 @@
 require('dotenv').config();
 
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN;
-const WEBHOOK_URL = `${process.env.NEXTAUTH_URL}/api/telegram/webhook`;
+const WEBHOOK_URL = `${process.env.NEXTAUTH_URL}/api/telegram/webhook-simple`;
 
 async function setupWebhook() {
   try {

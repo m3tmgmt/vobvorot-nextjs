@@ -147,7 +147,7 @@ function FooterComponent() {
             }}>
               <div>Connection: SECURE</div>
               <div>Status: ONLINE</div>
-              <div>Protocol: Y2K.v3</div>
+              <div>Protocol: vbvrt3</div>
               <div style={{ marginTop: '0.5rem' }}>
                 System Code: 
                 <span 
@@ -234,7 +234,7 @@ function FooterComponent() {
             color: 'rgba(255,255,255,0.5)',
             fontSize: '0.8rem'
           }}>
-            © 2024 vobvorot • Made with ✨ for puzzle hunters
+            © 2024 vobvorot • made with a whisper from God
           </div>
           
           <div style={{

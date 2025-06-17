@@ -95,10 +95,13 @@ export async function POST(request: NextRequest) {
       }])
     }
 
-    if (sku.stock < quantity) {
+    // Calculate available stock (total stock minus reserved stock)
+    const availableStock = Math.max(0, sku.stock - (sku.reservedStock || 0))
+    
+    if (availableStock < quantity) {
       return createValidationErrorResponse([{
         field: 'quantity',
-        message: `Only ${sku.stock} items available in stock`
+        message: `Only ${availableStock} items available in stock`
       }])
     }
 
@@ -108,7 +111,9 @@ export async function POST(request: NextRequest) {
       data: {
         sku,
         validated: true,
-        availableStock: sku.stock
+        availableStock: availableStock,
+        totalStock: sku.stock,
+        reservedStock: sku.reservedStock || 0
       },
       message: 'Item validated successfully. Manage cart client-side.'
     })
@@ -155,11 +160,14 @@ export async function PUT(request: NextRequest) {
       }])
     }
 
+    // Calculate available stock (total stock minus reserved stock)
+    const availableStock = Math.max(0, sku.stock - (sku.reservedStock || 0))
+    
     // Check stock availability
-    if (quantity > sku.stock) {
+    if (quantity > availableStock) {
       return createValidationErrorResponse([{
         field: 'quantity',
-        message: `Only ${sku.stock} items available in stock`
+        message: `Only ${availableStock} items available in stock`
       }])
     }
 
@@ -168,7 +176,9 @@ export async function PUT(request: NextRequest) {
       data: {
         skuId,
         validatedQuantity: quantity,
-        availableStock: sku.stock,
+        availableStock: availableStock,
+        totalStock: sku.stock,
+        reservedStock: sku.reservedStock || 0,
         isActive: sku.product.isActive
       },
       message: 'Stock validated successfully'

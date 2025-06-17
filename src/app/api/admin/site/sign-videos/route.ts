@@ -6,10 +6,14 @@ let signVideoCache: { videos: any[], timestamp: number } | null = null
 const CACHE_DURATION = 5 * 60 * 1000 // 5 minutes
 
 // Получить все sign видео
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    // Check cache first
-    if (signVideoCache && (Date.now() - signVideoCache.timestamp) < CACHE_DURATION) {
+    // Check for cache bypass parameter
+    const url = new URL(request.url)
+    const bypassCache = url.searchParams.get('refresh') === 'true'
+    
+    // Check cache first (unless bypassed)
+    if (!bypassCache && signVideoCache && (Date.now() - signVideoCache.timestamp) < CACHE_DURATION) {
       console.log('Returning cached sign videos')
       return NextResponse.json({
         videos: signVideoCache.videos,
@@ -59,6 +63,23 @@ export async function GET() {
         }
       } catch (parseError) {
         console.error('Failed to parse old sign videos:', parseError)
+      }
+    }
+    
+    // Если нет видео вообще, добавляем дефолтное видео для первого запуска
+    if (newVideoSettings.length === 0) {
+      console.log('No sign videos found, adding default video for initialization')
+      try {
+        const defaultVideo = await prisma.setting.create({
+          data: {
+            key: `sign_video_${Date.now()}_default`,
+            value: '/assets/videos/hero2.mp4'
+          }
+        })
+        newVideoSettings.push(defaultVideo)
+        console.log('Default sign video added:', defaultVideo.value)
+      } catch (error) {
+        console.error('Failed to add default sign video:', error)
       }
     }
     

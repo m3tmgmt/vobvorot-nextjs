@@ -246,7 +246,18 @@ async function getProductsHandler(request: NextRequest) {
         where,
         include: {
           images: true,
-          skus: true,
+          skus: {
+            select: {
+              id: true,
+              sku: true,
+              price: true,
+              stock: true,
+              reservedStock: true, // Include reserved stock
+              size: true,
+              color: true,
+              isActive: true
+            }
+          },
           category: true
         },
         orderBy: { createdAt: 'desc' },
@@ -273,13 +284,19 @@ async function getProductsHandler(request: NextRequest) {
         "Clothing": "👕"
       };
 
-      // Enhance products with emoji data for categories
+      // Enhance products with emoji data for categories and calculate available stock
       const enhancedProducts = products.map(product => ({
         ...product,
         category: product.category ? {
           ...product.category,
           emoji: categoryEmojiMap[product.category.name] || "📦"
-        } : null
+        } : null,
+        skus: product.skus.map(sku => ({
+          ...sku,
+          availableStock: Math.max(0, sku.stock - (sku.reservedStock || 0)), // Calculate available stock
+          totalStock: sku.stock,
+          reservedStock: sku.reservedStock || 0
+        }))
       }));
 
       return NextResponse.json({
@@ -301,8 +318,16 @@ async function getProductsHandler(request: NextRequest) {
         console.log('Returning all mock products:', mockProducts.length)
       }
       
-      // Apply limit
-      const limitedProducts = filteredProducts.slice(0, limit)
+      // Apply limit and add stock calculation for mock data
+      const limitedProducts = filteredProducts.slice(0, limit).map(product => ({
+        ...product,
+        skus: product.skus.map(sku => ({
+          ...sku,
+          reservedStock: 0, // Mock data has no reservations
+          availableStock: sku.stock, // All stock is available in mock
+          totalStock: sku.stock
+        }))
+      }))
       
       return NextResponse.json({
         success: true,

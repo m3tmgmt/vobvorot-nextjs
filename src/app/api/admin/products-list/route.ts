@@ -54,7 +54,7 @@ export async function GET(request: NextRequest) {
         videoUrl: product.videoUrl,
         category: product.category.name,
         categorySlug: product.category.slug,
-        price: primarySku ? parseFloat(primarySku.price) : 0,
+        price: primarySku ? parseFloat(primarySku.price.toString()) : 0,
         stock: primarySku ? primarySku.stock : 0,
         size: primarySku ? primarySku.size : 'Standard',
         skuId: primarySku ? primarySku.id : null,

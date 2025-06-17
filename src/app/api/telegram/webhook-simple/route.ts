@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
+import { prisma } from '@/lib/prisma'
 import { cloudinaryService } from '@/lib/cloudinary'
 import { sendShippingNotification, sendEmail, emailService } from '@/lib/email'
 
-const prisma = new PrismaClient()
-
-const BOT_TOKEN = '7700098378:AAEa-cUAEVbUdigyFK9m4PrkOhK-_1jfvQM'
-const ADMIN_IDS = ['316593422', '1837334996']
+const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || '7700098378:AAEa-cUAEVbUdigyFK9m4PrkOhK-_1jfvQM'
+const ADMIN_IDS = process.env.TELEGRAM_OWNER_CHAT_ID?.split(',') || ['316593422', '1837334996']
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY
 
 // Простое хранилище состояний пользователей (в production лучше использовать Redis)
@@ -26,6 +24,7 @@ async function saveUserState(userId: string, state: any) {
     userStates.set(userId, state)
   } catch (error) {
     console.error('Failed to save user state:', error)
+    await sendTelegramMessage(parseInt(userId), '❌ Ошибка сохранения состояния бота. Попробуйте заново или обратитесь к администратору.')
     userStates.set(userId, state) // Fallback to memory
   }
 }
@@ -49,6 +48,7 @@ async function getUserState(userId: string) {
     }
   } catch (error) {
     console.error('Failed to load user state:', error)
+    await sendTelegramMessage(parseInt(userId), '❌ Ошибка загрузки состояния бота. Начинаем заново.')
   }
   
   return null
@@ -62,6 +62,7 @@ async function deleteUserState(userId: string) {
     userStates.delete(userId)
   } catch (error) {
     console.error('Failed to delete user state:', error)
+    await sendTelegramMessage(parseInt(userId), '❌ Ошибка очистки состояния бота. Возможны проблемы в работе.')
     userStates.delete(userId) // Fallback to memory cleanup
   }
 }
@@ -77,12 +78,45 @@ async function saveDebugLog(action: string, data: any) {
     })
   } catch (error) {
     console.error('Failed to save debug log:', error)
+    // Debug logs are internal - no user notification needed
+  }
+}
+
+// Простая проверка подписи webhook (базовая безопасность)
+function verifyTelegramWebhook(body: string, signature: string | null): boolean {
+  if (!signature || !process.env.TELEGRAM_WEBHOOK_SECRET) {
+    return false
+  }
+  
+  try {
+    const crypto = require('crypto')
+    const expectedSignature = crypto
+      .createHmac('sha256', process.env.TELEGRAM_WEBHOOK_SECRET)
+      .update(body, 'utf8')
+      .digest('hex')
+    
+    return crypto.timingSafeEqual(
+      Buffer.from(signature, 'hex'),
+      Buffer.from(expectedSignature, 'hex')
+    )
+  } catch (error) {
+    console.error('Signature verification error:', error)
+    return false
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const update = await request.json()
+    const body = await request.text()
+    const signature = request.headers.get('x-telegram-bot-api-secret-token')
+    
+    // Проверка подписи webhook для безопасности
+    if (process.env.NODE_ENV === 'production' && !verifyTelegramWebhook(body, signature)) {
+      console.warn('Invalid webhook signature')
+      return NextResponse.json({ ok: true }) // Возвращаем success для избежания повторных попыток
+    }
+    
+    const update = JSON.parse(body)
     console.log('📨 Simple webhook received:', JSON.stringify(update, null, 2))
     
     // Обрабатываем текстовые сообщения, медиа и callback queries
@@ -123,6 +157,9 @@ async function handleCallbackQuery(callbackQuery: any) {
   await answerCallbackQuery(callbackQuery.id)
   
   switch(data) {
+    case 'main_menu':
+      await sendMainMenu(chatId)
+      break
     case 'orders':
       await sendOrdersMenu(chatId)
       break
@@ -520,8 +557,11 @@ async function handleMessage(message: any) {
       case '/fix_gallery':
         await fixGalleryManually(chatId)
         break
+      case '/help':
+        await sendHelpMessage(chatId)
+        break
       default:
-        await sendTelegramMessage(chatId, `❓ Неизвестная команда: ${text}\n\nИспользуйте /start для главного меню`)
+        await sendTelegramMessage(chatId, `❓ Неизвестная команда: ${text}\n\nИспользуйте /help для списка доступных команд`)
     }
     return
   }
@@ -566,6 +606,44 @@ async function sendWelcomeMessage(chatId: number, userId: number) {
   }
 
   await sendTelegramMessage(chatId, welcomeMessage, true, keyboard)
+}
+
+async function sendHelpMessage(chatId: number) {
+  const helpMessage = `📚 *Справка по командам VobvorotAdminBot*
+
+🔧 *Доступные команды:*
+/start - Главное меню
+/menu - Показать главное меню
+/help - Эта справка
+/orders - Управление заказами
+/products - Управление товарами
+/fix_gallery - Исправить галерею видео
+
+🚀 *Основные функции:*
+• 📦 Управление заказами и статусами
+• 🛍️ Создание и редактирование товаров
+• 🏷️ Управление категориями
+• 🎬 Загрузка видео для главной страницы
+• 🖼️ Загрузка видео для страницы "Your Name, My Pic"
+• 📊 Просмотр статистики магазина
+
+💡 *Подсказки:*
+• Загружайте видео размером до 50MB
+• Поддерживаются форматы MP4, MOV, AVI
+• Используйте кнопки меню для навигации
+• При создании товара указывайте размер текстом
+
+❓ Если возникли проблемы, используйте /start для возврата в главное меню`
+
+  const keyboard = {
+    inline_keyboard: [
+      [
+        { text: '🏠 Главное меню', callback_data: 'main_menu' }
+      ]
+    ]
+  }
+
+  await sendTelegramMessage(chatId, helpMessage, true, keyboard)
 }
 
 async function sendMainMenu(chatId: number) {
@@ -969,12 +1047,18 @@ async function sendTelegramMessage(chatId: number, text: string, markdown = fals
     const result = await response.json()
     if (!result.ok) {
       console.error('❌ Telegram API error:', result)
+      // Inform user about the error
+      if (result.error_code === 400 && result.description?.includes('Bad Request')) {
+        console.error('Bad request - possibly malformed message')
+      }
+      return null
     } else {
       console.log('✅ Message sent successfully')
     }
     return result
   } catch (error) {
     console.error('❌ Failed to send message:', error)
+    return null
   }
 }
 
@@ -990,6 +1074,7 @@ async function answerCallbackQuery(callbackQueryId: string, text?: string) {
     })
   } catch (error) {
     console.error('❌ Failed to answer callback query:', error)
+    // Callback query answers are optional - no user notification needed
   }
 }
 
@@ -1188,8 +1273,91 @@ async function sendCategorySelection(chatId: number) {
 }
 
 async function handleAddProductCategory(chatId: number, userId: number, text: string) {
-  // Этот метод будет вызван только если пользователь вводит текст вместо выбора кнопки
-  await sendTelegramMessage(chatId, '❌ Пожалуйста, выберите категорию из предложенных кнопок или создайте новую')
+  try {
+    // First, try to find a category that matches the user's input (case-insensitive)
+    const categories = await prisma.category.findMany({
+      where: { 
+        isActive: true,
+        name: {
+          contains: text.trim(),
+          mode: 'insensitive'
+        }
+      },
+      orderBy: { name: 'asc' }
+    })
+
+    if (categories.length === 1) {
+      // Exact or single match found - proceed with this category
+      const userState = userStates.get(userId.toString())
+      userState.productData.categoryId = categories[0].id
+      userState.action = 'add_product_size'
+      userStates.set(userId.toString(), userState)
+      
+      await sendTelegramMessage(chatId, `✅ Категория "${categories[0].name}" выбрана!\n\n📏 Введите размер товара (например: Standard, XL, 42, Large и т.д.):`)
+      return
+    } else if (categories.length > 1) {
+      // Multiple matches found - show specific matches
+      let message = `🔍 Найдено несколько категорий для "${text}":\n\n`
+      categories.forEach((cat, index) => {
+        message += `${index + 1}. ${cat.name}\n`
+      })
+      message += '\n📝 Уточните название или выберите из кнопок ниже:'
+      
+      // Show buttons for matched categories
+      const categoryButtons = []
+      for (let i = 0; i < categories.length; i += 2) {
+        const row = []
+        row.push({ text: categories[i].name, callback_data: `select_category_${categories[i].id}` })
+        if (categories[i + 1]) {
+          row.push({ text: categories[i + 1].name, callback_data: `select_category_${categories[i + 1].id}` })
+        }
+        categoryButtons.push(row)
+      }
+      
+      const keyboard = { inline_keyboard: categoryButtons }
+      await sendTelegramMessage(chatId, message, true, keyboard)
+      return
+    }
+
+    // No matches found - show all available categories
+    const allCategories = await prisma.category.findMany({
+      where: { isActive: true },
+      orderBy: { name: 'asc' }
+    })
+
+    if (allCategories.length === 0) {
+      await sendTelegramMessage(chatId, '❌ В системе нет активных категорий. Сначала создайте категорию в админ-панели.')
+      return
+    }
+
+    let message = `❌ Категория "${text}" не найдена.\n\n📋 Доступные категории:\n\n`
+    allCategories.forEach((cat, index) => {
+      message += `${index + 1}. ${cat.name}\n`
+    })
+    message += '\n💡 Выберите категорию из кнопок ниже или введите точное название:'
+
+    // Create category buttons
+    const categoryButtons = []
+    for (let i = 0; i < allCategories.length; i += 2) {
+      const row = []
+      row.push({ text: allCategories[i].name, callback_data: `select_category_${allCategories[i].id}` })
+      if (allCategories[i + 1]) {
+        row.push({ text: allCategories[i + 1].name, callback_data: `select_category_${allCategories[i + 1].id}` })
+      }
+      categoryButtons.push(row)
+    }
+
+    // Add option to create new category
+    categoryButtons.push([{ text: '➕ Создать новую категорию', callback_data: 'create_new_category' }])
+    categoryButtons.push([{ text: '❌ Отменить создание товара', callback_data: 'cancel_product_creation' }])
+
+    const keyboard = { inline_keyboard: categoryButtons }
+    await sendTelegramMessage(chatId, message, true, keyboard)
+
+  } catch (error) {
+    console.error('Error in handleAddProductCategory:', error)
+    await sendTelegramMessage(chatId, '❌ Ошибка при обработке категории. Попробуйте еще раз.')
+  }
 }
 
 async function handleCategorySelection(chatId: number, userId: number, categoryId: string) {
@@ -1553,6 +1721,14 @@ async function handleUploadHomeVideo(chatId: number, userId: number, video: any)
     return
   }
   
+  // Проверяем формат видео
+  const supportedFormats = ['video/mp4', 'video/mov', 'video/avi', 'video/quicktime']
+  if (video.mime_type && !supportedFormats.includes(video.mime_type.toLowerCase())) {
+    await sendTelegramMessage(chatId, `❌ Неподдерживаемый формат видео: ${video.mime_type}\n\n✅ Поддерживаемые форматы: MP4, MOV, AVI\n\nПожалуйста, конвертируйте видео в один из поддерживаемых форматов.`)
+    userStates.delete(userId.toString())
+    return
+  }
+  
   await sendTelegramMessage(chatId, '⏳ Загружаю видео...')
   
   try {
@@ -1770,6 +1946,21 @@ async function startUploadSignVideo(chatId: number, userId: number) {
 async function handleUploadSignVideo(chatId: number, userId: number, video: any) {
   if (!video) {
     await sendTelegramMessage(chatId, '❌ Пожалуйста, отправьте видео файл')
+    return
+  }
+
+  // Проверяем формат видео
+  const supportedFormats = ['video/mp4', 'video/mov', 'video/avi', 'video/quicktime']
+  if (video.mime_type && !supportedFormats.includes(video.mime_type.toLowerCase())) {
+    await sendTelegramMessage(chatId, `❌ Неподдерживаемый формат видео: ${video.mime_type}\n\n✅ Поддерживаемые форматы: MP4, MOV, AVI\n\nПожалуйста, конвертируйте видео в один из поддерживаемых форматов.`)
+    userStates.delete(userId.toString())
+    return
+  }
+
+  // Проверяем размер файла
+  if (video.file_size && video.file_size > 20 * 1024 * 1024) {
+    await sendTelegramMessage(chatId, '❌ Файл слишком большой. Максимальный размер: 20MB\n\nПопробуйте сжать видео или выберите файл меньшего размера.')
+    userStates.delete(userId.toString())
     return
   }
 
@@ -2057,6 +2248,7 @@ async function cleanupEmptyVideoRecords() {
     console.log(`Cleaned up ${deleteResult.count} empty video records`)
   } catch (error) {
     console.error('Error cleaning up empty video records:', error)
+    // Internal cleanup function - no user notification needed
   }
 }
 
@@ -2773,6 +2965,7 @@ async function uploadPhotoToCloudinary(photos: any[]): Promise<string | null> {
     return result.secure_url
   } catch (error) {
     console.error('Error uploading photo:', error)
+    // This function returns null on error - caller handles user notification
     return null
   }
 }
@@ -5032,6 +5225,7 @@ async function sendTrackingEmail(email: string, name: string, orderNumber: strin
     console.log(`✅ Tracking email sent to ${email} for order ${orderNumber}`)
   } catch (error) {
     console.error('❌ Failed to send tracking email:', error)
+    // Email failures are logged but don't need user notification in bot
   }
 }
 
@@ -5082,5 +5276,6 @@ async function sendDigitalFilesEmail(email: string, name: string, orderNumber: s
     console.log(`✅ Digital files email sent to ${email} for order ${orderNumber}`)
   } catch (error) {
     console.error('❌ Failed to send digital files email:', error)
+    // Email failures are logged but don't need user notification in bot
   }
 }

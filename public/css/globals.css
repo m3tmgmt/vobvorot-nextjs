@@ -2013,6 +2013,57 @@ ul::-webkit-scrollbar-corner, ol::-webkit-scrollbar-corner, li::-webkit-scrollba
   opacity: 1;
 }
 
+/* Mobile optimization for hero videos */
+@media (max-width: 768px) {
+  .hero-video-container {
+    /* Ensure proper containment on mobile */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    /* Prevent any potential overflow on mobile */
+    max-width: 100% !important;
+    max-height: 100% !important;
+    overflow: hidden;
+    /* Optimize performance on mobile devices */
+    will-change: opacity;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+  }
+  
+  /* Adjust pagination for mobile */
+  .hero-pagination {
+    bottom: var(--space-6);
+    gap: var(--space-1);
+  }
+  
+  .hero-pagination-dot {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-video-container {
+    /* Extra mobile constraints for very small screens */
+    transform: none !important;
+    min-width: unset !important;
+    min-height: unset !important;
+  }
+  
+  .hero-pagination {
+    bottom: var(--space-4);
+  }
+  
+  .hero-pagination-dot {
+    width: 8px;
+    height: 8px;
+  }
+}
+
 .hero-pagination {
   position: absolute;
   bottom: var(--space-8);
