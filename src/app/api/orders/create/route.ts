@@ -115,6 +115,51 @@ export async function POST(request: NextRequest) {
       
       if (!sku) {
         // Create SKU if it doesn't exist
+        // Try to find existing product first, create if not exists
+        let product = await prisma.product.findUnique({
+          where: { id: item.product.id }
+        })
+
+        if (!product) {
+          // Create product if it doesn't exist (fallback for mock data)
+          try {
+            // First create a category if needed
+            let category = await prisma.category.findFirst({
+              where: { name: 'General' }
+            })
+
+            if (!category) {
+              category = await prisma.category.create({
+                data: {
+                  name: 'General',
+                  slug: 'general',
+                  description: 'General products',
+                  isActive: true
+                }
+              })
+            }
+
+            product = await prisma.product.create({
+              data: {
+                id: item.product.id,
+                name: item.product.name,
+                slug: item.product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+                description: `Product: ${item.product.name}`,
+                categoryId: category.id,
+                isActive: true
+              }
+            })
+
+            logger.info('Created product from order data', {
+              productId: product.id,
+              productName: product.name
+            })
+          } catch (productError) {
+            logger.error('Failed to create product', { productError })
+            // Continue with existing logic if product creation fails
+          }
+        }
+
         sku = await prisma.productSku.create({
           data: {
             productId: item.product.id,
