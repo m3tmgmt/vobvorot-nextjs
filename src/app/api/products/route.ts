@@ -303,6 +303,12 @@ async function getProductsHandler(request: NextRequest) {
         success: true,
         products: enhancedProducts,
         total: enhancedProducts.length
+      }, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       })
     } catch (dbError) {
       console.error('Database connection failed, using mock data:', dbError)
@@ -333,6 +339,12 @@ async function getProductsHandler(request: NextRequest) {
         success: true,
         products: limitedProducts,
         total: limitedProducts.length
+      }, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       })
     }
   } catch (error) {

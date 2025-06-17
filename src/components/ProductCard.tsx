@@ -217,7 +217,57 @@ const ProductCard = memo(function ProductCard({
   )
 })
 
-// Custom comparison function for memo
-ProductCard.displayName = 'ProductCard'
+// Custom comparison function for memo to ensure re-render when stock changes
+function areEqual(prevProps: ProductCardProps, nextProps: ProductCardProps) {
+  // Always re-render if product ID is different
+  if (prevProps.product.id !== nextProps.product.id) {
+    return false
+  }
+  
+  // Check if any SKU stock data has changed
+  const prevSkus = prevProps.product.skus
+  const nextSkus = nextProps.product.skus
+  
+  if (prevSkus.length !== nextSkus.length) {
+    return false
+  }
+  
+  for (let i = 0; i < prevSkus.length; i++) {
+    const prevSku = prevSkus[i]
+    const nextSku = nextSkus[i]
+    
+    if (
+      prevSku.stock !== nextSku.stock ||
+      prevSku.reservedStock !== nextSku.reservedStock ||
+      prevSku.availableStock !== nextSku.availableStock
+    ) {
+      console.log('🔄 ProductCard re-rendering due to stock change:', {
+        productName: nextProps.product.name,
+        skuId: nextSku.id,
+        prevStock: prevSku.stock,
+        nextStock: nextSku.stock,
+        prevReserved: prevSku.reservedStock,
+        nextReserved: nextSku.reservedStock,
+        prevAvailable: prevSku.availableStock,
+        nextAvailable: nextSku.availableStock
+      })
+      return false // Re-render
+    }
+  }
+  
+  // Check other props that might affect rendering
+  if (
+    prevProps.priority !== nextProps.priority ||
+    prevProps.loading !== nextProps.loading
+  ) {
+    return false
+  }
+  
+  return true // Don't re-render
+}
 
-export { ProductCard }
+// Use custom comparison function
+const MemoizedProductCard = memo(ProductCard, areEqual)
+MemoizedProductCard.displayName = 'ProductCard'
+
+export { MemoizedProductCard as ProductCard }

@@ -32,8 +32,8 @@ export default function ProductsPageClient() {
   const [activeCategory, setActiveCategory] = useState('all')
   const { lastUpdate, shouldRefetch, resetRefetch } = useStock()
   
-  // Автоматическое обновление остатков каждые 15 секунд
-  useStockRefresh({ interval: 15000, enabled: true })
+  // Автоматическое обновление остатков каждые 5 секунд для быстрой реакции
+  useStockRefresh({ interval: 5000, enabled: true })
 
   useEffect(() => {
     console.log('📊 Fetching products on products page, triggered by stock update:', lastUpdate)

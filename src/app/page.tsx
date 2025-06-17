@@ -34,8 +34,8 @@ export default function HomePage() {
   const { findPiece, dispatch: puzzleDispatch } = usePuzzle()
   const { lastUpdate, shouldRefetch, resetRefetch } = useStock()
   
-  // Автоматическое обновление остатков каждые 15 секунд
-  useStockRefresh({ interval: 15000, enabled: true })
+  // Автоматическое обновление остатков каждые 5 секунд для быстрой реакции
+  useStockRefresh({ interval: 5000, enabled: true })
   
   const videos = useMemo(() => allVideos, [allVideos])
 

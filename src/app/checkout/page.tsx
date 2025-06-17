@@ -158,9 +158,15 @@ export default function CheckoutPage() {
         console.log('Order created successfully:', order)
         console.log('Payment URL:', order.paymentUrl)
         
-        // Trigger stock update to refresh inventory display immediately
-        console.log('🔄 Triggering stock update after order creation')
+        // Trigger immediate stock update to refresh inventory display
+        console.log('🔄 Triggering immediate stock update after order creation')
         triggerUpdate()
+        
+        // Additional delay to ensure the stock update propagates
+        setTimeout(() => {
+          console.log('🔄 Secondary stock update trigger')
+          triggerUpdate()
+        }, 1000)
         
         // Cart will be cleared only after successful payment verification
         
