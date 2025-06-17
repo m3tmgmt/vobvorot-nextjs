@@ -7,27 +7,42 @@ const handleUpdate = webhookCallback(bot, 'std/http')
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('📨 Grammar webhook received request')
+    
     // Проверяем секретный токен для безопасности
     const secretToken = request.headers.get('x-telegram-bot-api-secret-token')
     const expectedToken = process.env.TELEGRAM_WEBHOOK_SECRET
     
+    console.log(`🔐 Secret token check: ${!!secretToken}, expected: ${!!expectedToken}`)
+    
     // Временно отключено для тестирования
     // if (expectedToken && secretToken !== expectedToken) {
+    //   console.log('❌ Unauthorized webhook request')
     //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     // }
 
     // Получаем update от Telegram
     const update = await request.json()
+    console.log('📨 Received update:', JSON.stringify(update, null, 2))
+    
+    // Проверяем, что bot инициализирован
+    if (!bot) {
+      console.error('❌ Bot not initialized')
+      return NextResponse.json({ error: 'Bot not initialized' }, { status: 500 })
+    }
     
     // Обрабатываем update через Grammy bot
+    console.log('🔄 Processing update through Grammy bot...')
     await handleUpdate(update)
+    console.log('✅ Update processed successfully')
     
     return NextResponse.json({ ok: true })
     
   } catch (error) {
-    console.error('Telegram webhook error:', error)
+    console.error('❌ Telegram webhook error:', error)
+    console.error('Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     return NextResponse.json(
-      { error: 'Internal server error' }, 
+      { error: 'Internal server error', details: error instanceof Error ? error.message : String(error) }, 
       { status: 500 }
     )
   }

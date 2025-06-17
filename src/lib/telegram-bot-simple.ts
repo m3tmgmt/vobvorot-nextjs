@@ -1532,4 +1532,18 @@ ${result.message}`)
   }
 })
 
+// Экспортируем функции для работы с ботом
+export async function initializeBot() {
+  try {
+    console.log('✅ Simple VobvorotAdminBot initialized successfully')
+    return bot
+  } catch (error) {
+    console.error('❌ Failed to initialize bot:', error)
+    throw error
+  }
+}
+
+// Инициализируем бота при импорте
+initializeBot().catch(console.error)
+
 console.log('✅ Simple VobvorotAdminBot initialized successfully')
