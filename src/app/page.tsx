@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ProductCard } from '@/components/ProductCard'
 import { usePuzzle } from '@/contexts/PuzzleContext'
+import { useStock } from '@/contexts/StockContext'
+import { useStockRefresh } from '@/hooks/useStockRefresh'
 import { Footer } from '@/components/Footer'
 import LettersToFuture from '@/components/LettersToFuture'
 import { LazySection } from '@/components/LazySection'
@@ -16,7 +18,7 @@ interface Product {
   description?: string
   brand?: string
   images: { url: string; alt?: string; isPrimary: boolean }[]
-  skus: { id: string; price: number; stock: number; size?: string; color?: string }[]
+  skus: { id: string; price: number; stock: number; reservedStock?: number; availableStock?: number; size?: string; color?: string }[]
   category: { name: string; slug: string }
 }
 
@@ -30,6 +32,10 @@ export default function HomePage() {
   const [homeVideo, setHomeVideo] = useState<string>('')
   const [allVideos, setAllVideos] = useState<string[]>([])
   const { findPiece, dispatch: puzzleDispatch } = usePuzzle()
+  const { lastUpdate, shouldRefetch, resetRefetch } = useStock()
+  
+  // Автоматическое обновление остатков каждые 15 секунд
+  useStockRefresh({ interval: 15000, enabled: true })
   
   const videos = useMemo(() => allVideos, [allVideos])
 
@@ -94,31 +100,42 @@ export default function HomePage() {
     }
   }, [videos.length])
 
+  // Fetch products and refetch when stock updates
   useEffect(() => {
-    fetch('/api/products?limit=12')
-      .then(res => res.json())
-      .then(data => {
-        const productsList = data.products || []
-        setProducts(productsList)
-        
-        // For EXVICPMOUR Store section, show only EXVICPMOUR category products
-        const exvicpmourProducts = productsList.filter((p: Product) => 
-          p.category.slug === 'exvicpmour'
-        )
-        setFilteredProducts(exvicpmourProducts)
-        
-        // Get unique categories from actual products
-        const productCategories = new Set(productsList.map((p: Product) => p.category.slug))
-        
-        // Filter categories to show only those with products, plus "all"
-        const categoriesWithProducts = allCategories.filter(cat => 
-          cat.id === 'all' || productCategories.has(cat.id)
-        )
-        
-        setAvailableCategories(categoriesWithProducts)
-      })
-      .catch(err => console.error('Failed to fetch products:', err))
-  }, [])
+    const fetchProducts = () => {
+      console.log('📊 Fetching products, triggered by stock update:', lastUpdate)
+      fetch('/api/products?limit=12')
+        .then(res => res.json())
+        .then(data => {
+          const productsList = data.products || []
+          setProducts(productsList)
+          
+          // For EXVICPMOUR Store section, show only EXVICPMOUR category products
+          const exvicpmourProducts = productsList.filter((p: Product) => 
+            p.category.slug === 'exvicpmour'
+          )
+          setFilteredProducts(exvicpmourProducts)
+          
+          // Get unique categories from actual products
+          const productCategories = new Set(productsList.map((p: Product) => p.category.slug))
+          
+          // Filter categories to show only those with products, plus "all"
+          const categoriesWithProducts = allCategories.filter(cat => 
+            cat.id === 'all' || productCategories.has(cat.id)
+          )
+          
+          setAvailableCategories(categoriesWithProducts)
+          
+          // Reset refetch flag after successful fetch
+          if (shouldRefetch) {
+            resetRefetch()
+          }
+        })
+        .catch(err => console.error('Failed to fetch products:', err))
+    }
+
+    fetchProducts()
+  }, [lastUpdate, shouldRefetch, resetRefetch])
 
   const handleFilter = (categoryId: string) => {
     setActiveFilter(categoryId)

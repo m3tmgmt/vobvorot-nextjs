@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from 'react'
 import { ProductCard } from '@/components/ProductCard'
+import { useStock } from '@/contexts/StockContext'
+import { useStockRefresh } from '@/hooks/useStockRefresh'
 import { Footer } from '@/components/Footer'
 
 interface Product {
@@ -11,7 +13,7 @@ interface Product {
   description?: string
   brand?: string
   images: { url: string; alt?: string; isPrimary: boolean }[]
-  skus: { id: string; price: any; stock: number; size?: string; color?: string }[]
+  skus: { id: string; price: any; stock: number; reservedStock?: number; availableStock?: number; size?: string; color?: string }[]
   category: { name: string; slug: string; emoji?: string }
 }
 
@@ -28,8 +30,13 @@ export default function ProductsPageClient() {
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState('all')
+  const { lastUpdate, shouldRefetch, resetRefetch } = useStock()
+  
+  // Автоматическое обновление остатков каждые 15 секунд
+  useStockRefresh({ interval: 15000, enabled: true })
 
   useEffect(() => {
+    console.log('📊 Fetching products on products page, triggered by stock update:', lastUpdate)
     // Fetch both products and categories
     Promise.all([
       fetch('/api/products').then(res => res.json()),
@@ -60,6 +67,11 @@ export default function ProductsPageClient() {
         
         setCategories(categoriesWithProducts)
         setIsLoading(false)
+        
+        // Reset refetch flag after successful fetch
+        if (shouldRefetch) {
+          resetRefetch()
+        }
       })
       .catch(err => {
         console.error('Failed to fetch data:', err)
@@ -86,6 +98,11 @@ export default function ProductsPageClient() {
             
             setCategories(categoriesWithProducts)
             setIsLoading(false)
+            
+            // Reset refetch flag after successful fetch
+            if (shouldRefetch) {
+              resetRefetch()
+            }
           })
           .catch(() => {
             setAllProducts([])
@@ -94,7 +111,7 @@ export default function ProductsPageClient() {
             setIsLoading(false)
           })
       })
-  }, [])
+  }, [lastUpdate, shouldRefetch, resetRefetch])
 
   // Filter products by category only
   useEffect(() => {

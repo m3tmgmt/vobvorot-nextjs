@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useCart } from '@/contexts/CartContext'
+import { useStock } from '@/contexts/StockContext'
 import { Footer } from '@/components/Footer'
 export type PaymentMethod = 'westernbid_paypal' | 'westernbid_stripe' | null
 
@@ -19,6 +20,7 @@ interface PaymentInfo {
 
 export default function CheckoutPage() {
   const { state, dispatch } = useCart()
+  const { triggerUpdate } = useStock()
   const router = useRouter()
   const [step, setStep] = useState(1) // 1: Shipping, 2: Payment (Review step removed)
   const [loading, setLoading] = useState(false)
@@ -155,6 +157,10 @@ export default function CheckoutPage() {
         
         console.log('Order created successfully:', order)
         console.log('Payment URL:', order.paymentUrl)
+        
+        // Trigger stock update to refresh inventory display immediately
+        console.log('🔄 Triggering stock update after order creation')
+        triggerUpdate()
         
         // Cart will be cleared only after successful payment verification
         

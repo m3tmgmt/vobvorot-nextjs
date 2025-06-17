@@ -19,6 +19,7 @@ import { AuthProvider } from "@/contexts/AuthContext";
 import { MatrixProvider } from "@/contexts/MatrixContext";
 import { KonamiProvider } from "@/contexts/KonamiContext";
 import { ABTestProvider } from "@/components/ABTestProvider";
+import { StockProvider } from "@/contexts/StockContext";
 import { generateOrganizationStructuredData, generateWebsiteStructuredData } from "@/lib/seo";
 
 
@@ -171,23 +172,25 @@ export default function RootLayout({
                 <PuzzleProvider>
                   <KonamiProvider>
                     <ABTestProvider>
-                      <CartProvider>
-                        <WishlistProvider>
-                      <DynamicComponents />
-                      <SecretDetector />
-                      <Navigation />
-                      <Cart />
-                      <Wishlist />
-                      <FloatingCartIcons />
-                      <PuzzleProgress />
-                      <MusicPlayer />
-                      <main>
-                        <ErrorBoundary>
-                          {children}
-                        </ErrorBoundary>
-                      </main>
-                        </WishlistProvider>
-                      </CartProvider>
+                      <StockProvider>
+                        <CartProvider>
+                          <WishlistProvider>
+                        <DynamicComponents />
+                        <SecretDetector />
+                        <Navigation />
+                        <Cart />
+                        <Wishlist />
+                        <FloatingCartIcons />
+                        <PuzzleProgress />
+                        <MusicPlayer />
+                        <main>
+                          <ErrorBoundary>
+                            {children}
+                          </ErrorBoundary>
+                        </main>
+                          </WishlistProvider>
+                        </CartProvider>
+                      </StockProvider>
                     </ABTestProvider>
                   </KonamiProvider>
                 </PuzzleProvider>
