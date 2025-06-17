@@ -1,9 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { webhookCallback } from 'grammy'
 import { bot } from '@/lib/telegram-bot-simple'
-
-// Создаем webhook handler
-const handleUpdate = webhookCallback(bot, 'std/http')
 
 export async function POST(request: NextRequest) {
   try {
@@ -31,9 +27,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Bot not initialized' }, { status: 500 })
     }
     
-    // Обрабатываем update через Grammy bot
+    // Обрабатываем update напрямую через Grammy bot
     console.log('🔄 Processing update through Grammy bot...')
-    await handleUpdate(update)
+    await bot.handleUpdate(update)
     console.log('✅ Update processed successfully')
     
     return NextResponse.json({ ok: true })
