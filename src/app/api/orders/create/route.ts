@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
     const reservationItems: ReservationItem[] = []
 
     for (const item of orderData.items) {
-      // Find existing SKU for this product variant
+      // CRITICAL: Only find SKU that EXACTLY matches the requested size and color
       let sku = await prisma.productSku.findFirst({
         where: {
           productId: item.product.id,
@@ -115,111 +115,55 @@ export async function POST(request: NextRequest) {
         }
       })
       
-      // If specific size/color not found, try to find any available SKU for this product
-      if (!sku) {
-        sku = await prisma.productSku.findFirst({
-          where: {
-            productId: item.product.id,
-            isActive: true
-          },
-          orderBy: { createdAt: 'asc' } // Use the first created SKU
-        })
-      }
-      
-      if (!sku) {
-        // Create SKU if it doesn't exist
-        // Try to find existing product first, create if not exists
-        let product = await prisma.product.findUnique({
-          where: { id: item.product.id }
-        })
-
-        if (!product) {
-          // Create product if it doesn't exist (fallback for mock data)
-          try {
-            // First create a category if needed
-            let category = await prisma.category.findFirst({
-              where: { name: 'General' }
-            })
-
-            if (!category) {
-              category = await prisma.category.create({
-                data: {
-                  name: 'General',
-                  slug: 'general',
-                  description: 'General products',
-                  isActive: true
-                }
-              })
-            }
-
-            product = await prisma.product.create({
-              data: {
-                id: item.product.id,
-                name: item.product.name,
-                slug: item.product.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-                description: `Product: ${item.product.name}`,
-                categoryId: category.id,
-                isActive: true
-              }
-            })
-
-            logger.info('Created product from order data', {
-              productId: product.id,
-              productName: product.name
-            })
-          } catch (productError) {
-            logger.error('Failed to create product', { productError })
-            // Continue with existing logic if product creation fails
-          }
-        }
-
-        // Find product stock from shared-data
-        let productStock = 0
-        try {
-          const { sharedProducts } = await import('@/lib/shared-data')
-          const sharedProduct = sharedProducts.find(p => p.id === item.product.id || p.name === item.product.name)
-          productStock = sharedProduct?.stock || 0
-        } catch (error) {
-          logger.warn('Could not get stock from shared-data, using default', {
-            productId: item.product.id,
-            error: error instanceof Error ? error.message : String(error)
-          })
-        }
-        sku = await prisma.productSku.create({
-          data: {
-            productId: item.product.id,
-            sku: `${item.product.id}-${item.selectedSize || 'NS'}-${item.selectedColor || 'NC'}`,
-            size: item.selectedSize,
-            color: item.selectedColor,
-            stock: productStock, // Use actual stock from shared-data instead of default 999
-            reservedStock: 0, // Explicitly set reserved stock to 0
-            price: Number(item.product.price),
-            isActive: true // Ensure SKU is active
-          }
-        })
-        
-        logger.info('Created new SKU with actual stock', {
-          skuId: sku.id,
-          productId: item.product.id,
-          stock: productStock,
-          reservedStock: 0,
-          size: item.selectedSize,
-          color: item.selectedColor,
-          productName: item.product.name
-        })
-      } else {
-        logger.info('Using existing SKU for order', {
-          skuId: sku.id,
-          productId: item.product.id,
-          existingStock: sku.stock,
-          existingReserved: sku.reservedStock,
+      logger.info('🔍 SKU search for order item', {
+        productId: item.product.id,
+        productName: item.product.name,
+        requestedSize: item.selectedSize,
+        requestedColor: item.selectedColor,
+        foundSku: sku ? {
+          id: sku.id,
+          sku: sku.sku,
           size: sku.size,
           color: sku.color,
+          stock: sku.stock,
+          reservedStock: sku.reservedStock
+        } : null
+      })
+      
+      if (!sku) {
+        // ❌ CRITICAL: Prevent automatic SKU creation to avoid inventory issues
+        logger.error('❌ SKU not found - refusing to create new SKU automatically', {
+          productId: item.product.id,
           productName: item.product.name,
           requestedSize: item.selectedSize,
           requestedColor: item.selectedColor
         })
+
+        return NextResponse.json({
+          error: 'Product variant not available',
+          message: `The requested size "${item.selectedSize || 'default'}" and color "${item.selectedColor || 'default'}" for "${item.product.name}" is not available in our inventory.`,
+          productId: item.product.id,
+          requestedVariant: {
+            size: item.selectedSize,
+            color: item.selectedColor
+          }
+        }, { status: 400 })
       }
+      
+      // ✅ Using existing SKU - log details for tracking
+      logger.info('✅ Using existing SKU for order', {
+        skuId: sku.id,
+        productId: item.product.id,
+        existingStock: sku.stock,
+        existingReserved: sku.reservedStock,
+        availableStock: sku.stock - (sku.reservedStock || 0),
+        size: sku.size,
+        color: sku.color,
+        productName: item.product.name,
+        requestedSize: item.selectedSize,
+        requestedColor: item.selectedColor,
+        priceMatch: Number(item.product.price) === Number(sku.price)
+      })
       
       skuItems.push({
         skuId: sku.id,
@@ -377,6 +321,30 @@ export async function POST(request: NextRequest) {
           reservationError: reservationResult.error
         }
       }, { status: 500 })
+    }
+
+    // 🔄 CRITICAL: Broadcast stock update immediately after successful reservation
+    try {
+      await broadcastStockUpdate({
+        type: 'RESERVATION_CREATED',
+        orderNumber,
+        reservedItems: reservationItems.map(item => ({
+          skuId: item.skuId,
+          quantity: item.quantity
+        })),
+        timestamp: new Date().toISOString()
+      })
+      
+      logger.info('📡 Stock update broadcast sent after reservation', {
+        orderNumber,
+        orderId: order.id,
+        reservedItemsCount: reservationItems.length
+      })
+    } catch (broadcastError) {
+      logger.warn('⚠️ Failed to broadcast stock update, but reservation succeeded', {
+        orderNumber,
+        error: broadcastError instanceof Error ? broadcastError.message : String(broadcastError)
+      })
     }
 
     logger.info('✅ Order created with inventory reserved', {

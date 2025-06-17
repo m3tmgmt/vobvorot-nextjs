@@ -13,10 +13,11 @@ export function removeSSEConnection(clientId: string) {
 
 // Function to broadcast stock updates to all connected clients
 export function broadcastStockUpdate(data: {
-  type: 'STOCK_UPDATE' | 'ORDER_CREATED'
+  type: 'STOCK_UPDATE' | 'ORDER_CREATED' | 'RESERVATION_CREATED'
   productIds?: string[]
   orderNumber?: string
-  timestamp: number
+  reservedItems?: Array<{ skuId: string; quantity: number }>
+  timestamp: string | number
 }) {
   const message = JSON.stringify(data)
   const eventData = `data: ${message}\n\n`
