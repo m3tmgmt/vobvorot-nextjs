@@ -285,19 +285,39 @@ async function getProductsHandler(request: NextRequest) {
       };
 
       // Enhance products with emoji data for categories and calculate available stock
-      const enhancedProducts = products.map(product => ({
-        ...product,
-        category: product.category ? {
-          ...product.category,
-          emoji: categoryEmojiMap[product.category.name] || "📦"
-        } : null,
-        skus: product.skus.map(sku => ({
-          ...sku,
-          availableStock: Math.max(0, sku.stock - (sku.reservedStock || 0)), // Calculate available stock
-          totalStock: sku.stock,
-          reservedStock: sku.reservedStock || 0
-        }))
-      }));
+      const enhancedProducts = products.map(product => {
+        const enhancedSkus = product.skus.map(sku => {
+          const availableStock = Math.max(0, sku.stock - (sku.reservedStock || 0))
+          
+          // Debug logging for stock calculations
+          if (sku.reservedStock > 0 || sku.stock <= 10) {
+            console.log('📊 Products API stock calculation:', {
+              productName: product.name,
+              skuId: sku.id,
+              stock: sku.stock,
+              reservedStock: sku.reservedStock,
+              calculatedAvailable: availableStock,
+              timestamp: new Date().toISOString()
+            })
+          }
+          
+          return {
+            ...sku,
+            availableStock: availableStock,
+            totalStock: sku.stock,
+            reservedStock: sku.reservedStock || 0
+          }
+        })
+        
+        return {
+          ...product,
+          category: product.category ? {
+            ...product.category,
+            emoji: categoryEmojiMap[product.category.name] || "📦"
+          } : null,
+          skus: enhancedSkus
+        }
+      });
 
       return NextResponse.json({
         success: true,

@@ -7,6 +7,7 @@ import { ProductCard } from '@/components/ProductCard'
 import { usePuzzle } from '@/contexts/PuzzleContext'
 import { useStock } from '@/contexts/StockContext'
 import { useStockRefresh } from '@/hooks/useStockRefresh'
+import { useSSEStockUpdates } from '@/hooks/useSSEStockUpdates'
 import { Footer } from '@/components/Footer'
 import LettersToFuture from '@/components/LettersToFuture'
 import { LazySection } from '@/components/LazySection'
@@ -36,6 +37,11 @@ export default function HomePage() {
   
   // Автоматическое обновление остатков каждые 5 секунд для быстрой реакции
   useStockRefresh({ interval: 5000, enabled: true })
+  
+  // Real-time обновления через SSE
+  const { isConnected } = useSSEStockUpdates()
+  
+  console.log('📡 Homepage SSE connection status:', isConnected)
   
   const videos = useMemo(() => allVideos, [allVideos])
 
@@ -272,7 +278,7 @@ export default function HomePage() {
         <div className="products-grid">
           {filteredProducts.map((product, index) => (
             <ProductCard 
-              key={product.id} 
+              key={`${product.id}-${lastUpdate}-${product.skus.map(s => `${s.stock}-${s.reservedStock}`).join('-')}`}
               product={product as any} 
               priority={index < 4}
               loading={index < 4 ? 'eager' : 'lazy'}

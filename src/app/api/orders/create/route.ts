@@ -14,6 +14,7 @@ import {
   getAvailableStock,
   type ReservationItem 
 } from '@/lib/inventory'
+import { broadcastStockUpdate } from '@/lib/sse-broadcaster'
 
 interface OrderItem {
   product: {
@@ -531,6 +532,21 @@ export async function POST(request: NextRequest) {
           customerEmail: order.shippingEmail
         }, emailError instanceof Error ? emailError : new Error(String(emailError)))
         // Don't fail the order flow if email fails
+      }
+
+      // Broadcast stock update via SSE to all connected clients
+      try {
+        const productIds = orderData.items.map(item => item.product.id)
+        await broadcastStockUpdate({
+          type: 'ORDER_CREATED',
+          productIds,
+          orderNumber: updatedOrder.orderNumber,
+          timestamp: Date.now()
+        })
+        console.log('📡 SSE broadcast sent for order:', updatedOrder.orderNumber)
+      } catch (sseError) {
+        console.error('📡 SSE broadcast failed:', sseError)
+        // Don't fail the order if SSE fails
       }
 
       return NextResponse.json({

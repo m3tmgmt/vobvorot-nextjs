@@ -38,6 +38,8 @@ export interface ProductSKU {
   stock: number
   /** Reserved stock quantity (items being paid for) */
   reservedStock?: number
+  /** Available stock (stock - reservedStock) calculated by API */
+  availableStock?: number
   /** Product size (e.g., "S", "M", "L", "XL") */
   size?: string
   /** Product color */

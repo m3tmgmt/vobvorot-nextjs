@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { ProductCard } from '@/components/ProductCard'
 import { useStock } from '@/contexts/StockContext'
 import { useStockRefresh } from '@/hooks/useStockRefresh'
+import { useSSEStockUpdates } from '@/hooks/useSSEStockUpdates'
 import { Footer } from '@/components/Footer'
 
 interface Product {
@@ -34,6 +35,11 @@ export default function ProductsPageClient() {
   
   // Автоматическое обновление остатков каждые 5 секунд для быстрой реакции
   useStockRefresh({ interval: 5000, enabled: true })
+  
+  // Real-time обновления через SSE
+  const { isConnected } = useSSEStockUpdates()
+  
+  console.log('📡 Products page SSE connection status:', isConnected)
 
   useEffect(() => {
     console.log('📊 Fetching products on products page, triggered by stock update:', lastUpdate)
@@ -193,7 +199,10 @@ export default function ProductsPageClient() {
         ) : products.length > 0 ? (
           <div className="products-grid">
             {products.map((product) => (
-              <ProductCard key={product.id} product={product as any} />
+              <ProductCard 
+                key={`${product.id}-${lastUpdate}-${product.skus.map(s => `${s.stock}-${s.reservedStock || 0}`).join('-')}`}
+                product={product as any} 
+              />
             ))}
           </div>
         ) : (

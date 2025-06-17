@@ -2,11 +2,12 @@
 
 import Image from 'next/image'
 import Link from 'next/link'
-import { memo, useMemo, useCallback, useState } from 'react'
+import { memo, useMemo, useCallback, useState, useEffect } from 'react'
 import { Button } from '@/components/ui/button'
 import { ProductErrorBoundary, ProductImageErrorBoundary } from '@/components/ProductErrorBoundary'
 import { useToastActions } from '@/components/Toast'
 import { useCart } from '@/contexts/CartContext'
+import { useStock } from '@/contexts/StockContext'
 import { Product } from '@/types/product'
 
 interface ProductCardProps {
@@ -28,22 +29,64 @@ const ProductCard = memo(function ProductCard({
 }: ProductCardProps) {
   const { dispatch } = useCart()
   const { success, error } = useToastActions()
+  const { lastUpdate } = useStock()
   const [imageError, setImageError] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [forceUpdateKey, setForceUpdateKey] = useState(0)
+
+  // Force re-render when stock updates globally
+  useEffect(() => {
+    console.log('🔄 ProductCard stock update detected:', product.name, 'lastUpdate:', lastUpdate)
+    setForceUpdateKey(prev => prev + 1)
+  }, [lastUpdate, product.name])
+
+  // Listen for order creation events for immediate refresh
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleOrderCreated = () => {
+      console.log('🛒 ProductCard received order created event for:', product.name)
+      setForceUpdateKey(prev => prev + 1)
+    }
+
+    window.addEventListener('vobvorot-order-created', handleOrderCreated)
+    
+    return () => {
+      window.removeEventListener('vobvorot-order-created', handleOrderCreated)
+    }
+  }, [product.name])
 
   // Memoize expensive calculations
   const productData = useMemo(() => {
     const primaryImage = product.images.find(img => img.isPrimary) || product.images[0]
     const minPrice = Math.min(...product.skus.map(sku => Number(sku.price)))
     
-    // Calculate available stock accounting for reservations
+    // Use availableStock from API (already calculated correctly on backend)
     const availableStockBySku = product.skus.map(sku => {
+      // Prefer API calculated availableStock, fallback to calculation only if not provided
+      if (typeof sku.availableStock === 'number') {
+        return Math.max(0, sku.availableStock)
+      }
+      // Fallback calculation (for older API responses)
       const available = sku.stock - (sku.reservedStock || 0)
       return Math.max(0, available)
     })
     
+    console.log('🔍 ProductCard stock calculation for', product.name, ':', {
+      skus: product.skus.map(sku => ({
+        id: sku.id,
+        stock: sku.stock,
+        reservedStock: sku.reservedStock,
+        availableStock: sku.availableStock,
+        calculated: sku.stock - (sku.reservedStock || 0)
+      })),
+      availableStockBySku
+    })
+    
     const inStock = availableStockBySku.some(available => available > 0)
     const totalAvailableStock = availableStockBySku.reduce((total, available) => total + available, 0)
+    const totalReservedStock = product.skus.reduce((total, sku) => total + (sku.reservedStock || 0), 0)
+    const hasReservations = totalReservedStock > 0
     const defaultSku = product.skus[0]
     
     return {
@@ -51,14 +94,18 @@ const ProductCard = memo(function ProductCard({
       minPrice,
       inStock,
       totalStock: totalAvailableStock, // Use available stock instead of raw stock
+      totalReservedStock,
+      hasReservations,
       defaultSku,
       availableStockBySku
     }
-  }, [product.images, product.skus])
+  }, [product.images, product.skus, forceUpdateKey]) // Add forceUpdateKey to trigger recalculation
+
+  // Destructure product data for easier access
+  const { primaryImage, minPrice, inStock, totalStock, totalReservedStock, hasReservations, defaultSku, availableStockBySku } = productData
 
   // Memoize click handlers
   const handleAddToCart = useCallback(async () => {
-    const { defaultSku, primaryImage, availableStockBySku } = productData
     const defaultSkuAvailable = availableStockBySku[0] || 0 // Available stock for default SKU
     if (defaultSku && defaultSkuAvailable > 0) {
       setIsLoading(true)
@@ -87,7 +134,7 @@ const ProductCard = memo(function ProductCard({
         setIsLoading(false)
       }
     }
-  }, [productData, dispatch, product.id, product.name])
+  }, [defaultSku, availableStockBySku, primaryImage, dispatch, product.id, product.name, success, error])
 
   const handleImageError = useCallback(() => {
     setImageError(true)
@@ -96,8 +143,6 @@ const ProductCard = memo(function ProductCard({
   const handleImageLoad = useCallback(() => {
     setImageError(false)
   }, [])
-
-  const { primaryImage, minPrice, inStock, totalStock, defaultSku } = productData
 
   return (
     <ProductErrorBoundary>
@@ -194,9 +239,25 @@ const ProductCard = memo(function ProductCard({
             gridColumn: '2', 
             gridRow: '2',
             textAlign: 'right',
-            fontSize: '0.85rem' 
+            fontSize: '0.85rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '2px'
           }}>
-            {inStock ? (totalStock === 1 ? 'last one!' : `${totalStock} left`) : 'sold out'}
+            <span style={{ 
+              color: inStock ? 'var(--green-neon)' : 'var(--pink-main)' 
+            }}>
+              {inStock ? (totalStock === 1 ? 'last one!' : `${totalStock} left`) : 'sold out'}
+            </span>
+            {hasReservations && (
+              <span style={{ 
+                fontSize: '0.75rem',
+                color: 'var(--yellow-neon)',
+                opacity: 0.8 
+              }}>
+                🔒 {totalReservedStock} reserved
+              </span>
+            )}
           </p>
         </div>
 
