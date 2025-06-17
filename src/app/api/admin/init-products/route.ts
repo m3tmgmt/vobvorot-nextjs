@@ -221,7 +221,6 @@ export async function POST(request: NextRequest) {
             description: mockProduct.description,
             categoryId,
             isActive: true,
-            isFeatured: mockProduct.categorySlug === 'exvicpmour',
             
             // Create images
             images: {

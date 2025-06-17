@@ -75,15 +75,12 @@ export async function reserveInventory(
         const skuIds = items.map(item => item.skuId)
         
         // First, fix any SKUs with null reservedStock
-        await tx.productSku.updateMany({
-          where: {
-            id: { in: skuIds },
-            reservedStock: null
-          },
-          data: {
-            reservedStock: 0
-          }
-        })
+        await tx.$executeRaw`
+          UPDATE "product_skus" 
+          SET "reservedStock" = 0 
+          WHERE "id" = ANY(${skuIds}) 
+          AND "reservedStock" IS NULL
+        `
         
         const availableStocks = await tx.productSku.findMany({
           where: {
