@@ -49,10 +49,24 @@ const ProductCard = memo(function ProductCard({
       setForceUpdateKey(prev => prev + 1)
     }
 
+    const handleReservationCreated = () => {
+      console.log('🔒 ProductCard received reservation created event for:', product.name)
+      setForceUpdateKey(prev => prev + 1)
+    }
+
+    const handleSSEStockUpdate = () => {
+      console.log('📡 ProductCard received SSE stock update for:', product.name)
+      setForceUpdateKey(prev => prev + 1)
+    }
+
     window.addEventListener('vobvorot-order-created', handleOrderCreated)
+    window.addEventListener('vobvorot-reservation-created', handleReservationCreated)
+    window.addEventListener('vobvorot-sse-stock-update', handleSSEStockUpdate)
     
     return () => {
       window.removeEventListener('vobvorot-order-created', handleOrderCreated)
+      window.removeEventListener('vobvorot-reservation-created', handleReservationCreated)  
+      window.removeEventListener('vobvorot-sse-stock-update', handleSSEStockUpdate)
     }
   }, [product.name])
 

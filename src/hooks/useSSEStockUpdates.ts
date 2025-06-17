@@ -56,6 +56,19 @@ export function useSSEStockUpdates() {
                 }))
                 break
                 
+              case 'RESERVATION_CREATED':
+                console.log('📡 Reservation created notification via SSE:', data)
+                triggerUpdate()
+                
+                window.dispatchEvent(new CustomEvent('vobvorot-reservation-created', {
+                  detail: { 
+                    orderNumber: data.orderNumber,
+                    reservedItems: data.reservedItems,
+                    timestamp: data.timestamp 
+                  }
+                }))
+                break
+                
               case 'PING':
                 // Keep-alive ping, no action needed
                 break

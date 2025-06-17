@@ -335,10 +335,19 @@ export async function POST(request: NextRequest) {
         timestamp: new Date().toISOString()
       })
       
-      logger.info('📡 Stock update broadcast sent after reservation', {
+      // ADDITIONAL: Also broadcast STOCK_UPDATE for maximum compatibility
+      await broadcastStockUpdate({
+        type: 'STOCK_UPDATE',
+        orderNumber,
+        productIds: reservationItems.map(item => item.skuId),
+        timestamp: Date.now()
+      })
+      
+      logger.info('📡 Multiple stock update broadcasts sent after reservation', {
         orderNumber,
         orderId: order.id,
-        reservedItemsCount: reservationItems.length
+        reservedItemsCount: reservationItems.length,
+        broadcastTypes: ['RESERVATION_CREATED', 'STOCK_UPDATE']
       })
     } catch (broadcastError) {
       logger.warn('⚠️ Failed to broadcast stock update, but reservation succeeded', {
