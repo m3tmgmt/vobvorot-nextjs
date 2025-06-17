@@ -1,10 +1,12 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Image from 'next/image'
 import Link from 'next/link'
 import { useCart } from '@/contexts/CartContext'
 import { useWishlist } from '@/contexts/WishlistContext'
+import { useStock } from '@/contexts/StockContext'
+import { useSSEStockUpdates } from '@/hooks/useSSEStockUpdates'
 // import { ProductReviews } from '@/components/ProductReviews' // Скрыто до появления серийных товаров
 
 interface Product {
@@ -14,7 +16,17 @@ interface Product {
   description?: string
   brand?: string
   images: { url: string; alt?: string; isPrimary: boolean }[]
-  skus: { id: string; price: any; stock: number; reservedStock?: number; size?: string; color?: string; weight?: number }[]
+  skus: { 
+    id: string; 
+    price: any; 
+    stock: number; 
+    reservedStock?: number; 
+    availableStock?: number;
+    totalStock?: number;
+    size?: string; 
+    color?: string; 
+    weight?: number 
+  }[]
   category: { name: string; slug: string }
   video?: {
     url: string
@@ -27,17 +39,74 @@ interface ProductPageClientProps {
   product: Product
 }
 
-export default function ProductPageClient({ product }: ProductPageClientProps) {
+export default function ProductPageClient({ product: initialProduct }: ProductPageClientProps) {
   const { dispatch } = useCart()
   const { addToWishlist, isInWishlist } = useWishlist()
+  const [product, setProduct] = useState<Product>(initialProduct)
   const [selectedSku, setSelectedSku] = useState<string>(product.skus[0]?.id || '')
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
+  const [forceUpdateKey, setForceUpdateKey] = useState(0)
+
+  // Initialize SSE for stock updates
+  useSSEStockUpdates()
+
+  // Refetch product data when stock updates occur
+  useEffect(() => {
+    const handleStockUpdate = async () => {
+      try {
+        console.log('🔄 ProductPageClient: Refetching product data due to stock update')
+        const response = await fetch(`/api/products/${product.slug}`, {
+          headers: {
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache'
+          }
+        })
+        
+        if (response.ok) {
+          const updatedProduct = await response.json()
+          console.log('✅ ProductPageClient: Product data updated', {
+            productName: updatedProduct.name,
+            skuCount: updatedProduct.skus?.length,
+            totalStock: updatedProduct.skus?.reduce((sum: number, sku: any) => sum + (sku.availableStock || 0), 0)
+          })
+          setProduct(updatedProduct)
+          setForceUpdateKey(prev => prev + 1)
+        }
+      } catch (error) {
+        console.error('❌ ProductPageClient: Error refetching product:', error)
+      }
+    }
+
+    const handleReservationCreated = () => {
+      console.log('🔒 ProductPageClient: Reservation created, triggering product update')
+      handleStockUpdate()
+    }
+
+    const handleSSEStockUpdate = () => {
+      console.log('📡 ProductPageClient: SSE stock update received, triggering product update')
+      handleStockUpdate()
+    }
+
+    // Listen for various stock update events
+    window.addEventListener('vobvorot-reservation-created', handleReservationCreated)
+    window.addEventListener('vobvorot-sse-stock-update', handleSSEStockUpdate)
+    window.addEventListener('vobvorot-stock-changed', handleStockUpdate)
+
+    return () => {
+      window.removeEventListener('vobvorot-reservation-created', handleReservationCreated)
+      window.removeEventListener('vobvorot-sse-stock-update', handleSSEStockUpdate)
+      window.removeEventListener('vobvorot-stock-changed', handleStockUpdate)
+    }
+  }, [product.slug])
 
   const selectedSkuData = product.skus.find(sku => sku.id === selectedSku) || product.skus[0]
   
-  // Calculate available stock for selected SKU
+  // Calculate available stock for selected SKU - use API-provided availableStock if available
   const selectedSkuAvailable = selectedSkuData ? 
-    Math.max(0, selectedSkuData.stock - (selectedSkuData.reservedStock || 0)) : 0
+    (selectedSkuData.availableStock !== undefined ? 
+      selectedSkuData.availableStock : 
+      Math.max(0, selectedSkuData.stock - (selectedSkuData.reservedStock || 0))
+    ) : 0
 
   const handleAddToCart = () => {
     if (selectedSkuData && selectedSkuAvailable > 0) {
@@ -457,7 +526,10 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
                         ${Number(sku.price)}
                       </p>
                       {(() => {
-                        const available = Math.max(0, sku.stock - (sku.reservedStock || 0))
+                        // Use API-provided availableStock if available, otherwise calculate
+                        const available = sku.availableStock !== undefined ? 
+                          sku.availableStock : 
+                          Math.max(0, sku.stock - (sku.reservedStock || 0))
                         return available > 0 ? (
                           <p style={{ 
                             fontSize: '0.8rem', 

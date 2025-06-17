@@ -38,7 +38,42 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(product)
+    // ✅ CRITICAL: Calculate availableStock for each SKU (same as in /products API)
+    const enhancedProduct = {
+      ...product,
+      skus: product.skus.map(sku => {
+        const availableStock = Math.max(0, sku.stock - (sku.reservedStock || 0))
+        
+        // Debug logging for stock calculations
+        if (sku.reservedStock > 0 || sku.stock <= 10) {
+          console.log('📊 Product slug API stock calculation:', {
+            productName: product.name,
+            slug: product.slug,
+            skuId: sku.id,
+            size: sku.size,
+            stock: sku.stock,
+            reservedStock: sku.reservedStock,
+            calculatedAvailable: availableStock,
+            timestamp: new Date().toISOString()
+          })
+        }
+        
+        return {
+          ...sku,
+          availableStock: availableStock,
+          totalStock: sku.stock,
+          reservedStock: sku.reservedStock || 0
+        }
+      })
+    }
+
+    return NextResponse.json(enhancedProduct, {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
+    })
   } catch (error) {
     console.error('Error fetching product:', error)
     return NextResponse.json(
