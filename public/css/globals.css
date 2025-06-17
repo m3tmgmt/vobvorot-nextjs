@@ -705,7 +705,7 @@ body {
   height: 100dvh; /* Use dynamic viewport height when supported */
   min-height: 600px; /* Add minimum height for safety */
   width: 100%;
-  overflow: visible; /* Позволяем глитч-эффектам отображаться полностью */
+  overflow: hidden; /* Контейнер для видео */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -732,13 +732,16 @@ body {
 
 .hero-video {
   position: absolute;
-  top: 50%;
-  left: 50%;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: translate(-50%, -50%);
-  z-index: -2;
+  z-index: 1; /* Понижен чтобы быть под контентом но над фоном */
+  /* Принудительное ограничение размерами родительского контейнера */
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .hero-overlay {
@@ -1046,13 +1049,13 @@ body {
 /* Product Grid */
 .products-grid {
   display: grid !important;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)) !important;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)) !important;
   gap: 2rem !important;
   margin-bottom: 3rem;
   justify-content: center;
   justify-items: stretch;
   align-items: start;
-  max-width: 1300px !important;
+  max-width: 1200px !important;
   margin-left: auto;
   margin-right: auto;
   padding: 0 2rem;
@@ -1985,15 +1988,12 @@ ul::-webkit-scrollbar-corner, ol::-webkit-scrollbar-corner, li::-webkit-scrollba
 /* Layout Utility Classes */
 .hero-video-container {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  min-width: 100%;
-  min-height: 100%;
-  width: auto;
-  height: auto;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
-  transform: translate(-50%, -50%);
-  z-index: 5;
+  z-index: 1; /* Понижен z-index чтобы быть под контентом */
   opacity: 0;
   transition: opacity 2s ease-in-out;
   filter: none !important;
@@ -2003,6 +2003,10 @@ ul::-webkit-scrollbar-corner, ol::-webkit-scrollbar-corner, li::-webkit-scrollba
   animation: none !important;
   perspective: none !important;
   backface-visibility: visible !important;
+  /* Принудительное ограничение размерами родительского контейнера */
+  max-width: 100%;
+  max-height: 100%;
+  overflow: hidden;
 }
 
 .hero-video-container.active {
@@ -2368,7 +2372,7 @@ ul::-webkit-scrollbar-corner, ol::-webkit-scrollbar-corner, li::-webkit-scrollba
   }
   
   .products-grid {
-    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
     gap: var(--space-6);
   }
   
@@ -2505,7 +2509,7 @@ ul::-webkit-scrollbar-corner, ol::-webkit-scrollbar-corner, li::-webkit-scrollba
   }
   
   .products-grid {
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 1rem;
   }
   
@@ -2540,4 +2544,12 @@ ul::-webkit-scrollbar-corner, ol::-webkit-scrollbar-corner, li::-webkit-scrollba
     gap: 1.5rem !important;
     grid-template-columns: 1fr !important;
   }
+}
+
+/* Calligraphy Font for Special Elements */
+.calligraphy-font {
+  font-family: 'Dancing Script', cursive !important;
+  font-weight: 600;
+  font-style: normal;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
 }
