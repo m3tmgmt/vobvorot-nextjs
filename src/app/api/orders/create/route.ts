@@ -122,8 +122,18 @@ export async function POST(request: NextRequest) {
             size: item.selectedSize,
             color: item.selectedColor,
             stock: 999, // Default high stock
-            price: Number(item.product.price)
+            reservedStock: 0, // Explicitly set reserved stock to 0
+            price: Number(item.product.price),
+            isActive: true // Ensure SKU is active
           }
+        })
+        
+        logger.info('Created new SKU for order', {
+          skuId: sku.id,
+          productId: item.product.id,
+          stock: sku.stock,
+          reservedStock: sku.reservedStock,
+          productName: item.product.name
         })
       }
       
@@ -192,6 +202,48 @@ export async function POST(request: NextRequest) {
     })
 
     // Step 3: Попытаться зарезервировать товары
+    logger.info('Attempting to reserve inventory', {
+      orderNumber,
+      orderId: order.id,
+      reservationItems: reservationItems.map(item => ({
+        skuId: item.skuId,
+        quantity: item.quantity
+      }))
+    })
+
+    // Debug: Check stock levels before reservation
+    for (const item of reservationItems) {
+      const skuStock = await prisma.productSku.findUnique({
+        where: { id: item.skuId },
+        select: { 
+          id: true, 
+          stock: true, 
+          reservedStock: true,
+          isActive: true,
+          product: { select: { name: true, isActive: true } }
+        }
+      })
+      
+      if (skuStock) {
+        const availableStock = skuStock.stock - (skuStock.reservedStock || 0)
+        logger.info('Stock check before reservation', {
+          skuId: item.skuId,
+          productName: skuStock.product.name,
+          totalStock: skuStock.stock,
+          reservedStock: skuStock.reservedStock || 0,
+          availableStock,
+          requestedQuantity: item.quantity,
+          isActive: skuStock.isActive,
+          productActive: skuStock.product.isActive
+        })
+      } else {
+        logger.error('SKU not found during stock check', {
+          skuId: item.skuId,
+          quantity: item.quantity
+        })
+      }
+    }
+
     const reservationResult = await reserveInventory(order.id, reservationItems)
 
     if (!reservationResult.success) {
@@ -225,12 +277,21 @@ export async function POST(request: NextRequest) {
 
       logger.error('Order creation failed - reservation error', {
         orderNumber,
-        error: reservationResult.error
+        error: reservationResult.error,
+        reservationItems: reservationItems.map(item => ({
+          skuId: item.skuId,
+          quantity: item.quantity
+        }))
       })
 
       return NextResponse.json({
         error: 'Unable to reserve inventory',
-        message: reservationResult.error || 'Failed to reserve items for your order'
+        message: reservationResult.error || 'Failed to reserve items for your order',
+        debug: {
+          orderNumber,
+          totalItems: reservationItems.length,
+          reservationError: reservationResult.error
+        }
       }, { status: 500 })
     }
 

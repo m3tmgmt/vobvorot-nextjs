@@ -57,6 +57,15 @@ export async function reserveInventory(
   orderId: string, 
   items: ReservationItem[]
 ): Promise<ReservationResult> {
+  console.log('🚀 Starting inventory reservation:', {
+    orderId,
+    itemsCount: items.length,
+    items: items.map(item => ({
+      skuId: item.skuId,
+      quantity: item.quantity
+    }))
+  })
+  
   let retryCount = 0
   
   while (retryCount < MAX_RETRY_ATTEMPTS) {
@@ -64,6 +73,18 @@ export async function reserveInventory(
       const result = await prisma.$transaction(async (tx) => {
         // 1. Проверить доступные остатки
         const skuIds = items.map(item => item.skuId)
+        
+        // First, fix any SKUs with null reservedStock
+        await tx.productSku.updateMany({
+          where: {
+            id: { in: skuIds },
+            reservedStock: null
+          },
+          data: {
+            reservedStock: 0
+          }
+        })
+        
         const availableStocks = await tx.productSku.findMany({
           where: {
             id: { in: skuIds },
@@ -101,8 +122,26 @@ export async function reserveInventory(
             continue
           }
 
-          const availableStock = sku.stock - sku.reservedStock
+          const availableStock = sku.stock - (sku.reservedStock || 0)
+          
+          console.log('💡 Stock check in reserveInventory:', {
+            skuId: item.skuId,
+            productName: sku.product.name,
+            totalStock: sku.stock,
+            reservedStock: sku.reservedStock,
+            availableStock,
+            requestedQuantity: item.quantity,
+            isActive: sku.product.isActive
+          })
+          
           if (availableStock < item.quantity) {
+            console.log('❌ Insufficient stock detected:', {
+              skuId: item.skuId,
+              productName: sku.product.name,
+              available: availableStock,
+              requested: item.quantity
+            })
+            
             insufficientStock.push({
               skuId: item.skuId,
               requested: item.quantity,
