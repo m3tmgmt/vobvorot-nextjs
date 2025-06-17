@@ -160,24 +160,38 @@ export async function POST(request: NextRequest) {
           }
         }
 
+        // Find product stock from shared-data
+        let productStock = 0
+        try {
+          const { sharedProducts } = await import('@/lib/shared-data')
+          const sharedProduct = sharedProducts.find(p => p.id === item.product.id || p.name === item.product.name)
+          productStock = sharedProduct?.stock || 0
+        } catch (error) {
+          logger.warn('Could not get stock from shared-data, using default', {
+            productId: item.product.id,
+            error: error instanceof Error ? error.message : String(error)
+          })
+        }
         sku = await prisma.productSku.create({
           data: {
             productId: item.product.id,
             sku: `${item.product.id}-${item.selectedSize || 'NS'}-${item.selectedColor || 'NC'}`,
             size: item.selectedSize,
             color: item.selectedColor,
-            stock: 999, // Default high stock
+            stock: productStock, // Use actual stock from shared-data instead of default 999
             reservedStock: 0, // Explicitly set reserved stock to 0
             price: Number(item.product.price),
             isActive: true // Ensure SKU is active
           }
         })
         
-        logger.info('Created new SKU for order', {
+        logger.info('Created new SKU with actual stock', {
           skuId: sku.id,
           productId: item.product.id,
-          stock: sku.stock,
-          reservedStock: sku.reservedStock,
+          stock: productStock,
+          reservedStock: 0,
+          size: item.selectedSize,
+          color: item.selectedColor,
           productName: item.product.name
         })
       }

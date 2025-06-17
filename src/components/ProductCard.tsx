@@ -35,23 +35,32 @@ const ProductCard = memo(function ProductCard({
   const productData = useMemo(() => {
     const primaryImage = product.images.find(img => img.isPrimary) || product.images[0]
     const minPrice = Math.min(...product.skus.map(sku => Number(sku.price)))
-    const inStock = product.skus.some(sku => sku.stock > 0)
-    const totalStock = product.skus.reduce((total, sku) => total + sku.stock, 0)
+    
+    // Calculate available stock accounting for reservations
+    const availableStockBySku = product.skus.map(sku => {
+      const available = sku.stock - (sku.reservedStock || 0)
+      return Math.max(0, available)
+    })
+    
+    const inStock = availableStockBySku.some(available => available > 0)
+    const totalAvailableStock = availableStockBySku.reduce((total, available) => total + available, 0)
     const defaultSku = product.skus[0]
     
     return {
       primaryImage,
       minPrice,
       inStock,
-      totalStock,
-      defaultSku
+      totalStock: totalAvailableStock, // Use available stock instead of raw stock
+      defaultSku,
+      availableStockBySku
     }
   }, [product.images, product.skus])
 
   // Memoize click handlers
   const handleAddToCart = useCallback(async () => {
-    const { defaultSku, primaryImage } = productData
-    if (defaultSku && defaultSku.stock > 0) {
+    const { defaultSku, primaryImage, availableStockBySku } = productData
+    const defaultSkuAvailable = availableStockBySku[0] || 0 // Available stock for default SKU
+    if (defaultSku && defaultSkuAvailable > 0) {
       setIsLoading(true)
       try {
         dispatch({
@@ -66,7 +75,7 @@ const ProductCard = memo(function ProductCard({
             image: primaryImage?.url,
             size: defaultSku.size,
             color: defaultSku.color,
-            maxStock: defaultSku.stock
+            maxStock: defaultSkuAvailable // Use available stock for max limit
           }
         })
         

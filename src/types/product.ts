@@ -36,6 +36,8 @@ export interface ProductSKU {
   price: number
   /** Current stock quantity */
   stock: number
+  /** Reserved stock quantity (items being paid for) */
+  reservedStock?: number
   /** Product size (e.g., "S", "M", "L", "XL") */
   size?: string
   /** Product color */

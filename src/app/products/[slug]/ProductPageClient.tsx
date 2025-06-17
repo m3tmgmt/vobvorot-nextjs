@@ -14,7 +14,7 @@ interface Product {
   description?: string
   brand?: string
   images: { url: string; alt?: string; isPrimary: boolean }[]
-  skus: { id: string; price: any; stock: number; size?: string; color?: string; weight?: number }[]
+  skus: { id: string; price: any; stock: number; reservedStock?: number; size?: string; color?: string; weight?: number }[]
   category: { name: string; slug: string }
   video?: {
     url: string
@@ -34,9 +34,13 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
 
   const selectedSkuData = product.skus.find(sku => sku.id === selectedSku) || product.skus[0]
+  
+  // Calculate available stock for selected SKU
+  const selectedSkuAvailable = selectedSkuData ? 
+    Math.max(0, selectedSkuData.stock - (selectedSkuData.reservedStock || 0)) : 0
 
   const handleAddToCart = () => {
-    if (selectedSkuData && selectedSkuData.stock > 0) {
+    if (selectedSkuData && selectedSkuAvailable > 0) {
       dispatch({
         type: 'ADD_ITEM',
         payload: {
@@ -49,7 +53,7 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
           image: product.images[selectedImageIndex]?.url,
           size: selectedSkuData.size,
           color: selectedSkuData.color,
-          maxStock: selectedSkuData.stock
+          maxStock: selectedSkuAvailable
         }
       })
     }
@@ -452,23 +456,26 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
                       }}>
                         ${Number(sku.price)}
                       </p>
-                      {sku.stock > 0 ? (
-                        <p style={{ 
-                          fontSize: '0.8rem', 
-                          color: 'var(--green-neon)',
-                          fontFamily: 'JetBrains Mono, monospace'
-                        }}>
-                          {sku.stock} in stock
-                        </p>
-                      ) : (
-                        <p style={{ 
-                          fontSize: '0.8rem', 
-                          color: '#ff4444',
-                          fontFamily: 'JetBrains Mono, monospace'
-                        }}>
-                          Out of stock
-                        </p>
-                      )}
+                      {(() => {
+                        const available = Math.max(0, sku.stock - (sku.reservedStock || 0))
+                        return available > 0 ? (
+                          <p style={{ 
+                            fontSize: '0.8rem', 
+                            color: 'var(--green-neon)',
+                            fontFamily: 'JetBrains Mono, monospace'
+                          }}>
+                            {available} in stock
+                          </p>
+                        ) : (
+                          <p style={{ 
+                            fontSize: '0.8rem', 
+                            color: '#ff4444',
+                            fontFamily: 'JetBrains Mono, monospace'
+                          }}>
+                            Out of stock
+                          </p>
+                        )
+                      })()}
                     </div>
                   </label>
                 ))}
@@ -479,13 +486,13 @@ export default function ProductPageClient({ product }: ProductPageClientProps) {
               <button
                 className="hero-button"
                 onClick={handleAddToCart}
-                disabled={!selectedSkuData || selectedSkuData.stock === 0}
+                disabled={!selectedSkuData || selectedSkuAvailable === 0}
                 style={{
                   width: '100%',
                   padding: '1rem 2rem',
                   fontSize: '1.1rem',
-                  opacity: (!selectedSkuData || selectedSkuData.stock === 0) ? 0.5 : 1,
-                  cursor: (!selectedSkuData || selectedSkuData.stock === 0) ? 'not-allowed' : 'pointer'
+                  opacity: (!selectedSkuData || selectedSkuAvailable === 0) ? 0.5 : 1,
+                  cursor: (!selectedSkuData || selectedSkuAvailable === 0) ? 'not-allowed' : 'pointer'
                 }}
                 aria-label={`Add ${product.name} to cart for $${Number(selectedSkuData?.price)}`}
               >
