@@ -32,7 +32,7 @@ export default function HomePage() {
   const [homeVideo, setHomeVideo] = useState<string>('')
   const [allVideos, setAllVideos] = useState<string[]>([])
   const { findPiece, dispatch: puzzleDispatch } = usePuzzle()
-  const { lastUpdate, shouldRefetch, resetRefetch } = useStock()
+  const { lastUpdate, shouldRefetch, resetRefetch, triggerUpdate } = useStock()
   
   // Автоматическое обновление остатков каждые 5 секунд для быстрой реакции
   useStockRefresh({ interval: 5000, enabled: true })
@@ -104,7 +104,7 @@ export default function HomePage() {
   useEffect(() => {
     const fetchProducts = () => {
       console.log('📊 Fetching products, triggered by stock update:', lastUpdate)
-      fetch('/api/products?limit=12')
+      fetch('/api/products?limit=12&t=' + Date.now()) // Add timestamp to bypass cache
         .then(res => res.json())
         .then(data => {
           const productsList = data.products || []
@@ -136,6 +136,26 @@ export default function HomePage() {
 
     fetchProducts()
   }, [lastUpdate, shouldRefetch, resetRefetch])
+
+  // Listen for order creation events for immediate stock refresh
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleOrderCreated = (event: CustomEvent) => {
+      console.log('🛒 Order created event received on homepage:', event.detail)
+      // Force immediate product refresh
+      setTimeout(() => {
+        console.log('🔄 Force refreshing homepage products after order')
+        triggerUpdate()
+      }, 100)
+    }
+
+    window.addEventListener('vobvorot-order-created', handleOrderCreated as EventListener)
+    
+    return () => {
+      window.removeEventListener('vobvorot-order-created', handleOrderCreated as EventListener)
+    }
+  }, [triggerUpdate])
 
   const handleFilter = (categoryId: string) => {
     setActiveFilter(categoryId)

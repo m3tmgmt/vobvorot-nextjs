@@ -158,15 +158,41 @@ export default function CheckoutPage() {
         console.log('Order created successfully:', order)
         console.log('Payment URL:', order.paymentUrl)
         
-        // Trigger immediate stock update to refresh inventory display
+        // Aggressive stock update strategy for immediate UI refresh
         console.log('🔄 Triggering immediate stock update after order creation')
+        
+        // 1. Immediate trigger
         triggerUpdate()
         
-        // Additional delay to ensure the stock update propagates
-        setTimeout(() => {
-          console.log('🔄 Secondary stock update trigger')
-          triggerUpdate()
-        }, 1000)
+        // 2. Send custom event for immediate refresh
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('vobvorot-order-created', { 
+            detail: { 
+              orderNumber: order.orderNumber,
+              timestamp: Date.now()
+            }
+          }))
+        }
+        
+        // 3. Multiple delayed triggers to ensure propagation
+        const delays = [500, 1000, 2000]
+        delays.forEach(delay => {
+          setTimeout(() => {
+            console.log(`🔄 Delayed stock update trigger (${delay}ms)`)
+            triggerUpdate()
+          }, delay)
+        })
+        
+        // 4. Force reload of product data in localStorage (if any)
+        if (typeof window !== 'undefined') {
+          try {
+            localStorage.removeItem('vobvorot-products-cache')
+            localStorage.removeItem('vobvorot-stock-cache')
+            console.log('🗑️ Cleared product cache')
+          } catch (error) {
+            console.warn('Failed to clear cache:', error)
+          }
+        }
         
         // Cart will be cleared only after successful payment verification
         

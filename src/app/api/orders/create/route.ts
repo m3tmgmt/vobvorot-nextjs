@@ -104,14 +104,26 @@ export async function POST(request: NextRequest) {
     const reservationItems: ReservationItem[] = []
 
     for (const item of orderData.items) {
-      // Find or create SKU for this product variant
+      // Find existing SKU for this product variant
       let sku = await prisma.productSku.findFirst({
         where: {
           productId: item.product.id,
           size: item.selectedSize || null,
-          color: item.selectedColor || null
+          color: item.selectedColor || null,
+          isActive: true
         }
       })
+      
+      // If specific size/color not found, try to find any available SKU for this product
+      if (!sku) {
+        sku = await prisma.productSku.findFirst({
+          where: {
+            productId: item.product.id,
+            isActive: true
+          },
+          orderBy: { createdAt: 'asc' } // Use the first created SKU
+        })
+      }
       
       if (!sku) {
         // Create SKU if it doesn't exist
@@ -193,6 +205,18 @@ export async function POST(request: NextRequest) {
           size: item.selectedSize,
           color: item.selectedColor,
           productName: item.product.name
+        })
+      } else {
+        logger.info('Using existing SKU for order', {
+          skuId: sku.id,
+          productId: item.product.id,
+          existingStock: sku.stock,
+          existingReserved: sku.reservedStock,
+          size: sku.size,
+          color: sku.color,
+          productName: item.product.name,
+          requestedSize: item.selectedSize,
+          requestedColor: item.selectedColor
         })
       }
       

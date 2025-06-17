@@ -30,17 +30,17 @@ export default function ProductsPageClient() {
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [activeCategory, setActiveCategory] = useState('all')
-  const { lastUpdate, shouldRefetch, resetRefetch } = useStock()
+  const { lastUpdate, shouldRefetch, resetRefetch, triggerUpdate } = useStock()
   
   // Автоматическое обновление остатков каждые 5 секунд для быстрой реакции
   useStockRefresh({ interval: 5000, enabled: true })
 
   useEffect(() => {
     console.log('📊 Fetching products on products page, triggered by stock update:', lastUpdate)
-    // Fetch both products and categories
+    // Fetch both products and categories with cache bypass
     Promise.all([
-      fetch('/api/products').then(res => res.json()),
-      fetch('/api/categories').then(res => res.json())
+      fetch('/api/products?t=' + Date.now()).then(res => res.json()),
+      fetch('/api/categories?t=' + Date.now()).then(res => res.json())
     ])
       .then(([productsData, categoriesData]) => {
         const productsList = productsData.data?.products || productsData.products || []
@@ -112,6 +112,26 @@ export default function ProductsPageClient() {
           })
       })
   }, [lastUpdate, shouldRefetch, resetRefetch])
+
+  // Listen for order creation events for immediate stock refresh
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleOrderCreated = (event: CustomEvent) => {
+      console.log('🛒 Order created event received on products page:', event.detail)
+      // Force immediate product refresh
+      setTimeout(() => {
+        console.log('🔄 Force refreshing products page after order')
+        triggerUpdate()
+      }, 100)
+    }
+
+    window.addEventListener('vobvorot-order-created', handleOrderCreated as EventListener)
+    
+    return () => {
+      window.removeEventListener('vobvorot-order-created', handleOrderCreated as EventListener)
+    }
+  }, [triggerUpdate])
 
   // Filter products by category only
   useEffect(() => {
