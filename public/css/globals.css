@@ -1,0 +1,2672 @@
+/* PRIORITY 1: Hide cursor IMMEDIATELY on load */
+html { cursor: none !important; }
+body { cursor: none !important; }
+* { cursor: none !important; }
+
+/* CHROME SPECIFIC: Override WebKit defaults */
+@media screen and (-webkit-min-device-pixel-ratio:0) and (min-resolution:.001dpcm) {
+  html, body, *, *::before, *::after {
+    cursor: none !important;
+    -webkit-cursor: none !important;
+  }
+  
+  /* Target Chrome's default cursor behaviors */
+  a, button, input, textarea, select, [onclick], [role="button"] {
+    cursor: none !important;
+    -webkit-cursor: none !important;
+  }
+}
+
+/* Base Styles */
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  cursor: none !important;
+}
+
+/* Prevent horizontal scrolling */
+body {
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* Simple scroll optimization without breaking other functionality */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Optimize only puzzle page performance */
+.puzzle-hub * {
+  will-change: auto;
+}
+
+.puzzle-hub .cards-grid {
+  contain: layout;
+  min-height: 200px; /* Предотвращает белый экран */
+}
+
+/* Pulse анимация для skeleton */
+@keyframes pulse {
+  0% { opacity: 0.6; }
+  100% { opacity: 1; }
+}
+
+/* Предотвращение белого экрана при загрузке */
+.puzzle-hub .section-spacing-medium {
+  min-height: 300px;
+  background: transparent;
+}
+
+/* PRIORITY: Universal Custom Scrollbar Override */
+/* Firefox-specific styles */
+html {
+  scrollbar-width: thin !important;
+  scrollbar-color: #FF6B9D transparent !important;
+  scroll-behavior: smooth;
+}
+
+body {
+  scrollbar-width: thin !important;
+  scrollbar-color: #FF6B9D transparent !important;
+  /* Firefox fallback with solid colors */
+  scrollbar-color: #FF6B9D rgba(0, 0, 0, 0.1) !important;
+}
+
+/* WebKit browsers (Chrome, Safari, Edge) */
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  width: 16px !important;
+  height: 16px !important;
+  background: transparent !important;
+}
+
+html::-webkit-scrollbar-track,
+body::-webkit-scrollbar-track {
+  background: transparent !important;
+  border-radius: 8px !important;
+  /* Fallback for older browsers */
+  background: rgba(0, 0, 0, 0.05) !important;
+}
+
+html::-webkit-scrollbar-thumb,
+body::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #FF6B9D, #9D4EDD, #00F5FF) !important;
+  border-radius: 8px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+  box-shadow: 0 0 10px rgba(255, 107, 157, 0.6) !important;
+  /* Fallback for browsers without gradient support */
+  background: #FF6B9D !important;
+  background: -webkit-linear-gradient(135deg, #FF6B9D, #9D4EDD, #00F5FF) !important;
+  background: -moz-linear-gradient(135deg, #FF6B9D, #9D4EDD, #00F5FF) !important;
+}
+
+html::-webkit-scrollbar-thumb:hover,
+body::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #00F5FF, #FF6B9D, #FFFF00) !important;
+  background: -webkit-linear-gradient(135deg, #00F5FF, #FF6B9D, #FFFF00) !important;
+  background: -moz-linear-gradient(135deg, #00F5FF, #FF6B9D, #FFFF00) !important;
+  box-shadow: 0 0 15px rgba(255, 107, 157, 0.9), 0 0 25px rgba(0, 245, 255, 0.5) !important;
+  transform: scale(1.05) !important;
+}
+
+html::-webkit-scrollbar-corner,
+body::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Additional support for older WebKit */
+html::-webkit-scrollbar-button,
+body::-webkit-scrollbar-button {
+  display: none !important;
+}
+
+/* Force styling on specific containers that might override */
+#__next,
+.main-content,
+main {
+  scrollbar-width: thin !important;
+  scrollbar-color: #FF6B9D transparent !important;
+}
+
+/* Browser-specific enhancements using @supports */
+@supports (scrollbar-width: thin) {
+  /* Modern Firefox */
+  * {
+    scrollbar-width: thin !important;
+    scrollbar-color: #FF6B9D transparent !important;
+  }
+}
+
+@supports selector(::-webkit-scrollbar) {
+  /* Modern WebKit browsers */
+  *::-webkit-scrollbar {
+    width: 14px !important;
+    height: 14px !important;
+  }
+  
+  *::-webkit-scrollbar-track {
+    background: transparent !important;
+  }
+  
+  *::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, #FF6B9D, #9D4EDD, #00F5FF) !important;
+    border-radius: 8px !important;
+    border: 2px solid transparent !important;
+    background-clip: padding-box !important;
+  }
+}
+
+/* Safari-specific fixes */
+@supports (-webkit-appearance: none) {
+  body::-webkit-scrollbar-thumb {
+    -webkit-appearance: none !important;
+    background: #FF6B9D !important;
+    border-radius: 8px !important;
+  }
+}
+
+:root {
+  /* Enhanced Color Palette from Original Design */
+  --pink-main: #FF6B9D;
+  --pink-light: #FFB3D4;
+  --pink-neon: #FF1493;
+  --cyan-accent: #00F5FF;
+  --purple-accent: #9D4EDD;
+  --yellow-neon: #FFFF00;
+  --green-neon: #00FF7F;
+  --white: #FFFFFF;
+  --black: #000000;
+  --gray-light: #F8F8F8;
+  --red-error: #FF4444;
+  --orange-accent: #FF8C00;
+  
+  /* Typography Scale - Responsive Design System */
+  --font-size-xs: 0.75rem;    /* 12px */
+  --font-size-sm: 0.875rem;   /* 14px */
+  --font-size-base: 1rem;     /* 16px */
+  --font-size-lg: 1.125rem;   /* 18px */
+  --font-size-xl: 1.25rem;    /* 20px */
+  --font-size-2xl: 1.5rem;    /* 24px */
+  --font-size-3xl: 1.875rem;  /* 30px */
+  --font-size-4xl: 2.25rem;   /* 36px */
+  --font-size-5xl: 3rem;      /* 48px */
+  --font-size-6xl: 3.75rem;   /* 60px */
+  
+  /* Line Height Scale */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-relaxed: 1.625;
+  --leading-loose: 2;
+  
+  /* Font Weight Scale */
+  --font-light: 300;
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+  
+  /* Spacing Scale */
+  --space-1: 0.25rem;   /* 4px */
+  --space-2: 0.5rem;    /* 8px */
+  --space-3: 0.75rem;   /* 12px */
+  --space-4: 1rem;      /* 16px */
+  --space-5: 1.25rem;   /* 20px */
+  --space-6: 1.5rem;    /* 24px */
+  --space-8: 2rem;      /* 32px */
+  --space-10: 2.5rem;   /* 40px */
+  --space-12: 3rem;     /* 48px */
+  --space-16: 4rem;     /* 64px */
+  --space-20: 5rem;     /* 80px */
+}
+
+html, body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  background: linear-gradient(135deg, #000000 0%, #1a0014 50%, #000000 100%);
+  color: #FFFFFF;
+  font-family: 'Space Grotesk', sans-serif;
+  min-height: 100vh;
+  cursor: none !important;
+  /* IMMEDIATE cursor hiding - highest priority */
+  -webkit-cursor: none !important;
+  -moz-cursor: none !important;
+  -ms-cursor: none !important;
+  -o-cursor: none !important;
+  /* Force custom scrollbars */
+  scrollbar-width: thin !important;
+  scrollbar-color: var(--pink-main) transparent !important;
+}
+
+/* INSTANT cursor hiding - executed immediately without media queries */
+html {
+  cursor: none !important;
+  -webkit-cursor: none !important;
+  -moz-cursor: none !important;
+}
+
+body {
+  cursor: none !important;
+  -webkit-cursor: none !important; 
+  -moz-cursor: none !important;
+}
+
+/* IMMEDIATE universal override */
+*, *::before, *::after {
+  cursor: none !important;
+  -webkit-cursor: none !important;
+  -moz-cursor: none !important;
+}
+
+/* ENHANCED Cursor Effects - FORCE hide browser cursor completely */
+@media (hover: hover) and (pointer: fine) {
+  /* Primary cursor hiding with maximum specificity */
+  html, body {
+    cursor: none !important;
+    -webkit-cursor: none !important;
+    -moz-cursor: none !important;
+  }
+  
+  /* Universal cursor suppression with highest specificity */
+  *, *::before, *::after, *:hover, *:focus, *:active, *:visited, *:link {
+    cursor: none !important;
+    -webkit-cursor: none !important;
+    -moz-cursor: none !important;
+    -ms-cursor: none !important;
+    -o-cursor: none !important;
+  }
+  
+  /* AGGRESSIVE cursor override for all possible elements */
+  html *, body *, div *, span *, p *, a *, button *, input *, textarea *, select *, 
+  nav *, header *, footer *, main *, section *, article *, aside *, 
+  h1 *, h2 *, h3 *, h4 *, h5 *, h6 *, ul *, ol *, li *, 
+  img *, svg *, path *, canvas *, video *, audio *,
+  form *, fieldset *, legend *, label *, 
+  table *, thead *, tbody *, tr *, td *, th *,
+  iframe *, object *, embed * {
+    cursor: none !important;
+    -webkit-cursor: none !important;
+  }
+  
+  /* Target all possible interactive elements with MAXIMUM specificity */
+  button, a, input, textarea, select, label, option, optgroup,
+  [role="button"], [role="link"], [role="menuitem"], [role="tab"],
+  [onclick], [onmousedown], [onmouseup], [onmouseover],
+  [href], [tabindex], [contenteditable],
+  div[onclick], span[onclick], li[onclick], p[onclick],
+  h1[onclick], h2[onclick], h3[onclick], h4[onclick], h5[onclick], h6[onclick],
+  img[onclick], svg[onclick], path[onclick] {
+    cursor: none !important;
+    -webkit-cursor: none !important;
+    -moz-cursor: none !important;
+  }
+  
+  /* FORCE override for framework-specific elements */
+  [data-testid] *, [data-cy] *, [data-test] *,
+  .next-link *, .react-component *,
+  [class*="btn"] *, [class*="button"] *, [class*="link"] *,
+  [class*="card"] *, [class*="modal"] *, [class*="nav"] * {
+    cursor: none !important;
+  }
+  
+  /* Override ANY cursor style that might be set inline or by frameworks */
+  [style*="cursor: pointer"], [style*="cursor: default"], 
+  [style*="cursor: text"], [style*="cursor: grab"],
+  [style*="cursor: grabbing"], [style*="cursor: move"] {
+    cursor: none !important;
+  }
+  
+  /* Component-specific targeting with ENHANCED coverage */
+  .nav-toggle, .nav-close, .nav-title, .nav-links,
+  .navigation *, .nav-content *, .nav-links *,
+  .navigation button, .nav-links button, .nav-links li,
+  .cart-modal *, .wishlist-modal *, .modal *,
+  .cart-modal button, .wishlist-modal button, .modal button,
+  .product-card *, .product-title, .add-to-cart-btn,
+  .hero-title, .hero-button, .filter-btn,
+  .cursor-main, .cursor-trail {
+    cursor: none !important;
+    -webkit-cursor: none !important;
+  }
+  
+  /* CRITICAL: Override ANY element that shows pointer cursor */
+  *[style*="pointer"], *[class*="pointer"], *[data-cursor] {
+    cursor: none !important;
+  }
+  
+  /* Browser-specific aggressive overrides */
+  *::-webkit-any-link, *:link, *:visited {
+    cursor: none !important;
+  }
+  
+  /* Force on pseudo-elements too */
+  *::before, *::after {
+    cursor: none !important;
+  }
+  
+  /* Target framework-generated elements */
+  [data-nextjs-cursor], [data-react-cursor],
+  .next-cursor, .react-cursor {
+    cursor: none !important;
+  }
+  
+  /* Override any inline styles */
+  [style*="cursor"] {
+    cursor: none !important;
+  }
+  
+  /* Force override common cursor states */
+  :hover, :focus, :active, :visited {
+    cursor: none !important;
+  }
+  
+  /* NUCLEAR OPTION: Override absolutely everything */
+  body * {
+    cursor: none !important;
+  }
+  
+  /* Last resort - use CSS custom properties to override */
+  :root {
+    --cursor-override: none !important;
+  }
+  
+  * {
+    cursor: var(--cursor-override) !important;
+  }
+}
+
+@media (max-width: 768px) {
+  body {
+    cursor: default !important;
+  }
+  
+  /* Restore normal cursors on mobile */
+  *, *:hover, *:focus, *:active {
+    cursor: default !important;
+  }
+  
+  button, a, input, textarea, select,
+  [role="button"], [onclick], [href] {
+    cursor: pointer !important;
+  }
+  
+  .cursor-main,
+  .cursor-trail {
+    display: none !important;
+  }
+}
+
+/* Particle System */
+.particle-system {
+  background: transparent;
+}
+
+.particle {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+@media (max-width: 768px) {
+  .particle-system {
+    display: none !important;
+  }
+}
+
+/* Matrix Effect */
+.matrix-effect {
+  background: transparent;
+}
+
+@media (max-width: 768px) {
+  .matrix-effect {
+    display: none !important;
+  }
+}
+
+/* Floating animation for particles */
+@keyframes particleFloat {
+  0%, 100% { 
+    transform: translateX(0) translateY(0) scale(1);
+    opacity: 0;
+  }
+  10% { 
+    opacity: 1;
+  }
+  90% { 
+    opacity: 1;
+  }
+  100% { 
+    transform: translateX(10px) translateY(-100vh) scale(0.5);
+    opacity: 0;
+  }
+}
+
+/* Modal animations */
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modalSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* Navigation Styles */
+.nav-toggle {
+  position: fixed;
+  top: 2rem;
+  left: 2rem;
+  z-index: calc(var(--z-navigation) + 1);
+  background: rgba(0, 0, 0, 0.8);
+  border: 2px solid #FF6B9D;
+  color: #FF6B9D;
+  font-size: 1.5rem;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  cursor: none !important;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  /* Performance optimization */
+  will-change: transform, background, box-shadow;
+  transform: translateZ(0);
+}
+
+.nav-toggle:hover {
+  background: #FF6B9D;
+  color: #000000;
+  transform: scale(1.1);
+  box-shadow: 0 0 20px rgba(255, 107, 157, 0.5);
+}
+
+.navigation {
+  position: fixed;
+  top: 0;
+  left: -400px;
+  width: 350px;
+  height: 100vh;
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.98) 0%, rgba(26, 0, 20, 0.95) 50%, rgba(0, 0, 0, 0.98) 100%);
+  backdrop-filter: blur(25px);
+  border-right: 2px solid #FF6B9D;
+  z-index: var(--z-navigation);
+  transition: left 0.3s ease-out;
+  padding: 2rem;
+  overflow-y: auto;
+  overflow-x: hidden;
+  box-shadow: inset -1px 0 0 rgba(255, 107, 157, 0.2);
+  /* Enhanced performance optimizations */
+  will-change: transform, left;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  contain: layout style paint;
+  /* Cursor optimization */
+  cursor: none !important;
+}
+
+.navigation.active {
+  left: 0;
+  box-shadow: 10px 0 30px rgba(255, 107, 157, 0.4), inset -1px 0 0 rgba(255, 107, 157, 0.2);
+  /* Force compositing layer */
+  transform: translate3d(0, 0, 0);
+}
+
+/* Navigation scan lines effect - disabled for performance */
+.navigation::before {
+  display: none;
+}
+
+.nav-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: #FF6B9D;
+  font-size: 2rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.nav-close:hover {
+  color: #00F5FF;
+  transform: rotate(90deg);
+}
+
+.nav-content {
+  margin-top: 3rem;
+}
+
+.nav-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin-bottom: 2rem;
+  background: linear-gradient(45deg, #FF6B9D, #00F5FF, #FFFF00);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-align: center;
+  position: relative;
+  font-family: 'JetBrains Mono', monospace;
+  z-index: 1;
+  /* Performance optimization - removed heavy animations */
+  will-change: auto;
+}
+
+.nav-title:hover {
+  transform: scale(1.02);
+  transition: transform 0.2s ease;
+}
+
+/* Simplified nav title effects for performance */
+.nav-title::before,
+.nav-title::after {
+  display: none;
+}
+
+@keyframes textGlow {
+  0% { 
+    text-shadow: 0 0 20px rgba(255, 107, 157, 0.3), 0 0 30px rgba(0, 245, 255, 0.2);
+    filter: brightness(1);
+  }
+  50% { 
+    text-shadow: 0 0 30px rgba(255, 107, 157, 0.6), 0 0 40px rgba(0, 245, 255, 0.4), 0 0 50px rgba(255, 255, 0, 0.3);
+    filter: brightness(1.1);
+  }
+  100% { 
+    text-shadow: 0 0 20px rgba(255, 107, 157, 0.3), 0 0 30px rgba(0, 245, 255, 0.2);
+    filter: brightness(1);
+  }
+}
+
+@keyframes textGlitch {
+  0%, 90%, 100% { 
+    transform: translate(0);
+    opacity: 1;
+  }
+  10% { 
+    transform: translate(-1px, 1px);
+    opacity: 0.9;
+  }
+  20% { 
+    transform: translate(1px, -1px);
+    opacity: 0.8;
+  }
+  30% { 
+    transform: translate(-1px, -1px);
+    opacity: 0.9;
+  }
+  40% { 
+    transform: translate(1px, 1px);
+    opacity: 1;
+  }
+}
+
+@keyframes glitchLayer1 {
+  0%, 85%, 100% { 
+    transform: translate(0);
+    opacity: 0;
+  }
+  15% { 
+    transform: translate(-2px, 0);
+    opacity: 0.5;
+  }
+  20% { 
+    transform: translate(2px, 0);
+    opacity: 0.3;
+  }
+}
+
+@keyframes glitchLayer2 {
+  0%, 80%, 100% { 
+    transform: translate(0);
+    opacity: 0;
+  }
+  12% { 
+    transform: translate(1px, -1px);
+    opacity: 0.4;
+  }
+  18% { 
+    transform: translate(-1px, 1px);
+    opacity: 0.2;
+  }
+}
+
+.nav-links {
+  list-style: none;
+  padding: 0;
+}
+
+.nav-links li {
+  margin-bottom: 0.5rem;
+}
+
+.nav-links button {
+  width: 100%;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border: 1px solid rgba(255, 107, 157, 0.3);
+  color: rgba(255, 255, 255, 0.95);
+  padding: var(--space-4) var(--space-5);
+  text-align: left;
+  font-size: var(--font-size-base);
+  font-weight: var(--font-bold);
+  border-radius: 15px;
+  transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+  position: relative;
+  overflow: hidden;
+  backdrop-filter: blur(15px);
+  letter-spacing: 0.02em;
+  /* Enhanced typography */
+  line-height: var(--leading-normal);
+  font-family: 'Space Grotesk', sans-serif;
+  /* Enhanced performance optimization */
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  contain: layout style;
+  /* Cursor optimization */
+  cursor: none !important;
+}
+
+.nav-links button:hover::after {
+  opacity: 1;
+}
+
+/* Simplified button effects for performance */
+.nav-links button::after {
+  display: none;
+}
+
+/* Simplified hover effects for better performance */
+
+.nav-links button:hover {
+  border: 1px solid rgba(255, 107, 157, 0.7);
+  background: rgba(255, 107, 157, 0.2);
+  color: var(--white);
+  transform: translate3d(var(--space-2), -2px, 0);
+  /* Simplified shadows for performance */
+  box-shadow: 0 4px 15px rgba(255, 107, 157, 0.3);
+}
+
+/* Hero Section - Standardized */
+.hero-section {
+  position: relative;
+  height: 100vh;
+  height: 100dvh; /* Use dynamic viewport height when supported */
+  min-height: 600px; /* Add minimum height for safety */
+  width: 100%;
+  overflow: visible; /* Позволяем глитч-эффектам отображаться полностью */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(ellipse at center, rgba(255, 107, 157, 0.1) 0%, transparent 70%);
+}
+
+/* Hero Section Variants */
+.hero-section.hero-medium {
+  height: 70vh;
+  min-height: 500px;
+}
+
+.hero-section.hero-small {
+  height: auto;
+  min-height: 400px;
+  padding: 3rem 0;
+  overflow: visible;
+}
+
+.hero-section.hero-compact {
+  height: 40vh;
+  min-height: 300px;
+}
+
+.hero-video {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: -2;
+}
+
+.hero-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    45deg,
+    rgba(0, 0, 0, 0.1) 0%,
+    rgba(255, 107, 157, 0.05) 30%,
+    rgba(0, 245, 255, 0.05) 70%,
+    rgba(0, 0, 0, 0.15) 100%
+  );
+  z-index: 7;
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  text-align: center;
+  z-index: var(--z-hero-content);
+  max-width: 1200px;
+  width: 100%;
+  padding: 2rem;
+  /* Добавляем дополнительное пространство для глитч-эффектов */
+  padding-left: 5rem;
+  padding-right: 5rem;
+  /* Убеждаемся что контент не обрезается */
+  overflow: visible;
+  /* Принудительное центрирование */
+  margin: 0 auto;
+}
+
+.hero-title {
+  /* Enhanced responsive typography */
+  font-size: clamp(var(--font-size-5xl), 8vw + 1rem, 8rem);
+  font-weight: var(--font-bold);
+  margin-bottom: var(--space-4);
+  background: linear-gradient(45deg, var(--pink-main), var(--cyan-accent), var(--purple-accent));
+  background-size: 200% 200%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  /* Removed heavy animation for performance */
+  will-change: auto;
+  text-shadow: 0 0 30px rgba(255, 107, 157, 0.5);
+  line-height: var(--leading-tight);
+  transition: all 0.3s ease;
+  cursor: pointer;
+  letter-spacing: -0.02em;
+  position: relative;
+  /* Принудительное центрирование и исправление блюра */
+  text-align: center;
+  width: 100%;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  z-index: 50;
+  /* Убеждаемся что глитч-эффекты не обрезаются */
+  overflow: visible;
+  /* Центрирование без дополнительных отступов */
+  margin: 0 auto;
+  max-width: 100%;
+}
+
+/* Медиа-запросы для мобильных устройств */
+@media (max-width: 768px) {
+  .hero-content {
+    padding-left: 2rem;
+    padding-right: 2rem;
+    max-width: 100%;
+  }
+  
+  .hero-title {
+    font-size: clamp(2rem, 12vw, 4rem) !important;
+  }
+  
+  /* На мобильных возвращаем обычный размер карточек */
+  .products-grid,
+  .cards-grid,
+  .puzzle-grid,
+  .achievements-grid,
+  .exvicpmour-story-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 320px));
+    max-width: 100%;
+    padding: 0 1rem;
+    justify-content: center !important;
+    justify-items: center !important;
+    place-content: center !important;
+  }
+  
+  /* Отключаем особое поведение на мобильных */
+  .puzzle-grid.single-item {
+    display: grid !important;
+    justify-content: center !important;
+  }
+  
+  .puzzle-grid.single-item > * {
+    width: auto;
+    max-width: 100%;
+  }
+}
+
+.hero-title:hover {
+  animation: gradientShift 2s ease-in-out infinite, textGlitch 0.2s infinite;
+  transform: scale(1.01);
+  text-shadow: 0 0 30px rgba(255, 107, 157, 0.8), 0 0 45px rgba(0, 245, 255, 0.6);
+  /* Добавляем отступ для предотвращения обрезания */
+  margin: 0 1rem;
+}
+
+.hero-subtitle {
+  font-size: clamp(var(--font-size-lg), 3vw + 0.5rem, var(--font-size-2xl));
+  color: var(--pink-light);
+  margin-bottom: var(--space-8);
+  font-weight: var(--font-light);
+  letter-spacing: 0.05em;
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  line-height: var(--leading-normal);
+  /* Enhanced visibility */
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.hero-button {
+  background: linear-gradient(45deg, #FF6B9D, #9D4EDD);
+  border: none;
+  color: #FFFFFF;
+  font-size: 1.2rem;
+  font-weight: 600;
+  padding: 1rem 2.5rem;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  box-shadow: 0 10px 30px rgba(255, 107, 157, 0.3);
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.hero-button:hover {
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 15px 40px rgba(255, 107, 157, 0.5);
+  background: linear-gradient(45deg, #FF1493, #00F5FF);
+}
+
+/* Glitch Effect */
+.glitch {
+  position: relative;
+  transition: all 0.3s ease;
+}
+
+.glitch:hover {
+  animation: glitch 0.1s infinite;
+}
+
+@keyframes glitch {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+  100% { transform: translate(0); }
+}
+
+/* Section Styles - Standardized */
+.products-section {
+  padding: var(--space-16) var(--space-8);
+  margin-top: var(--space-16);
+  margin-bottom: var(--space-16);
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+  position: relative;
+  z-index: 2;
+}
+
+/* Standard section spacing variants */
+.section-spacing-large {
+  margin-top: var(--space-20);
+  margin-bottom: var(--space-20);
+}
+
+.section-spacing-medium {
+  margin-top: var(--space-16);
+  margin-bottom: var(--space-16);
+}
+
+.section-spacing-small {
+  margin-top: var(--space-12);
+  margin-bottom: var(--space-12);
+}
+
+.section-title {
+  font-size: clamp(var(--font-size-4xl), 5vw + 1rem, var(--font-size-6xl));
+  font-weight: var(--font-bold);
+  text-align: center;
+  margin-bottom: var(--space-12);
+  background: linear-gradient(45deg, var(--cyan-accent), var(--pink-main), var(--white));
+  background-size: 200% 200%;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  line-height: var(--leading-tight);
+  position: relative;
+  /* Removed heavy animation for performance */
+  will-change: auto;
+}
+
+/* Removed section-title underline */
+
+.section-title:hover {
+  animation: textGlitch 0.2s infinite;
+  transform: scale(1.02);
+  text-shadow: 0 0 20px rgba(0, 245, 255, 0.6), 0 0 30px rgba(255, 107, 157, 0.4);
+}
+
+/* Filter Bar */
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  margin-bottom: 3rem;
+  padding: 0 1rem;
+}
+
+.filter-btn {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
+  border: 1px solid rgba(255, 107, 157, 0.2);
+  color: rgba(255, 255, 255, 0.9);
+  padding: var(--space-3) var(--space-5);
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: var(--font-medium);
+  font-size: var(--font-size-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  backdrop-filter: blur(15px);
+  position: relative;
+  overflow: hidden;
+  /* Enhanced visual appeal */
+  box-shadow: 0 2px 8px rgba(255, 107, 157, 0.1);
+}
+
+.filter-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 107, 157, 0.3), transparent);
+  transition: left 0.6s;
+}
+
+.filter-btn:hover::before {
+  left: 100%;
+}
+
+.filter-btn:hover {
+  border-color: var(--pink-main);
+  color: var(--pink-main);
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 20px rgba(255, 107, 157, 0.3);
+  background: rgba(255, 107, 157, 0.1);
+}
+
+.filter-btn.active {
+  background: linear-gradient(45deg, var(--pink-main), var(--pink-neon));
+  border-color: var(--pink-main);
+  color: var(--white);
+  box-shadow: 0 8px 25px rgba(255, 107, 157, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Puzzle hint button specific styles */
+.puzzle-hint-btn.hint-inactive {
+  background: transparent;
+  border-color: var(--yellow-neon);
+  color: var(--yellow-neon);
+}
+
+.puzzle-hint-btn.hint-active {
+  background: var(--yellow-neon);
+  border-color: var(--yellow-neon);
+  color: var(--black);
+}
+
+.puzzle-hint-btn.hint-inactive:hover {
+  background: rgba(255, 255, 0, 0.1);
+  border-color: var(--yellow-neon);
+  color: var(--yellow-neon);
+}
+
+.puzzle-hint-btn.hint-active:hover {
+  background: var(--yellow-neon);
+  border-color: var(--yellow-neon);
+  color: var(--black);
+}
+
+/* Product Grid */
+.products-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 420px)) !important;
+  gap: 2rem !important;
+  margin-bottom: 3rem;
+  justify-content: center;
+  justify-items: center;
+  align-items: start;
+  place-content: center;
+  max-width: 1400px !important;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 2rem;
+}
+
+.cards-grid {
+  display: grid !important;
+  grid-template-columns: repeat(2, 1fr) !important;
+  gap: 1.5rem !important;
+  margin-top: 2rem;
+  justify-content: center;
+  justify-items: center;
+  align-items: start;
+  place-content: center;
+  max-width: 900px !important;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 2rem;
+}
+
+/* Mobile responsiveness for cards-grid */
+@media (max-width: 768px) {
+  .cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.25rem !important;
+    padding: 0 1.5rem;
+    justify-content: center !important;
+    justify-items: center !important;
+    place-content: center !important;
+  }
+  
+  .products-grid,
+  .exvicpmour-story-grid {
+    grid-template-columns: repeat(auto-fit, minmax(330px, 380px)) !important;
+    gap: 1.25rem !important;
+    padding: 0 1.5rem;
+    justify-content: center !important;
+    justify-items: center !important;
+    place-content: center !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+    padding: 0 1rem;
+    justify-content: center !important;
+    justify-items: center !important;
+    place-content: center !important;
+  }
+  
+  .products-grid,
+  .exvicpmour-story-grid {
+    grid-template-columns: repeat(auto-fit, minmax(300px, 360px)) !important;
+    gap: 1rem !important;
+    padding: 0 1rem;
+    justify-content: center !important;
+    justify-items: center !important;
+    place-content: center !important;
+  }
+}
+
+
+/* Простое решение - используем CSS grid auto-fit с центрированием */
+.puzzle-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 480px)) !important;
+  gap: 2rem !important;
+  margin-top: 2rem;
+  justify-content: center;
+  justify-items: stretch;
+  align-items: start;
+  max-width: 1300px !important;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 2rem;
+}
+
+/* Для одиночного элемента - используем другую структуру */
+.puzzle-grid.single-item {
+  display: flex !important;
+  justify-content: center !important;
+}
+
+.puzzle-grid.single-item > * {
+  width: 450px;
+  max-width: 100%;
+}
+
+/* Сетка для achievements с равными размерами */
+.achievements-grid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)) !important;
+  gap: 2rem !important;
+  margin-top: 2rem;
+  justify-content: center;
+  justify-items: stretch;
+  align-items: stretch; /* Растягиваем по высоте для равного размера */
+  max-width: 1300px !important;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 0 2rem;
+}
+
+/* Stats Grid for About page */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 2rem;
+  margin: 3rem 0;
+}
+
+/* Team Grid for About page */
+.team-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  margin-top: 2rem;
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+  justify-content: center;
+  justify-items: center;
+}
+
+/* Mobile responsiveness for team grid */
+@media (max-width: 768px) {
+  .team-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+}
+
+/* Timeline Grid for About page */
+.timeline-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 3rem;
+  margin-top: 2rem;
+}
+
+/* EXVICPMOUR Story Grid */
+.exvicpmour-story-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-top: 2rem;
+  justify-content: center;
+  justify-items: center;
+  place-content: center;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Mobile responsiveness for exvicpmour story grid */
+@media (max-width: 768px) {
+  .exvicpmour-story-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+}
+
+/* Training Cards Grid - 3 cards in one row */
+.training-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-top: 2rem;
+  justify-content: center;
+  justify-items: center;
+  place-content: center;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Mobile responsiveness for training cards grid */
+@media (max-width: 768px) {
+  .training-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+}
+
+/* Community Cards Grid - 3 cards in one row */
+.community-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-top: 2rem;
+  justify-content: center;
+  justify-items: center;
+  place-content: center;
+  max-width: 1200px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Mobile responsiveness for community cards grid */
+@media (max-width: 768px) {
+  .community-cards-grid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    max-width: 100%;
+    padding: 0 1rem;
+  }
+}
+
+/* Flex utilities for About page */
+.flex-center-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.gap-4 {
+  gap: 1rem;
+}
+
+/* Global Scrollbar Styles - Y2K Cyberpunk Theme */
+/* Universal Firefox scrollbar styling */
+* {
+  scrollbar-width: thin !important;
+  scrollbar-color: #FF6B9D transparent !important;
+}
+
+/* Force override default scrollbars for all common elements */
+html, body, div, main, section, article, aside, nav, header, footer,
+ul, ol, li, p, h1, h2, h3, h4, h5, h6, 
+.container, .content, .modal, .panel, .sidebar,
+*[class*="modal"], *[class*="panel"], *[class*="scroll"],
+textarea, pre, code, iframe, object, embed {
+  scrollbar-width: thin !important;
+  scrollbar-color: #FF6B9D transparent !important;
+  /* Enhanced Firefox support */
+  scrollbar-color: #FF6B9D rgba(255, 107, 157, 0.1) !important;
+}
+
+/* WebKit scrollbar for all elements with high specificity */
+html::-webkit-scrollbar, body::-webkit-scrollbar, div::-webkit-scrollbar,
+main::-webkit-scrollbar, section::-webkit-scrollbar, article::-webkit-scrollbar,
+ul::-webkit-scrollbar, ol::-webkit-scrollbar, li::-webkit-scrollbar,
+.container::-webkit-scrollbar, .content::-webkit-scrollbar,
+*[class*="modal"]::-webkit-scrollbar, *[class*="panel"]::-webkit-scrollbar,
+*[class*="scroll"]::-webkit-scrollbar, *::-webkit-scrollbar {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+html::-webkit-scrollbar-track, body::-webkit-scrollbar-track, div::-webkit-scrollbar-track,
+main::-webkit-scrollbar-track, section::-webkit-scrollbar-track, article::-webkit-scrollbar-track,
+ul::-webkit-scrollbar-track, ol::-webkit-scrollbar-track, li::-webkit-scrollbar-track,
+.container::-webkit-scrollbar-track, .content::-webkit-scrollbar-track,
+*[class*="modal"]::-webkit-scrollbar-track, *[class*="panel"]::-webkit-scrollbar-track,
+*[class*="scroll"]::-webkit-scrollbar-track, *::-webkit-scrollbar-track {
+  background: transparent !important;
+  border-radius: 10px !important;
+}
+
+html::-webkit-scrollbar-thumb, body::-webkit-scrollbar-thumb, div::-webkit-scrollbar-thumb,
+main::-webkit-scrollbar-thumb, section::-webkit-scrollbar-thumb, article::-webkit-scrollbar-thumb,
+ul::-webkit-scrollbar-thumb, ol::-webkit-scrollbar-thumb, li::-webkit-scrollbar-thumb,
+.container::-webkit-scrollbar-thumb, .content::-webkit-scrollbar-thumb,
+*[class*="modal"]::-webkit-scrollbar-thumb, *[class*="panel"]::-webkit-scrollbar-thumb,
+*[class*="scroll"]::-webkit-scrollbar-thumb, *::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--pink-main), var(--purple-accent), var(--cyan-accent)) !important;
+  border-radius: 10px !important;
+  border: 2px solid transparent !important;
+  background-clip: padding-box !important;
+  box-shadow: 
+    0 0 10px rgba(255, 107, 157, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2) !important;
+  /* Removed heavy animation for performance */
+  box-shadow: 0 0 10px rgba(255, 107, 157, 0.5) !important;
+}
+
+html::-webkit-scrollbar-thumb:hover, body::-webkit-scrollbar-thumb:hover, div::-webkit-scrollbar-thumb:hover,
+main::-webkit-scrollbar-thumb:hover, section::-webkit-scrollbar-thumb:hover, article::-webkit-scrollbar-thumb:hover,
+ul::-webkit-scrollbar-thumb:hover, ol::-webkit-scrollbar-thumb:hover, li::-webkit-scrollbar-thumb:hover,
+.container::-webkit-scrollbar-thumb:hover, .content::-webkit-scrollbar-thumb:hover,
+*[class*="modal"]::-webkit-scrollbar-thumb:hover, *[class*="panel"]::-webkit-scrollbar-thumb:hover,
+*[class*="scroll"]::-webkit-scrollbar-thumb:hover, *::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, var(--cyan-accent), var(--pink-main), var(--yellow-neon)) !important;
+  box-shadow: 
+    0 0 15px rgba(255, 107, 157, 0.8),
+    0 0 20px rgba(0, 245, 255, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3) !important;
+  transform: scale(1.05) !important;
+}
+
+html::-webkit-scrollbar-corner, body::-webkit-scrollbar-corner, div::-webkit-scrollbar-corner,
+main::-webkit-scrollbar-corner, section::-webkit-scrollbar-corner, article::-webkit-scrollbar-corner,
+ul::-webkit-scrollbar-corner, ol::-webkit-scrollbar-corner, li::-webkit-scrollbar-corner,
+.container::-webkit-scrollbar-corner, .content::-webkit-scrollbar-corner,
+*[class*="modal"]::-webkit-scrollbar-corner, *[class*="panel"]::-webkit-scrollbar-corner,
+*[class*="scroll"]::-webkit-scrollbar-corner, *::-webkit-scrollbar-corner {
+  background: transparent !important;
+}
+
+/* Enhanced styles for modal scrollbars */
+.modal-content,
+.cart-modal,
+.wishlist-modal,
+.navigation,
+.puzzle-progress-modal {
+  scrollbar-width: thin;
+  scrollbar-color: var(--pink-main) transparent;
+}
+
+.modal-content::-webkit-scrollbar,
+.cart-modal::-webkit-scrollbar,
+.wishlist-modal::-webkit-scrollbar,
+.navigation::-webkit-scrollbar,
+.puzzle-progress-modal::-webkit-scrollbar {
+  width: 14px;
+  height: 14px;
+}
+
+.modal-content::-webkit-scrollbar-track,
+.cart-modal::-webkit-scrollbar-track,
+.wishlist-modal::-webkit-scrollbar-track,
+.navigation::-webkit-scrollbar-track,
+.puzzle-progress-modal::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 12px;
+}
+
+.modal-content::-webkit-scrollbar-thumb,
+.cart-modal::-webkit-scrollbar-thumb,
+.wishlist-modal::-webkit-scrollbar-thumb,
+.navigation::-webkit-scrollbar-thumb,
+.puzzle-progress-modal::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, var(--pink-main), var(--purple-accent), var(--cyan-accent));
+  border-radius: 12px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  box-shadow: 
+    0 0 15px rgba(255, 107, 157, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.2);
+  /* Removed heavy animation for performance */
+  box-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover,
+.cart-modal::-webkit-scrollbar-thumb:hover,
+.wishlist-modal::-webkit-scrollbar-thumb:hover,
+.navigation::-webkit-scrollbar-thumb:hover,
+.puzzle-progress-modal::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, var(--cyan-accent), var(--pink-main), var(--yellow-neon));
+  box-shadow: 
+    0 0 20px rgba(255, 107, 157, 0.9),
+    0 0 30px rgba(0, 245, 255, 0.5),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transform: scale(1.1);
+}
+
+.modal-content::-webkit-scrollbar-corner,
+.cart-modal::-webkit-scrollbar-corner,
+.wishlist-modal::-webkit-scrollbar-corner,
+.navigation::-webkit-scrollbar-corner,
+.puzzle-progress-modal::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Simplified scrollbar animation */
+@keyframes scrollbarGlow {
+  0%, 100% { 
+    box-shadow: 0 0 10px rgba(255, 107, 157, 0.5);
+  }
+  50% { 
+    box-shadow: 0 0 15px rgba(255, 107, 157, 0.7);
+  }
+}
+
+/* Enhanced Product Card - Inspired by Original Design */
+.product-card {
+  /* Enhanced glassmorphism with better contrast */
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+  border: 1px solid rgba(255, 107, 157, 0.2);
+  border-radius: 20px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 420px;
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  backdrop-filter: blur(24px) saturate(180%);
+  position: relative;
+  /* Better accessibility contrast */
+  box-shadow: 
+    0 8px 32px rgba(255, 107, 157, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.product-card::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(45deg, transparent, rgba(255, 107, 157, 0.1), transparent);
+  transform: rotate(45deg);
+  transition: all 0.6s ease;
+  opacity: 0;
+}
+
+.product-card:hover::before {
+  opacity: 1;
+  animation: shine 1.5s ease-in-out;
+}
+
+@keyframes shine {
+  0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+  100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+}
+
+.product-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: var(--pink-main);
+  box-shadow: 
+    0 20px 48px rgba(255, 107, 157, 0.2),
+    0 0 0 1px rgba(255, 107, 157, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.15);
+}
+
+.product-image {
+  position: relative;
+  width: 100%;
+  height: 280px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.product-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.product-card:hover .product-image img {
+  transform: scale(1.1);
+}
+
+.product-info {
+  padding: 1.5rem;
+  text-align: left; /* Принудительно выравниваем по левому краю информацию о товаре */
+}
+
+/* Product cards that don't use product-info class (puzzle, about pages) */
+.product-card:not(:has(.product-info)):not(:has(.product-image)) {
+  padding: 1.5rem;
+}
+
+/* Alternative for older browsers */
+.product-card.content-card {
+  padding: 1.5rem;
+}
+
+.product-category {
+  color: var(--cyan-accent);
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-medium);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: var(--space-2);
+  font-family: 'JetBrains Mono', monospace;
+  /* Enhanced readability */
+  text-shadow: 0 0 4px rgba(0, 245, 255, 0.3);
+}
+
+.product-title {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-semibold);
+  margin-bottom: var(--space-3);
+  color: rgba(255, 255, 255, 0.95); /* Enhanced contrast */
+  transition: all 0.3s ease;
+  line-height: var(--leading-tight);
+  /* Better text rendering */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.product-title:hover {
+  color: var(--pink-main);
+  text-shadow: 0 0 8px rgba(255, 107, 157, 0.4);
+}
+
+.product-price {
+  font-size: var(--font-size-2xl);
+  font-weight: var(--font-bold);
+  color: var(--yellow-neon);
+  margin-bottom: var(--space-2);
+  /* Enhanced visibility with shadow */
+  text-shadow: 0 0 4px rgba(255, 255, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.product-stock {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin-bottom: 1rem;
+  font-style: italic;
+}
+
+.add-to-cart-btn {
+  width: 100%;
+  background: linear-gradient(45deg, var(--pink-main), var(--pink-neon));
+  border: 2px solid transparent;
+  color: var(--white);
+  font-weight: var(--font-semibold);
+  padding: var(--space-3) var(--space-4);
+  border-radius: 25px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: var(--font-size-sm);
+  position: relative;
+  overflow: hidden;
+  /* Enhanced visual appeal */
+  box-shadow: 0 4px 15px rgba(255, 107, 157, 0.2);
+}
+
+.add-to-cart-btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transition: left 0.6s;
+}
+
+.add-to-cart-btn:hover::before {
+  left: 100%;
+}
+
+.add-to-cart-btn:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(255, 107, 157, 0.4);
+  background: linear-gradient(45deg, var(--pink-neon), var(--cyan-accent));
+  border-color: var(--cyan-accent);
+}
+
+.add-to-cart-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* Cart Modal */
+.cart-modal {
+  position: fixed;
+  top: 0;
+  right: -450px;
+  width: 400px;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(20px);
+  border-left: 2px solid #FF6B9D;
+  z-index: 1100;
+  transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.cart-modal.active {
+  right: 0;
+  box-shadow: -10px 0 30px rgba(255, 107, 157, 0.3);
+}
+
+/* Wishlist Modal */
+.wishlist-modal {
+  position: fixed;
+  top: 0;
+  right: -450px;
+  width: 400px;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(20px);
+  border-left: 2px solid var(--cyan-accent);
+  z-index: 1200;
+  transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  padding: 2rem;
+  overflow-y: auto;
+}
+
+.wishlist-modal.active {
+  right: 0;
+  box-shadow: -10px 0 30px rgba(0, 245, 255, 0.3);
+}
+
+/* Wishlist specific styles */
+.wishlist-item {
+  border: 1px solid rgba(0, 245, 255, 0.3) !important;
+}
+
+.wishlist-item-date {
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 0.5rem;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.wishlist-item-price {
+  color: var(--cyan-accent) !important;
+}
+
+.wishlist-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.wishlist-add-to-cart-btn {
+  background: linear-gradient(45deg, var(--pink-main), var(--purple-accent));
+  border: none;
+  color: white;
+  padding: 0.4rem 0.8rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.wishlist-add-to-cart-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(255, 107, 157, 0.4);
+}
+
+.wishlist-remove-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.8);
+  padding: 0.4rem 0.8rem;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  transition: all 0.3s ease;
+}
+
+.wishlist-remove-btn:hover {
+  background: rgba(255, 0, 0, 0.2);
+  border-color: rgba(255, 0, 0, 0.5);
+  color: #ff6b6b;
+}
+
+.wishlist-empty {
+  padding: 2rem 0;
+}
+
+.wishlist-empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+}
+
+.wishlist-empty-title {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+}
+
+.wishlist-empty-subtitle {
+  color: rgba(255, 255, 255, 0.5);
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+.wishlist-total {
+  border-top: 2px solid var(--cyan-accent);
+}
+
+.wishlist-count {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--cyan-accent);
+  margin-bottom: 1rem;
+  text-align: center;
+}
+
+.wishlist-continue-btn {
+  background: linear-gradient(45deg, var(--cyan-accent), var(--purple-accent));
+  color: var(--black);
+}
+
+/* Modal backdrop */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  pointer-events: auto;
+}
+
+/* Specific z-index for cart backdrop */
+.cart-backdrop {
+  z-index: 1099;
+}
+
+/* Specific z-index for wishlist backdrop */
+.wishlist-backdrop {
+  z-index: 1199;
+}
+
+/* Konami Code Animations */
+@keyframes konamiShake {
+  0%, 100% { transform: translateX(0); }
+  10% { transform: translateX(-10px); }
+  20% { transform: translateX(10px); }
+  30% { transform: translateX(-10px); }
+  40% { transform: translateX(10px); }
+  50% { transform: translateX(-5px); }
+  60% { transform: translateX(5px); }
+  70% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+  90% { transform: translateX(-2px); }
+}
+
+@keyframes konamiGlow {
+  0% { 
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+    box-shadow: 0 0 30px rgba(0, 255, 65, 0.5);
+  }
+  50% { 
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.05);
+    box-shadow: 0 0 50px rgba(0, 255, 65, 0.8);
+  }
+  100% { 
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    box-shadow: 0 0 30px rgba(0, 255, 65, 0.5);
+  }
+}
+
+@keyframes secretMenuSlide {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -60%) scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+/* Developer Mode Effects */
+.developer-mode {
+  position: relative;
+}
+
+.developer-mode::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    45deg,
+    transparent 48%,
+    rgba(0, 255, 65, 0.03) 49%,
+    rgba(0, 255, 65, 0.03) 51%,
+    transparent 52%
+  );
+  pointer-events: none;
+  z-index: 10000;
+  animation: developerScanlines 3s linear infinite;
+}
+
+@keyframes developerScanlines {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+/* Enhanced Particle Effects */
+.particles-x10 .particle-system {
+  filter: brightness(1.5) saturate(2);
+}
+
+.particles-x10 .particle-system::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle, rgba(255, 107, 157, 0.1) 0%, transparent 70%);
+  animation: particleBoost 2s ease-in-out infinite;
+}
+
+@keyframes particleBoost {
+  0%, 100% { opacity: 0.5; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+
+/* Theme Variables for Konami Themes */
+:root {
+  --theme-primary: var(--pink-main);
+  --theme-secondary: var(--purple-accent);
+  --theme-accent: var(--cyan-accent);
+}
+
+/* Matrix Theme Override */
+.theme-matrix {
+  --theme-primary: #00FF41;
+  --theme-secondary: #008F11;
+  --theme-accent: #00FF41;
+}
+
+/* Cyber Theme Override */
+.theme-cyber {
+  --theme-primary: #FF00FF;
+  --theme-secondary: #8000FF;
+  --theme-accent: #00FFFF;
+}
+
+/* Neon Theme Override */
+.theme-neon {
+  --theme-primary: #FFFF00;
+  --theme-secondary: #FF8000;
+  --theme-accent: #FF0080;
+}
+
+.cart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.cart-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #FF6B9D;
+}
+
+.cart-close {
+  background: none;
+  border: none;
+  color: #FF6B9D;
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.cart-close:hover {
+  color: #00F5FF;
+  transform: rotate(90deg);
+}
+
+/* Cart and Wishlist Items */
+.cart-item {
+  display: flex;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  transition: all 0.3s ease;
+}
+
+.cart-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 107, 157, 0.3);
+}
+
+.cart-item-image {
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.cart-item-details {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.cart-item-title {
+  font-size: var(--font-size-base);
+  font-weight: var(--font-semibold);
+  color: rgba(255, 255, 255, 0.95);
+  margin: 0;
+  transition: all 0.3s ease;
+  line-height: var(--leading-tight);
+  /* Enhanced readability */
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.cart-item-title:hover {
+  color: var(--pink-main);
+  text-shadow: 0 0 8px rgba(255, 107, 157, 0.4);
+}
+
+.cart-item-price {
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-bold);
+  color: var(--yellow-neon);
+  margin: var(--space-1) 0;
+  font-family: 'JetBrains Mono', monospace;
+  /* Enhanced visibility */
+  text-shadow: 0 0 4px rgba(255, 255, 0, 0.3);
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.quantity-btn {
+  background: var(--pink-main);
+  border: none;
+  color: var(--white);
+  min-width: 44px;
+  min-height: 44px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-size: 1rem;
+  font-weight: bold;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  touch-action: manipulation;
+}
+
+.quantity-btn:hover {
+  background: var(--cyan-accent);
+  transform: scale(1.1);
+}
+
+.cart-total {
+  border-top: 2px solid var(--pink-main);
+  padding-top: 1rem;
+  margin-top: 1rem;
+}
+
+.total-amount {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--yellow-neon);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.checkout-btn {
+  width: 100%;
+  background: linear-gradient(45deg, var(--pink-main), var(--purple-accent));
+  border: none;
+  color: var(--white);
+  font-weight: 600;
+  padding: 1rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  transition: all 0.3s ease;
+}
+
+.checkout-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(255, 107, 157, 0.4);
+  background: linear-gradient(45deg, var(--cyan-accent), var(--purple-accent));
+}
+
+/* Text Utilities */
+.text-center {
+  text-align: center;
+}
+
+.flex {
+  display: flex;
+}
+
+/* Container */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* Standard Z-Index Hierarchy */
+:root {
+  --z-modal: 1200;
+  --z-overlay: 1100;
+  --z-navigation: 1050;
+  --z-cart: 1099;
+  --z-toast: 1300;
+  --z-hero-content: 20;
+  --z-section: 2;
+  --z-cursor: 10000;
+  --z-cursor-trail: 9999;
+}
+
+/* Matrix Mode Cursor Styles */
+[data-theme="matrix"] .cursor-main {
+  background: var(--green-neon) !important;
+  box-shadow: 0 0 20px var(--green-neon), 0 0 40px var(--green-neon) !important;
+}
+
+[data-theme="matrix"] .cursor-trail {
+  background: var(--green-neon) !important;
+  box-shadow: 0 0 10px var(--green-neon) !important;
+}
+
+/* Ensure cursor works everywhere */
+.cursor-main,
+.cursor-trail {
+  pointer-events: none !important;
+  z-index: var(--z-cursor) !important;
+}
+
+/* Layout Utility Classes */
+.hero-video-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 2s ease-in-out;
+  filter: none !important;
+  backdrop-filter: none !important;
+  mix-blend-mode: normal !important;
+  will-change: opacity !important;
+  animation: none !important;
+  perspective: none !important;
+  backface-visibility: visible !important;
+}
+
+.hero-video-container.active {
+  opacity: 1;
+}
+
+.hero-pagination {
+  position: absolute;
+  bottom: var(--space-8);
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: var(--space-2);
+}
+
+.hero-pagination-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.hero-pagination-dot.active {
+  background: var(--pink-main);
+}
+
+.hero-button-wrapper {
+  position: relative;
+  z-index: var(--z-hero-content);
+  pointer-events: auto;
+  user-select: none;
+}
+
+.section-intro-card {
+  margin-top: var(--space-8);
+  padding: var(--space-8);
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  border: 2px solid var(--cyan-accent);
+  max-width: 700px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.section-intro-text {
+  font-size: var(--font-size-xl);
+  line-height: var(--leading-relaxed);
+  color: rgba(255, 255, 255, 0.9);
+  text-align: center;
+}
+
+.stats-card {
+  text-align: center;
+  border: 2px solid var(--pink-main);
+}
+
+.stats-card.purple {
+  border-color: var(--purple-accent);
+}
+
+.stats-card.green {
+  border-color: var(--green-neon);
+}
+
+.stats-number {
+  color: var(--pink-main);
+  font-size: var(--font-size-6xl);
+  margin-bottom: var(--space-4);
+  font-weight: var(--font-bold);
+}
+
+.stats-number.purple {
+  color: var(--purple-accent);
+}
+
+.stats-number.green {
+  color: var(--green-neon);
+}
+
+.mission-section {
+  background: linear-gradient(45deg, rgba(255, 0, 150, 0.1), rgba(0, 255, 255, 0.1));
+  border-radius: 20px;
+  padding: var(--space-12);
+  border: 2px solid var(--pink-main);
+  text-align: center;
+  margin: var(--space-16) 0;
+}
+
+.mission-title {
+  color: var(--pink-main);
+  margin-bottom: var(--space-8);
+  font-size: var(--font-size-4xl);
+}
+
+.mission-text {
+  font-size: var(--font-size-xl);
+  line-height: var(--leading-loose);
+  color: rgba(255, 255, 255, 0.9);
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Empty State Styles */
+.empty-state {
+  text-align: center;
+  padding: var(--space-16) 0;
+}
+
+.empty-state-title {
+  color: var(--pink-main);
+  margin-bottom: var(--space-4);
+  font-size: var(--font-size-3xl);
+}
+
+.empty-state-subtitle {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--space-8);
+}
+
+/* Interactive Feature Cards */
+.feature-card {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 320px;
+  height: 320px;
+  padding: 1.5rem;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.feature-card:hover {
+  transform: translateY(-4px);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.06));
+}
+
+.feature-card-icon {
+  font-size: 3rem;
+  margin-bottom: var(--space-2);
+  transition: transform 0.3s ease;
+}
+
+.feature-card:hover .feature-card-icon {
+  transform: scale(1.1);
+}
+
+.feature-card-title {
+  margin-bottom: var(--space-3);
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.feature-card-description {
+  margin-bottom: var(--space-4);
+  color: rgba(255, 255, 255, 0.8);
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.4;
+  font-size: 0.95rem;
+  padding: 0 0.5rem;
+}
+
+/* Ensure button stays at bottom */
+.feature-card .add-to-cart-btn {
+  margin-top: auto;
+  position: relative;
+  z-index: 1;
+}
+
+/* Mobile adjustments for feature cards */
+@media (max-width: 768px) {
+  .feature-card {
+    min-height: 280px;
+    height: auto;
+    padding: 1.25rem;
+  }
+  
+  .feature-card-icon {
+    font-size: 2.5rem;
+  }
+  
+  .feature-card-title {
+    font-size: 1.1rem;
+  }
+  
+  .feature-card-description {
+    margin-bottom: var(--space-3);
+  }
+}
+
+@media (max-width: 480px) {
+  .feature-card {
+    min-height: 260px;
+    height: auto;
+    padding: 1rem;
+  }
+  
+  .feature-card-icon {
+    font-size: 2rem;
+    margin-bottom: var(--space-2);
+  }
+  
+  .feature-card-title {
+    font-size: 1rem;
+    margin-bottom: var(--space-2);
+  }
+  
+  .feature-card-description {
+    font-size: 0.9rem;
+    margin-bottom: var(--space-3);
+  }
+}
+
+/* Animations */
+/* Optimized gradient animation */
+@keyframes gradientShift {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0.5;
+  }
+}
+
+/* Enhanced Accessibility - Focus States */
+.filter-btn:focus-visible,
+.add-to-cart-btn:focus-visible,
+.nav-links button:focus-visible,
+.quantity-btn:focus-visible,
+.checkout-btn:focus-visible {
+  outline: 2px solid var(--cyan-accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px rgba(0, 245, 255, 0.2);
+}
+
+.product-card:focus-within {
+  border-color: var(--cyan-accent);
+  box-shadow: 
+    0 0 0 2px rgba(0, 245, 255, 0.3),
+    0 20px 48px rgba(255, 107, 157, 0.2);
+}
+
+/* Enhanced Typography for Better Readability */
+.product-info p,
+.cart-item-details p,
+.modal p {
+  line-height: var(--leading-relaxed);
+  color: rgba(255, 255, 255, 0.9);
+}
+
+/* Enhanced Loading States */
+.loading-shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 25%,
+    rgba(255, 107, 157, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* Enhanced Error States */
+.error-state {
+  border-color: var(--red-error) !important;
+  box-shadow: 0 0 0 2px rgba(255, 68, 68, 0.2) !important;
+}
+
+.error-text {
+  color: var(--red-error);
+  font-size: var(--font-size-sm);
+  margin-top: var(--space-1);
+  text-shadow: 0 0 4px rgba(255, 68, 68, 0.3);
+}
+
+/* Font Loading Optimization */
+@font-face {
+  font-family: 'Space Grotesk';
+  font-display: swap;
+  font-weight: 300 700;
+  src: url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-display: swap;
+  font-weight: 300 500;
+  src: url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&display=swap');
+}
+
+/* Cart Count Styles */
+.cart-count {
+  background: var(--pink-main);
+  color: white;
+  border-radius: 50%;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  margin-left: 0.5rem;
+  min-width: 18px;
+  height: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Matrix Mode Button Mobile Styles */
+.matrix-mode-btn {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.matrix-mode-btn:active {
+  background: rgba(57,255,20,0.3) !important;
+  transform: scale(0.95);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .hero-title {
+    font-size: 3rem;
+  }
+  
+  .hero-subtitle {
+    font-size: 1.2rem;
+  }
+  
+  .hero-button {
+    font-size: 1rem;
+    padding: 0.875rem 2rem;
+  }
+  
+  .products-grid {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 320px));
+    gap: var(--space-6);
+    justify-content: center !important;
+    justify-items: center !important;
+    place-content: center !important;
+  }
+  
+  .cards-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1.5rem;
+  }
+  
+  .section-title {
+    font-size: 2.5rem;
+  }
+  
+  .navigation {
+    width: 100vw;
+    left: -100vw;
+  }
+  
+  .navigation.active {
+    left: 0;
+  }
+  
+  .nav-toggle {
+    top: 1.5rem;
+    left: 1.5rem;
+    width: 48px;
+    height: 48px;
+    font-size: 1.3rem;
+    -webkit-tap-highlight-color: transparent;
+  }
+  
+  .cart-modal {
+    width: 100vw;
+    right: -100vw;
+  }
+  
+  .cart-modal.active {
+    right: 0;
+  }
+  
+  .wishlist-modal {
+    width: 100vw;
+    right: -100vw;
+  }
+  
+  .wishlist-modal.active {
+    right: 0;
+  }
+  
+  /* Checkout Page Mobile Fixes */
+  .checkout-container {
+    padding: 1rem !important;
+  }
+  
+  .checkout-grid {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  .checkout-sidebar {
+    order: -1 !important;
+    position: static !important;
+    width: 100% !important;
+    margin-bottom: 2rem !important;
+  }
+  
+  /* Form Mobile Optimization */
+  .form-input {
+    font-size: 16px !important; /* Prevents iOS zoom */
+    min-height: 44px !important;
+  }
+  
+  .form-button {
+    min-height: 44px !important;
+    width: 100% !important;
+    font-size: 1rem !important;
+  }
+  
+  /* Step Indicator Mobile */
+  .step-indicator {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.5rem !important;
+  }
+  
+  .step-item {
+    justify-content: center !important;
+  }
+  
+  /* Product Card Mobile Touch Targets */
+  .add-to-cart-btn {
+    min-height: 44px !important;
+    padding: 1rem !important;
+    font-size: 0.9rem !important;
+  }
+  
+  .quantity-btn {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+  
+  /* Footer Mobile Stacking */
+  .footer-grid {
+    grid-template-columns: 1fr !important;
+    text-align: center !important;
+    gap: 2rem !important;
+  }
+  
+  /* Floating Icons Mobile Position - keep in top-right like desktop */
+  .floating-cart-icons {
+    top: 20px !important;
+    right: 20px !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-content {
+    padding: 1rem;
+  }
+  
+  .products-section {
+    padding: 3rem 1rem;
+  }
+  
+  .filter-bar {
+    gap: 0.5rem;
+  }
+  
+  .filter-btn {
+    padding: var(--space-2) var(--space-4);
+    font-size: var(--font-size-xs);
+  }
+  
+  .products-grid {
+    grid-template-columns: repeat(auto-fit, minmax(250px, 280px));
+    gap: 1rem;
+    justify-content: center !important;
+    justify-items: center !important;
+    place-content: center !important;
+  }
+  
+  .product-info {
+    padding: var(--space-4);
+  }
+  
+  /* Enhanced mobile typography */
+  .product-title {
+    font-size: var(--font-size-lg);
+  }
+  
+  .product-price {
+    font-size: var(--font-size-xl);
+  }
+  
+  .cart-modal {
+    width: 300px;
+  }
+  
+  /* Product page mobile improvements */
+  .products-section {
+    padding: 2rem 1rem;
+  }
+  
+  .container {
+    padding: 0 0.5rem;
+  }
+  
+  /* Better spacing for product page grid on mobile */
+  .products-section .container[style*="grid"] {
+    gap: 1.5rem !important;
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Script Font Utility */
+.font-script {
+  font-family: 'Dancing Script', cursive;
+}
+
+.script-text {
+  font-family: 'Dancing Script', cursive;
+  font-weight: 600;
+}
+
+.script-heading {
+  font-family: 'Dancing Script', cursive;
+  font-weight: 700;
+}
