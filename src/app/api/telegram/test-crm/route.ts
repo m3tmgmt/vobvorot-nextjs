@@ -18,6 +18,11 @@ export async function POST(request: NextRequest) {
     const bot = new Bot(BOT_TOKEN)
     console.log('✅ [TEST-CRM] Bot created successfully')
     
+    // Инициализация бота
+    console.log('🔧 [TEST-CRM] Initializing bot...')
+    await bot.init()
+    console.log('✅ [TEST-CRM] Bot initialized successfully')
+    
     // Тест 2: Проверка Prisma
     console.log('🔧 [TEST-CRM] Creating Prisma client...')
     const prisma = new PrismaClient()

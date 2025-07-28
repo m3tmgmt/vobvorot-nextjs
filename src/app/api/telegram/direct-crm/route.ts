@@ -76,8 +76,9 @@ function getCategoriesMenu() {
 }
 
 // Функция создания бота с обработчиками
-function createBot() {
+async function createBot() {
   const bot = new Bot<MyContext>(BOT_TOKEN)
+  await bot.init()  // Инициализация бота
   const prisma = getPrismaClient()
 
   // Команда /start
@@ -545,7 +546,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Создаем бота для обработки запроса
-    const bot = createBot()
+    const bot = await createBot()
     await bot.handleUpdate(update)
     
     return NextResponse.json({ ok: true })
