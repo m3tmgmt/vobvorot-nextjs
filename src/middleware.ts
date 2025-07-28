@@ -2,8 +2,21 @@ import { NextRequest, NextResponse } from 'next/server'
 import { CSRFProtection } from '@/lib/csrf-protection'
 
 export async function middleware(request: NextRequest) {
-  // Применяем CSRF защиту только к API endpoints
-  if (request.nextUrl.pathname.startsWith('/api/')) {
+  const pathname = request.nextUrl.pathname
+  
+  // Исключаем Telegram webhook endpoints из CSRF проверки
+  const telegramEndpoints = [
+    '/api/telegram/webhook',
+    '/api/telegram/direct',
+    '/api/telegram/test-debug',
+    '/api/telegram/test-simple',
+    '/api/telegram/webhook-direct'
+  ]
+  
+  const isTelegramEndpoint = telegramEndpoints.some(endpoint => pathname.startsWith(endpoint))
+  
+  // Применяем CSRF защиту только к API endpoints, кроме Telegram
+  if (pathname.startsWith('/api/') && !isTelegramEndpoint) {
     const csrfCheck = await CSRFProtection.protectEndpoint(request)
     
     if (!csrfCheck.isValid) {
