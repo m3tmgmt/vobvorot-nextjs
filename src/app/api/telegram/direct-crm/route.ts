@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Bot, Context, InlineKeyboard } from 'grammy'
 import { PrismaClient } from '@prisma/client'
-import { logger } from '@/lib/logger'
 
 // Типы для контекста
 type MyContext = Context
@@ -538,7 +537,6 @@ export async function POST(request: NextRequest) {
     
   } catch (error) {
     console.error('💥 [DIRECT-CRM] Error:', error)
-    logger.error('Direct CRM webhook error', error)
     
     return NextResponse.json(
       { error: 'Internal server error' }, 
@@ -597,7 +595,7 @@ export async function GET(request: NextRequest) {
     }
     
   } catch (error) {
-    logger.error('Direct CRM webhook error', error)
+    console.error('Direct CRM webhook error', error)
     return NextResponse.json(
       { error: 'Failed to manage webhook' }, 
       { status: 500 }
