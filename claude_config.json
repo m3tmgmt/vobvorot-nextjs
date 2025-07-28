@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "resend": {
+      "command": "node",
+      "args": ["./mcp-resend-server.js"],
+      "cwd": "/Users/matty/exvicpmour-store/vobvorot-nextjs/"
+    }
+  }
+}

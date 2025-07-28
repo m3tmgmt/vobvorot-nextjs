@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>WesternBid Integration Test - VobVorot</title>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 100%);
+            color: #e0e0e0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+        .container {
+            text-align: center;
+            padding: 2rem;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+        }
+        .logo {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .order-info {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            text-align: left;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 0.5rem 0;
+            padding: 0.3rem 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .info-row:last-child {
+            border-bottom: none;
+            font-weight: bold;
+            font-size: 1.1rem;
+            color: #4ecdc4;
+        }
+        .payment-button {
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 1.5rem 0;
+            min-width: 280px;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+        }
+        .payment-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px rgba(0, 0, 0, 0.4);
+        }
+        .payment-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .security-notice {
+            color: #b0b0b0;
+            font-size: 0.9rem;
+            margin-top: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .debug-panel {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 1rem 0;
+            font-family: monospace;
+            font-size: 0.8rem;
+            text-align: left;
+        }
+        .debug-panel summary {
+            cursor: pointer;
+            padding: 0.5rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+        }
+        .back-link {
+            color: #4ecdc4;
+            text-decoration: none;
+            margin-top: 1rem;
+            display: inline-block;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">VobVorot</div>
+        <h2 style="margin: 1rem 0; color: #fff;">Complete Your Payment</h2>
+        
+        <div class="order-info">
+            <div class="info-row">
+                <span>Order ID:</span>
+                <span><strong>TEST-ORDER-123</strong></span>
+            </div>
+            <div class="info-row">
+                <span>Amount:</span>
+                <span><strong>$99.99</strong></span>
+            </div>
+            <div class="info-row">
+                <span>Payment Method:</span>
+                <span><strong>WesternBid</strong></span>
+            </div>
+        </div>
+        
+        <form id="westernbid-form" action="https://shop.westernbid.info" method="post">
+            <input type="hidden" name="wb_login" value="159008" />
+            <input type="hidden" name="charset" value="utf-8" />
+            <input type="hidden" name="wb_order_id" value="wb_1749839281234_TEST-ORDER-123" />
+            <input type="hidden" name="wb_amount" value="99.99" />
+            <input type="hidden" name="wb_description" value="Order TEST-ORDER-123 - VobVorot Store" />
+            <input type="hidden" name="wb_currency" value="USD" />
+            <input type="hidden" name="wb_success_url" value="https://vobvorot.com/payment/success" />
+            <input type="hidden" name="wb_fail_url" value="https://vobvorot.com/payment/fail" />
+            <input type="hidden" name="wb_result_url" value="https://vobvorot.com/api/webhooks/westernbid" />
+            <input type="hidden" name="wb_result_method" value="POST" />
+            <input type="hidden" name="email" value="test@vobvorot.com" />
+            <input type="hidden" name="phone" value="+380990007099" />
+            <input type="hidden" name="first_name" value="Test" />
+            <input type="hidden" name="last_name" value="User" />
+            <input type="hidden" name="shipping" value="0" />
+            <input type="hidden" name="wb_hash" value="" id="wb_hash" />
+            
+            <button type="submit" class="payment-button" id="payment-btn">
+                🔒 Proceed to Secure Payment
+            </button>
+        </form>
+        
+        <div class="security-notice">
+            🛡️ You will be redirected to WesternBid secure payment gateway
+        </div>
+        
+        <div class="debug-panel">
+            <details>
+                <summary>🔧 Technical Details</summary>
+                <pre style="margin: 0.5rem 0; font-size: 0.7rem; overflow-x: auto;" id="debug-info">
+Payment ID: wb_1749839281234_TEST-ORDER-123
+Merchant: 159008
+Hash: [Generated via JavaScript]
+Target: https://shop.westernbid.info
+
+Form Data:
+  wb_login: 159008
+  charset: utf-8
+  wb_order_id: wb_1749839281234_TEST-ORDER-123
+  wb_amount: 99.99
+  wb_description: Order TEST-ORDER-123 - VobVorot Store
+  wb_currency: USD
+  wb_success_url: https://vobvorot.com/payment/success
+  wb_fail_url: https://vobvorot.com/payment/fail
+  wb_result_url: https://vobvorot.com/api/webhooks/westernbid
+  wb_result_method: POST
+  email: test@vobvorot.com
+  phone: +380990007099
+  first_name: Test
+  last_name: User
+  shipping: 0
+  wb_hash: [Will be calculated]
+                </pre>
+            </details>
+        </div>
+        
+        <a href="https://vobvorot.com" class="back-link">← Back to VobVorot Store</a>
+    </div>
+
+    <script>
+        // MD5 hash function (simple implementation for testing)
+        function md5(d) {
+            function M(r, o) {
+                return o << r | o >>> 32 - r
+            }
+            function A(d, r, o, i, n, e) {
+                return M(r + M(M(d, o) + M(i, e)), n)
+            }
+            function z(d, r, o, i, n, e, t) {
+                return A(r & o | ~r & i, d, r, n, e, t)
+            }
+            function C(d, r, o, i, n, e, t) {
+                return A(r & i | o & ~i, d, r, n, e, t)
+            }
+            function g(d, r, o, i, n, e, t) {
+                return A(r ^ o ^ i, d, r, n, e, t)
+            }
+            function H(d, r, o, i, n, e, t) {
+                return A(o ^ (r | ~i), d, r, n, e, t)
+            }
+            function X(d, r) {
+                let o = d[0], i = d[1], n = d[2], e = d[3];
+                o = z(o, i, n, e, r[0], 7, -680876936);
+                e = z(e, o, i, n, r[1], 12, -389564586);
+                n = z(n, e, o, i, r[2], 17, 606105819);
+                i = z(i, n, e, o, r[3], 22, -1044525330);
+                o = z(o, i, n, e, r[4], 7, -176418897);
+                e = z(e, o, i, n, r[5], 12, 1200080426);
+                n = z(n, e, o, i, r[6], 17, -1473231341);
+                i = z(i, n, e, o, r[7], 22, -45705983);
+                o = z(o, i, n, e, r[8], 7, 1770035416);
+                e = z(e, o, i, n, r[9], 12, -1958414417);
+                n = z(n, e, o, i, r[10], 17, -42063);
+                i = z(i, n, e, o, r[11], 22, -1990404162);
+                o = z(o, i, n, e, r[12], 7, 1804603682);
+                e = z(e, o, i, n, r[13], 12, -40341101);
+                n = z(n, e, o, i, r[14], 17, -1502002290);
+                i = z(i, n, e, o, r[15], 22, 1236535329);
+                o = C(o, i, n, e, r[1], 5, -165796510);
+                e = C(e, o, i, n, r[6], 9, -1069501632);
+                n = C(n, e, o, i, r[11], 14, 643717713);
+                i = C(i, n, e, o, r[0], 20, -373897302);
+                o = C(o, i, n, e, r[5], 5, -701558691);
+                e = C(e, o, i, n, r[10], 9, 38016083);
+                n = C(n, e, o, i, r[15], 14, -660478335);
+                i = C(i, n, e, o, r[4], 20, -405537848);
+                o = C(o, i, n, e, r[9], 5, 568446438);
+                e = C(e, o, i, n, r[14], 9, -1019803690);
+                n = C(n, e, o, i, r[3], 14, -187363961);
+                i = C(i, n, e, o, r[8], 20, 1163531501);
+                o = C(o, i, n, e, r[13], 5, -1444681467);
+                e = C(e, o, i, n, r[2], 9, -51403784);
+                n = C(n, e, o, i, r[7], 14, 1735328473);
+                i = C(i, n, e, o, r[12], 20, -1926607734);
+                o = g(o, i, n, e, r[5], 4, -378558);
+                e = g(e, o, i, n, r[8], 11, -2022574463);
+                n = g(n, e, o, i, r[11], 16, 1839030562);
+                i = g(i, n, e, o, r[14], 23, -35309556);
+                o = g(o, i, n, e, r[1], 4, -1530992060);
+                e = g(e, o, i, n, r[4], 11, 1272893353);
+                n = g(n, e, o, i, r[7], 16, -155497632);
+                i = g(i, n, e, o, r[10], 23, -1094730640);
+                o = g(o, i, n, e, r[13], 4, 681279174);
+                e = g(e, o, i, n, r[0], 11, -358537222);
+                n = g(n, e, o, i, r[3], 16, -722521979);
+                i = g(i, n, e, o, r[6], 23, 76029189);
+                o = g(o, i, n, e, r[9], 4, -640364487);
+                e = g(e, o, i, n, r[12], 11, -421815835);
+                n = g(n, e, o, i, r[15], 16, 530742520);
+                i = g(i, n, e, o, r[2], 23, -995338651);
+                o = H(o, i, n, e, r[0], 6, -198630844);
+                e = H(e, o, i, n, r[7], 10, 1126891415);
+                n = H(n, e, o, i, r[14], 15, -1416354905);
+                i = H(i, n, e, o, r[5], 21, -57434055);
+                o = H(o, i, n, e, r[12], 6, 1700485571);
+                e = H(e, o, i, n, r[3], 10, -1894986606);
+                n = H(n, e, o, i, r[10], 15, -1051523);
+                i = H(i, n, e, o, r[1], 21, -2054922799);
+                o = H(o, i, n, e, r[8], 6, 1873313359);
+                e = H(e, o, i, n, r[15], 10, -30611744);
+                n = H(n, e, o, i, r[6], 15, -1560198380);
+                i = H(i, n, e, o, r[13], 21, 1309151649);
+                o = H(o, i, n, e, r[4], 6, -145523070);
+                e = H(e, o, i, n, r[11], 10, -1120210379);
+                n = H(n, e, o, i, r[2], 15, 718787259);
+                i = H(i, n, e, o, r[9], 21, -343485551);
+                d[0] = A(o, d[0]);
+                d[1] = A(i, d[1]);
+                d[2] = A(n, d[2]);
+                d[3] = A(e, d[3])
+            }
+            function m(d) {
+                let r = [], o = d.length * 8;
+                for (let t = 0; t < o; t += 8) r[t >> 5] |= (255 & d.charCodeAt(t / 8)) << t % 32;
+                return r
+            }
+            function f(d) {
+                let r = "";
+                for (let o = 0; o < 32 * d.length; o += 8) r += String.fromCharCode(d[o >> 5] >>> o % 32 & 255);
+                return r
+            }
+            function c(d) {
+                let r = "0123456789abcdef", o = "";
+                for (let i = 0; i < d.length; i++) {
+                    let n = d.charCodeAt(i);
+                    o += r.charAt(n >>> 4 & 15) + r.charAt(15 & n)
+                }
+                return o
+            }
+            function h(d) {
+                return unescape(encodeURIComponent(d))
+            }
+            function b(d) {
+                return f(function s(d) {
+                    let r = [1732584193, -271733879, -1732584194, 271733878];
+                    for (let o = 0; o < d.length; o += 16) X(r, d.slice(o, o + 16));
+                    return r
+                }(function y(d, r) {
+                    d[r >> 5] |= 128 << r % 32;
+                    d[14 + (r + 64 >>> 9 << 4)] = r;
+                    return d
+                }(m(d), d.length * 8)))
+            }
+            return c(b(h(d)))
+        }
+
+        console.log('WesternBid test page loaded');
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('westernbid-form');
+            const button = document.getElementById('payment-btn');
+            const hashField = document.getElementById('wb_hash');
+            
+            // Generate hash using WesternBid algorithm
+            const formData = {
+                charset: 'utf-8',
+                email: 'test@vobvorot.com',
+                first_name: 'Test',
+                last_name: 'User',
+                phone: '+380990007099',
+                shipping: '0',
+                wb_amount: '99.99',
+                wb_currency: 'USD',
+                wb_description: 'Order TEST-ORDER-123 - VobVorot Store',
+                wb_fail_url: 'https://vobvorot.com/payment/fail',
+                wb_login: '159008',
+                wb_order_id: 'wb_1749839281234_TEST-ORDER-123',
+                wb_result_method: 'POST',
+                wb_result_url: 'https://vobvorot.com/api/webhooks/westernbid',
+                wb_success_url: 'https://vobvorot.com/payment/success'
+            };
+            
+            // Sort keys and create hash string
+            const sortedKeys = Object.keys(formData).sort();
+            const hashString = sortedKeys
+                .map(key => `${key}=${formData[key]}`)
+                .join('&') + '&oVsVCgu';
+            
+            const hash = md5(hashString);
+            hashField.value = hash;
+            
+            console.log('Hash string:', hashString);
+            console.log('Generated hash:', hash);
+            
+            // Update debug info
+            document.getElementById('debug-info').innerHTML = `
+Payment ID: wb_1749839281234_TEST-ORDER-123
+Merchant: 159008
+Hash: ${hash}
+Target: https://shop.westernbid.info
+
+Hash Calculation:
+Input: ${hashString}
+MD5: ${hash}
+
+Form Data:
+${Object.entries(formData)
+  .map(([key, value]) => `  ${key}: ${value}`)
+  .join('\n')}
+  wb_hash: ${hash}
+            `;
+            
+            if (form && button) {
+                button.addEventListener('click', function(e) {
+                    console.log('Payment button clicked - submitting to WesternBid');
+                    console.log('Hash being sent:', hash);
+                    
+                    // Add loading state
+                    button.innerHTML = '⏳ Redirecting to Payment Gateway...';
+                    button.disabled = true;
+                    
+                    // Form will submit normally
+                    console.log('Form submission proceeding to:', form.action);
+                });
+                
+                console.log('✅ WesternBid test form ready');
+            } else {
+                console.error('❌ Form or button not found');
+            }
+        });
+    </script>
+</body>
+</html>

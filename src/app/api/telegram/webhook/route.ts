@@ -18,16 +18,15 @@ export async function POST(request: NextRequest) {
       secretMatch: secretToken === expectedToken
     })
     
-    // Временно отключаем проверку для отладки
-    // if (expectedToken && secretToken !== expectedToken) {
-    //   console.log('❌ [WEBHOOK] Unauthorized attempt')
-    //   logger.security('Unauthorized Telegram webhook attempt', { 
-    //     hasSecretToken: !!secretToken, 
-    //     hasExpectedToken: !!expectedToken,
-    //     ip: request.headers.get('x-forwarded-for') || 'unknown'
-    //   })
-    //   return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-    // }
+    if (expectedToken && secretToken !== expectedToken) {
+      console.log('❌ [WEBHOOK] Unauthorized attempt')
+      logger.security('Unauthorized Telegram webhook attempt', { 
+        hasSecretToken: !!secretToken, 
+        hasExpectedToken: !!expectedToken,
+        ip: request.headers.get('x-forwarded-for') || 'unknown'
+      })
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
 
     console.log('✅ [WEBHOOK] Auth passed, parsing JSON...')
     

@@ -1,0 +1,518 @@
+// This is an updated schema file that includes the Customer model
+// Copy the content below into your schema.prisma file after backing up the original
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
+}
+
+model User {
+  id               String         @id @default(cuid())
+  email            String         @unique
+  emailVerified    DateTime?
+  name             String?
+  password         String?
+  image            String?
+  role             Role           @default(USER)
+  firstName        String?
+  lastName         String?
+  phone            String?
+  dateOfBirth      DateTime?
+  gender           String?
+  newsletter       Boolean        @default(false)
+  language         String?        @default("en")
+  timezone         String?
+  isActive         Boolean        @default(true)
+  lastLoginAt      DateTime?
+  resetToken       String?
+  resetTokenExpiry DateTime?
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  accounts         Account[]
+  futureLetters    FutureLetter[]
+  orders           Order[]
+  reviews          Review[]
+  sessions         Session[]
+  addresses        UserAddress[]
+  wishlist         WishlistItem[]
+
+  @@index([email])
+  @@index([role])
+  @@index([isActive])
+  @@map("users")
+}
+
+// NEW: Customer model for CRM functionality
+model Customer {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  name          String?
+  phone         String?
+  telegramId    String?        @unique
+  totalSpent    Decimal        @default(0) @db.Decimal(10, 2)
+  orderCount    Int            @default(0)
+  tags          String[]       @default([])
+  notes         String[]       @default([])
+  status        CustomerStatus @default(ACTIVE)
+  lastOrderDate DateTime?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  orders        Order[]
+
+  @@index([email])
+  @@index([telegramId])
+  @@index([status])
+  @@map("customers")
+}
+
+// NEW: Telegram session persistence
+model TelegramSession {
+  id        String    @id @default(cuid())
+  key       String    @unique
+  data      Json
+  expiresAt DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([key])
+  @@index([expiresAt])
+  @@map("telegram_sessions")
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+model Category {
+  id          String     @id @default(cuid())
+  name        String
+  slug        String     @unique
+  description String?
+  emoji       String?
+  parentId    String?
+  imageUrl    String?
+  isActive    Boolean    @default(true)
+  sortOrder   Int?       @default(0)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  parent      Category?  @relation("CategoryParent", fields: [parentId], references: [id])
+  children    Category[] @relation("CategoryParent")
+  products    Product[]
+
+  @@index([parentId])
+  @@index([slug])
+  @@index([isActive])
+  @@index([sortOrder])
+  @@map("categories")
+}
+
+model Product {
+  id              String         @id @default(cuid())
+  name            String
+  slug            String         @unique
+  description     String?
+  brand           String?
+  categoryId      String
+  metaTitle       String?
+  metaDescription String?
+  videoUrl        String?
+  isActive        Boolean        @default(true)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+  images          ProductImage[]
+  skus            ProductSku[]
+  category        Category       @relation(fields: [categoryId], references: [id])
+  reviews         Review[]
+  wishlist        WishlistItem[]
+
+  @@index([categoryId])
+  @@index([slug])
+  @@index([brand])
+  @@index([isActive])
+  @@index([createdAt])
+  @@index([name])
+  @@index([description])
+  @@map("products")
+}
+
+model ProductImage {
+  id            String   @id @default(cuid())
+  url           String
+  alt           String?
+  isPrimary     Boolean  @default(false)
+  productId     String
+  cloudinaryId  String?
+  cloudinaryUrl String?
+  width         Int?
+  height        Int?
+  format        String?
+  size          BigInt?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([isPrimary])
+  @@map("product_images")
+}
+
+model ProductSku {
+  id                String             @id @default(cuid())
+  sku               String             @unique
+  size              String?
+  color             String?
+  price             Decimal            @db.Decimal(10, 2)
+  compareAtPrice    Decimal?           @db.Decimal(10, 2)
+  stock             Int                @default(0)
+  reservedStock     Int                @default(0)
+  lowStockThreshold Int?               @default(5)
+  productId         String
+  isActive          Boolean            @default(true)
+  weight            Decimal?           @db.Decimal(8, 3)
+  dimensions        String?
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  orderItems        OrderItem[]
+  reservations      StockReservation[]
+  product           Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([sku])
+  @@index([isActive])
+  @@index([stock])
+  @@map("product_skus")
+}
+
+model StockReservation {
+  id        String            @id @default(cuid())
+  skuId     String
+  quantity  Int
+  orderId   String?
+  expiresAt DateTime
+  status    ReservationStatus
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  sku       ProductSku        @relation(fields: [skuId], references: [id], onDelete: Cascade)
+  order     Order?            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([skuId])
+  @@index([orderId])
+  @@index([expiresAt])
+  @@map("stock_reservations")
+}
+
+model Order {
+  id               String             @id @default(cuid())
+  orderNumber      String             @unique
+  userId           String?
+  customerId       String? // NEW: Link to Customer
+  status           OrderStatus        @default(PENDING)
+  shippingName     String
+  shippingEmail    String
+  shippingPhone    String?
+  shippingAddress  String
+  shippingCity     String
+  shippingState    String?
+  shippingCountry  String
+  shippingZip      String
+  subtotal         Decimal            @db.Decimal(10, 2)
+  tax              Decimal            @default(0) @db.Decimal(10, 2)
+  shippingCost     Decimal            @db.Decimal(10, 2)
+  discount         Decimal            @default(0) @db.Decimal(10, 2)
+  total            Decimal            @db.Decimal(10, 2)
+  currency         String             @default("USD")
+  paymentMethod    String?
+  paymentStatus    PaymentStatus      @default(PENDING)
+  paymentId        String?
+  transactionId    String?
+  paidAt           DateTime?
+  failureReason    String?
+  refundedAt       DateTime?
+  refundAmount     Decimal?           @db.Decimal(10, 2)
+  refundId         String?
+  refundStatus     String?
+  refundReason     String?
+  sessionId        String?
+  trackingNumber   String?
+  notes            String?
+  internalNotes    String?
+  actualPayerEmail String?
+  actualPayerName  String?
+  payerMetadata    String?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  refundedBy       String?
+  orderType        OrderType          @default(PRODUCT)
+  items            OrderItem[]
+  orderLogs        OrderLog[]
+  reservations     StockReservation[]
+  user             User?              @relation(fields: [userId], references: [id])
+  customer         Customer?          @relation(fields: [customerId], references: [id]) // NEW
+  payment          Payment?
+  signOrder        SignOrder?
+
+  @@index([userId])
+  @@index([customerId]) // NEW
+  @@index([orderNumber])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([transactionId])
+  @@index([sessionId])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id          String     @id @default(cuid())
+  orderId     String
+  skuId       String
+  quantity    Int
+  price       Decimal    @db.Decimal(10, 2)
+  productName String
+  productSku  String
+  order       Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sku         ProductSku @relation(fields: [skuId], references: [id])
+
+  @@index([orderId])
+  @@index([skuId])
+  @@map("order_items")
+}
+
+model Payment {
+  id           String        @id @default(cuid())
+  orderId      String        @unique
+  paymentId    String?
+  amount       Decimal       @db.Decimal(10, 2)
+  currency     String        @default("USD")
+  status       PaymentStatus @default(PENDING)
+  method       String?
+  gatewayData  Json?
+  refundId     String?
+  refundAmount Decimal?      @db.Decimal(10, 2)
+  refundReason String?
+  refundedAt   DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  order        Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([paymentId])
+  @@index([status])
+  @@index([refundId])
+  @@map("payments")
+}
+
+model OrderLog {
+  id        String   @id @default(cuid())
+  orderId   String
+  action    String
+  details   Json?
+  userId    String?
+  createdAt DateTime @default(now())
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("order_logs")
+}
+
+model SignOrder {
+  id          String    @id @default(cuid())
+  orderId     String    @unique
+  signName    String
+  extraNotes  String?
+  photoUrl    String?
+  deliveredAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("sign_orders")
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  rating    Int
+  title     String?
+  comment   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, productId])
+  @@map("reviews")
+}
+
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  createdAt DateTime @default(now())
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, productId])
+  @@map("wishlist_items")
+}
+
+model UserAddress {
+  id        String      @id @default(cuid())
+  userId    String
+  type      AddressType @default(SHIPPING)
+  firstName String
+  lastName  String
+  company   String?
+  address1  String
+  address2  String?
+  city      String
+  state     String?
+  country   String
+  zipCode   String
+  phone     String?
+  isDefault Boolean     @default(false)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+  user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@map("user_addresses")
+}
+
+model FutureLetter {
+  id             String             @id @default(cuid())
+  userId         String?
+  senderEmail    String
+  senderName     String?
+  recipientEmail String?
+  subject        String?
+  message        String
+  deliveryDate   DateTime
+  status         FutureLetterStatus @default(PENDING)
+  deliveredAt    DateTime?
+  failureReason  String?
+  isAnonymous    Boolean            @default(false)
+  metadata       Json?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  user           User?              @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([senderEmail])
+  @@index([deliveryDate])
+  @@index([status])
+  @@index([createdAt])
+  @@map("future_letters")
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("settings")
+}
+
+// ENUMS
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  VIP
+  BLOCKED
+}
+
+enum FutureLetterStatus {
+  PENDING
+  SCHEDULED
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+enum AddressType {
+  SHIPPING
+  BILLING
+}
+
+enum Role {
+  USER
+  ADMIN
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+  PARTIALLY_REFUNDED
+}
+
+enum OrderType {
+  PRODUCT
+  SIGN_PHOTO
+}
+
+enum ReservationStatus {
+  ACTIVE
+  EXPIRED
+  CONFIRMED
+  CANCELLED
+}
