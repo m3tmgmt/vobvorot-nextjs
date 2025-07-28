@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { bot } from '@/lib/telegram-bot'
+import { logger } from '@/lib/logger'
 
 // Полная версия webhook с CRM функциональностью
 
