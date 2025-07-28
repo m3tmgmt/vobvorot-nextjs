@@ -25,7 +25,10 @@ type MyContext = Context & {
 
 // Проверка обязательных переменных окружения
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-const ADMIN_IDS = process.env.TELEGRAM_OWNER_CHAT_ID?.split(',') || []
+const ADMIN_IDS = process.env.TELEGRAM_OWNER_CHAT_ID
+  ?.split(',')
+  .map(id => id.trim().replace(/[\r\n\s]/g, ''))
+  .filter(id => id.length > 0) || []
 
 console.log('🔍 [BOT INIT] Environment check:')
 console.log(`  - BOT_TOKEN exists: ${!!BOT_TOKEN}`)

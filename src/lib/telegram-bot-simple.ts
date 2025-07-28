@@ -4,7 +4,10 @@ console.log('🚀 [INIT] Starting Simple VobvorotAdminBot initialization...')
 
 // Проверяем переменные окружения
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
-const ADMIN_IDS = process.env.TELEGRAM_OWNER_CHAT_ID?.trim().split(',').map(id => id.trim()) || []
+const ADMIN_IDS = process.env.TELEGRAM_OWNER_CHAT_ID
+  ?.split(',')
+  .map(id => id.trim().replace(/[\r\n\s]/g, ''))
+  .filter(id => id.length > 0) || []
 
 console.log('🔍 [INIT] Environment check:')
 console.log(`🔑 [INIT] Bot token exists: ${!!BOT_TOKEN}`)
