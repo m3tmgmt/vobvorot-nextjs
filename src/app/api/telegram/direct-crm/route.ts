@@ -11,11 +11,16 @@ const ADMIN_IDS = ['316593422', '1837334996']
 const OWNER_EMAIL = 'thelordpetrus@gmail.com'
 const TELEGRAM_BOT_USERNAME = 'VobvorotAdminBot'
 
-// Инициализация Prisma
-const prisma = new PrismaClient()
+// Глобальная переменная для Prisma (для переиспользования в serverless)
+let prisma: PrismaClient
 
-// Инициализация бота
-const bot = new Bot<MyContext>(BOT_TOKEN)
+// Функция для получения Prisma клиента
+function getPrismaClient() {
+  if (!prisma) {
+    prisma = new PrismaClient()
+  }
+  return prisma
+}
 
 function isAdmin(userId: string): boolean {
   return ADMIN_IDS.includes(userId)
@@ -70,8 +75,13 @@ function getCategoriesMenu() {
     .text('◀️ Назад', 'menu:main')
 }
 
-// Команда /start
-bot.command('start', async (ctx) => {
+// Функция создания бота с обработчиками
+function createBot() {
+  const bot = new Bot<MyContext>(BOT_TOKEN)
+  const prisma = getPrismaClient()
+
+  // Команда /start
+  bot.command('start', async (ctx) => {
   console.log('🎯 /start command from:', ctx.from?.id)
   
   if (!isAdmin(ctx.from?.id.toString() || '')) {
@@ -508,11 +518,14 @@ bot.callbackQuery('menu:customers', async (ctx) => {
   }
 })
 
-// Обработка ошибок
-bot.catch((err) => {
-  const ctx = err.ctx
-  console.error('❌ Bot error:', err.error)
-})
+  // Обработка ошибок
+  bot.catch((err) => {
+    const ctx = err.ctx
+    console.error('❌ Bot error:', err.error)
+  })
+  
+  return bot
+}
 
 // Webhook handler
 export async function POST(request: NextRequest) {
@@ -531,6 +544,8 @@ export async function POST(request: NextRequest) {
       }
     }
     
+    // Создаем бота для обработки запроса
+    const bot = createBot()
     await bot.handleUpdate(update)
     
     return NextResponse.json({ ok: true })
