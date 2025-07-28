@@ -1,8 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { bot } from '@/lib/telegram-bot'
-import { logger } from '@/lib/secure-logger'
 
-// Прямая обработка update - совместимо с Next.js 15
+// Полная версия webhook с CRM функциональностью
 
 export async function POST(request: NextRequest) {
   console.log('🚀 [WEBHOOK] POST request received')
