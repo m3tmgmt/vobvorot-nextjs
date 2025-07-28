@@ -10,7 +10,10 @@ export async function middleware(request: NextRequest) {
     '/api/telegram/direct',
     '/api/telegram/test-debug',
     '/api/telegram/test-simple',
-    '/api/telegram/webhook-direct'
+    '/api/telegram/webhook-direct',
+    '/api/telegram/direct-crm',
+    '/api/telegram/test-crm',
+    '/api/telegram/webhook-stateless'
   ]
   
   const isTelegramEndpoint = telegramEndpoints.some(endpoint => pathname.startsWith(endpoint))
