@@ -1,7 +1,11 @@
+console.log('🔄 [BOT INIT] Loading telegram-bot.ts module...')
+
 import { Bot, Context, session, GrammyError, HttpError } from 'grammy'
 import { conversations, createConversation } from '@grammyjs/conversations'
 import { Menu } from '@grammyjs/menu'
 import { cloudinaryService } from './cloudinary'
+
+console.log('✅ [BOT INIT] Imports completed')
 
 // Типы для контекста
 interface SessionData {
@@ -23,11 +27,19 @@ type MyContext = Context & {
 const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN
 const ADMIN_IDS = process.env.TELEGRAM_OWNER_CHAT_ID?.split(',') || []
 
+console.log('🔍 [BOT INIT] Environment check:')
+console.log(`  - BOT_TOKEN exists: ${!!BOT_TOKEN}`)
+console.log(`  - BOT_TOKEN length: ${BOT_TOKEN?.length || 0}`)
+console.log(`  - ADMIN_IDS: ${JSON.stringify(ADMIN_IDS)}`)
+console.log(`  - NEXTAUTH_URL: ${process.env.NEXTAUTH_URL}`)
+
 if (!BOT_TOKEN) {
+  console.error('❌ [BOT INIT] TELEGRAM_BOT_TOKEN is missing!')
   throw new Error('TELEGRAM_BOT_TOKEN is required in environment variables')
 }
 
 if (ADMIN_IDS.length === 0) {
+  console.error('❌ [BOT INIT] TELEGRAM_OWNER_CHAT_ID is missing!')
   throw new Error('TELEGRAM_OWNER_CHAT_ID is required in environment variables')
 }
 
@@ -44,13 +56,17 @@ const botInfo = {
   has_main_web_app: false
 }
 
+console.log('🤖 [BOT INIT] Creating bot instance...')
 const bot = new Bot<MyContext>(BOT_TOKEN, { 
   botInfo: botInfo 
 })
+console.log('✅ [BOT INIT] Bot instance created successfully')
 
 // Сессии и конверсации
+console.log('🔧 [BOT INIT] Setting up sessions and conversations...')
 bot.use(session({ initial: (): SessionData => ({}) }))
 bot.use(conversations())
+console.log('✅ [BOT INIT] Sessions and conversations configured')
 
 function isAdmin(ctx: MyContext): boolean {
   return ADMIN_IDS.includes(ctx.from?.id.toString() || '')
@@ -91,10 +107,17 @@ bot.on('message:text', async (ctx) => {
 
 // Старт бота
 bot.command('start', async (ctx) => {
+  console.log('🚀 [BOT] /start command received')
+  console.log(`👤 [BOT] User: ${ctx.from?.id} (@${ctx.from?.username})`)
+  console.log(`🔐 [BOT] Admin check: ${ctx.from?.id} in ${JSON.stringify(ADMIN_IDS)}`)
+  
   if (!isAdmin(ctx)) {
+    console.log('❌ [BOT] Access denied for user:', ctx.from?.id)
     await ctx.reply('❌ У вас нет доступа к этому боту.')
     return
   }
+  
+  console.log('✅ [BOT] Admin access granted')
 
   await ctx.reply(
     '🚀 *VobVorot Store Management*\n\n' +
@@ -1844,4 +1867,5 @@ async function updateProductField(ctx: MyContext, productId: string, field: stri
   }
 }
 
+console.log('🎯 [BOT INIT] Bot module loaded successfully, exporting bot instance...')
 export { bot }

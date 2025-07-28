@@ -5,8 +5,11 @@ import { logger } from '@/lib/secure-logger'
 // Прямая обработка update - совместимо с Next.js 15
 
 export async function POST(request: NextRequest) {
+  console.log('🚀 [WEBHOOK] POST request received')
+  
   try {
     console.log('🤖 [WEBHOOK] Starting webhook processing...')
+    console.log('🔍 [WEBHOOK] Headers:', Object.fromEntries(request.headers.entries()))
     
     // Временно отключаем проверку секретного токена для отладки
     // TODO: Восстановить проверку после исправления проблемы с токеном
@@ -18,12 +21,23 @@ export async function POST(request: NextRequest) {
     const update = await request.json()
     console.log('📨 [WEBHOOK] Update received:', JSON.stringify(update, null, 2))
     
-    console.log('🎯 [WEBHOOK] Calling bot.handleUpdate directly...')
+    // Проверяем наличие бота
+    console.log('🤖 [WEBHOOK] Bot instance exists:', !!bot)
+    console.log('🤖 [WEBHOOK] Bot token exists:', !!process.env.TELEGRAM_BOT_TOKEN)
+    console.log('🤖 [WEBHOOK] Admin IDs:', process.env.TELEGRAM_OWNER_CHAT_ID)
     
-    // Обрабатываем update напрямую через Grammy bot (Next.js 15 compatible)
-    await bot.handleUpdate(update)
-    
-    console.log('✅ [WEBHOOK] bot.handleUpdate completed successfully')
+    try {
+      console.log('🎯 [WEBHOOK] Calling bot.handleUpdate directly...')
+      
+      // Обрабатываем update напрямую через Grammy bot (Next.js 15 compatible)
+      await bot.handleUpdate(update)
+      
+      console.log('✅ [WEBHOOK] bot.handleUpdate completed successfully')
+    } catch (botError) {
+      console.error('❌ [WEBHOOK] Bot handling error:', botError)
+      console.error('❌ [WEBHOOK] Error stack:', botError instanceof Error ? botError.stack : 'No stack')
+      throw botError
+    }
     
     return NextResponse.json({ ok: true })
     
