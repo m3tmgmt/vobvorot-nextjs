@@ -569,7 +569,7 @@ export async function GET(request: NextRequest) {
     
     if (action === 'set') {
       // Устанавливаем webhook
-      const webhookUrl = `${process.env.NEXTAUTH_URL || 'https://vobvorot.com'}/api/telegram/direct-crm`
+      const webhookUrl = 'https://vobvorot.com/api/telegram/direct-crm'
       const secretToken = 'vobvorot_webhook_secret_2025'
       
       const response = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/setWebhook`, {
