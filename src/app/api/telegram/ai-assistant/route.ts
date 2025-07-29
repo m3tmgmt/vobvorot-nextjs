@@ -1318,31 +1318,17 @@ async function handleCleanupLogs(ctx: any, params: any) {
 // Webhook handler
 export async function POST(req: NextRequest) {
   try {
-    // Проверка secret token
-    // Telegram отправляет header в lowercase
-    const secretToken = req.headers.get('x-telegram-bot-api-secret-token')
-    const expectedToken = process.env.TELEGRAM_WEBHOOK_SECRET?.trim() || 'vobvorot_webhook_secret_2025'
-    
-    // Debug logging
     console.log('Webhook request received')
-    console.log('Received token:', secretToken)
-    console.log('Expected token from env:', process.env.TELEGRAM_WEBHOOK_SECRET)
-    console.log('Expected token (final):', expectedToken)
-    console.log('Tokens match:', secretToken === expectedToken)
-    
-    // Проверка токена - убираем лишние пробелы и кавычки
-    const cleanSecretToken = secretToken?.trim().replace(/^["']|["']$/g, '')
-    const cleanExpectedToken = expectedToken.trim().replace(/^["']|["']$/g, '')
-    
-    if (cleanSecretToken !== cleanExpectedToken) {
-      console.error('Token mismatch after cleaning')
-      console.error('Clean received:', cleanSecretToken)
-      console.error('Clean expected:', cleanExpectedToken)
-      return new Response('Unauthorized', { status: 401 })
-    }
     
     const bot = await createBot()
-    const handleUpdate = webhookCallback(bot, 'std/http')
+    
+    // Grammy webhookCallback обрабатывает secret token автоматически
+    // Передаем secret token в опции webhookCallback
+    const secretToken = process.env.TELEGRAM_WEBHOOK_SECRET?.trim() || 'vobvorot_webhook_secret_2025'
+    const handleUpdate = webhookCallback(bot, 'std/http', {
+      secretToken: secretToken
+    })
+    
     return handleUpdate(req)
   } catch (error) {
     console.error('Webhook error:', error)
