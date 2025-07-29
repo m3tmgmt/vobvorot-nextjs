@@ -19,7 +19,8 @@ export async function middleware(request: NextRequest) {
     '/api/telegram/smart-agent',
     '/api/telegram/ai-assistant',
     '/api/test-env',
-    '/api/test-webhook'
+    '/api/test-webhook',
+    '/api/debug-webhook'
   ]
   
   const isTelegramEndpoint = telegramEndpoints.some(endpoint => pathname.startsWith(endpoint))
