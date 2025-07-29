@@ -20,7 +20,8 @@ export async function middleware(request: NextRequest) {
     '/api/telegram/ai-assistant',
     '/api/test-env',
     '/api/test-webhook',
-    '/api/debug-webhook'
+    '/api/debug-webhook',
+    '/api/test-webhook-simple'
   ]
   
   const isTelegramEndpoint = telegramEndpoints.some(endpoint => pathname.startsWith(endpoint))
