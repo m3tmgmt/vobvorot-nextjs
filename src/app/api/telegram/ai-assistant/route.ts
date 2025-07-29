@@ -1319,12 +1319,9 @@ async function handleCleanupLogs(ctx: any, params: any) {
 export async function POST(req: NextRequest) {
   try {
     // Проверка secret token
-    const secretToken = req.headers.get('X-Telegram-Bot-Api-Secret-Token')
+    // Telegram отправляет header в lowercase
+    const secretToken = req.headers.get('x-telegram-bot-api-secret-token')
     const expectedToken = process.env.TELEGRAM_WEBHOOK_SECRET || 'vobvorot_webhook_secret_2025'
-    
-    console.log('Headers:', Object.fromEntries(req.headers.entries()))
-    console.log('Secret token from header:', secretToken)
-    console.log('Expected token:', expectedToken)
     
     if (secretToken !== expectedToken) {
       console.error('Token mismatch - received:', secretToken, 'expected:', expectedToken)
