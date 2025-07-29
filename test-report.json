@@ -1,0 +1,117 @@
+{
+  "modules": [
+    {
+      "name": "route.ts",
+      "status": "exists",
+      "size": "51.00"
+    },
+    {
+      "name": "utils.ts",
+      "status": "exists",
+      "size": "1.08"
+    },
+    {
+      "name": "rate-limiter.ts",
+      "status": "exists",
+      "size": "2.21"
+    },
+    {
+      "name": "confirmation-manager.ts",
+      "status": "exists",
+      "size": "2.36"
+    },
+    {
+      "name": "video-manager.ts",
+      "status": "exists",
+      "size": "6.26"
+    },
+    {
+      "name": "payment-manager.ts",
+      "status": "exists",
+      "size": "12.88"
+    },
+    {
+      "name": "email-manager.ts",
+      "status": "exists",
+      "size": "11.52"
+    },
+    {
+      "name": "delivery-manager.ts",
+      "status": "exists",
+      "size": "13.26"
+    },
+    {
+      "name": "logging-manager.ts",
+      "status": "exists",
+      "size": "12.51"
+    }
+  ],
+  "functions": [
+    {
+      "module": "route.ts",
+      "implemented": 8,
+      "total": 34
+    },
+    {
+      "module": "video-manager.ts",
+      "implemented": 6,
+      "total": 7
+    },
+    {
+      "module": "payment-manager.ts",
+      "implemented": 4,
+      "total": 6
+    },
+    {
+      "module": "email-manager.ts",
+      "implemented": 6,
+      "total": 9
+    },
+    {
+      "module": "delivery-manager.ts",
+      "implemented": 6,
+      "total": 8
+    },
+    {
+      "module": "logging-manager.ts",
+      "implemented": 8,
+      "total": 10
+    }
+  ],
+  "integrations": [
+    {
+      "name": "grammy",
+      "status": "installed"
+    },
+    {
+      "name": "@google/generative-ai",
+      "status": "installed"
+    },
+    {
+      "name": "@prisma/client",
+      "status": "installed"
+    },
+    {
+      "name": "cloudinary",
+      "status": "installed"
+    },
+    {
+      "name": "resend",
+      "status": "installed"
+    },
+    {
+      "name": "node-fetch",
+      "status": "installed"
+    }
+  ],
+  "infrastructure": [],
+  "errors": [
+    "База данных: \nInvalid `prisma.product.count()` invocation:\n\n\nCan't reach database server at `postgres-m2fm.railway.internal:5432`\n\nPlease make sure your database server is running at `postgres-m2fm.railway.internal:5432`."
+  ],
+  "warnings": [
+    "Переменная CLOUDINARY_URL не установлена",
+    "Переменная WESTERNBID_USERNAME не установлена",
+    "Переменная WESTERNBID_PASSWORD не установлена",
+    "Gemini AI: [GoogleGenerativeAI Error]: Error fetching from https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent: [503 Service Unavailable] The model is overloaded. Please try again later."
+  ]
+}
