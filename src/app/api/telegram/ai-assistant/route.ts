@@ -1321,10 +1321,23 @@ export async function POST(req: NextRequest) {
     // Проверка secret token
     // Telegram отправляет header в lowercase
     const secretToken = req.headers.get('x-telegram-bot-api-secret-token')
-    const expectedToken = process.env.TELEGRAM_WEBHOOK_SECRET || 'vobvorot_webhook_secret_2025'
+    const expectedToken = process.env.TELEGRAM_WEBHOOK_SECRET?.trim() || 'vobvorot_webhook_secret_2025'
     
-    if (secretToken !== expectedToken) {
-      console.error('Token mismatch - received:', secretToken, 'expected:', expectedToken)
+    // Debug logging
+    console.log('Webhook request received')
+    console.log('Received token:', secretToken)
+    console.log('Expected token from env:', process.env.TELEGRAM_WEBHOOK_SECRET)
+    console.log('Expected token (final):', expectedToken)
+    console.log('Tokens match:', secretToken === expectedToken)
+    
+    // Проверка токена - убираем лишние пробелы и кавычки
+    const cleanSecretToken = secretToken?.trim().replace(/^["']|["']$/g, '')
+    const cleanExpectedToken = expectedToken.trim().replace(/^["']|["']$/g, '')
+    
+    if (cleanSecretToken !== cleanExpectedToken) {
+      console.error('Token mismatch after cleaning')
+      console.error('Clean received:', cleanSecretToken)
+      console.error('Clean expected:', cleanExpectedToken)
       return new Response('Unauthorized', { status: 401 })
     }
     
