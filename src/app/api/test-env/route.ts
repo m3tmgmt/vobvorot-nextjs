@@ -1,54 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET(req: NextRequest) {
-  // Get authorization header
-  const authHeader = req.headers.get('authorization');
-  const expectedAuth = process.env.ADMIN_API_KEY;
+  // Проверяем авторизацию
+  const authHeader = req.headers.get('authorization')
+  const adminApiKey = process.env.ADMIN_API_KEY
   
-  // Check authorization
-  if (authHeader !== `Bearer ${expectedAuth}`) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!authHeader || authHeader !== `Bearer ${adminApiKey}`) {
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   
-  // Return environment info (safe values only)
-  return NextResponse.json({
-    env: {
-      NODE_ENV: process.env.NODE_ENV,
-      VERCEL_ENV: process.env.VERCEL_ENV,
-      TELEGRAM_WEBHOOK_SECRET_EXISTS: !!process.env.TELEGRAM_WEBHOOK_SECRET,
-      TELEGRAM_WEBHOOK_SECRET_LENGTH: process.env.TELEGRAM_WEBHOOK_SECRET?.length || 0,
-      TELEGRAM_WEBHOOK_SECRET_STARTS_WITH: process.env.TELEGRAM_WEBHOOK_SECRET?.substring(0, 10) + '...',
-      DATABASE_URL_EXISTS: !!process.env.DATABASE_URL,
-      TELEGRAM_BOT_TOKEN_EXISTS: !!process.env.TELEGRAM_BOT_TOKEN,
-      NEXT_PUBLIC_SITE_URL: process.env.NEXT_PUBLIC_SITE_URL,
-    },
+  // Возвращаем информацию о переменных окружения
+  const envStatus = {
+    NODE_ENV: process.env.NODE_ENV,
+    VERCEL_ENV: process.env.VERCEL_ENV,
+    DATABASE_URL: process.env.DATABASE_URL ? '✅ Set' : '❌ Not set',
+    DIRECT_DATABASE_URL: process.env.DIRECT_DATABASE_URL ? '✅ Set' : '❌ Not set',
+    TELEGRAM_BOT_TOKEN: process.env.TELEGRAM_BOT_TOKEN ? '✅ Set' : '❌ Not set',
+    TELEGRAM_WEBHOOK_SECRET: process.env.TELEGRAM_WEBHOOK_SECRET ? `✅ Set (${process.env.TELEGRAM_WEBHOOK_SECRET?.length} chars)` : '❌ Not set',
+    GEMINI_API_KEY: process.env.GEMINI_API_KEY ? '✅ Set' : '❌ Not set',
+    NEXTAUTH_SECRET: process.env.NEXTAUTH_SECRET ? '✅ Set' : '❌ Not set',
+    ADMIN_API_KEY: process.env.ADMIN_API_KEY ? '✅ Set' : '❌ Not set',
+    WESTERNBID_MERCHANT_ID: process.env.WESTERNBID_MERCHANT_ID ? '✅ Set' : '❌ Not set',
+    WESTERNBID_SECRET_KEY: process.env.WESTERNBID_SECRET_KEY ? '✅ Set' : '❌ Not set',
+    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME ? '✅ Set' : '❌ Not set',
+    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY ? '✅ Set' : '❌ Not set',
+    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET ? '✅ Set' : '❌ Not set',
+    RESEND_API_KEY: process.env.RESEND_API_KEY ? '✅ Set' : '❌ Not set',
+    // Debug info
+    deploymentId: process.env.VERCEL_DEPLOYMENT_ID,
+    region: process.env.VERCEL_REGION,
+    timestamp: new Date().toISOString()
+  }
+  
+  return NextResponse.json(envStatus, { 
+    status: 200,
     headers: {
-      'x-telegram-bot-api-secret-token': req.headers.get('x-telegram-bot-api-secret-token'),
-      'X-Telegram-Bot-Api-Secret-Token': req.headers.get('X-Telegram-Bot-Api-Secret-Token'),
-    },
-    timestamp: new Date().toISOString()
-  });
-}
-
-export async function POST(req: NextRequest) {
-  // Log all headers
-  const headers: Record<string, string> = {};
-  req.headers.forEach((value, key) => {
-    headers[key] = value;
-  });
-  
-  // Get the secret token from header
-  const secretToken = req.headers.get('x-telegram-bot-api-secret-token');
-  const expectedToken = process.env.TELEGRAM_WEBHOOK_SECRET;
-  
-  return NextResponse.json({
-    test: 'webhook-test',
-    received_token: secretToken,
-    expected_token_exists: !!expectedToken,
-    expected_token_length: expectedToken?.length || 0,
-    tokens_match: secretToken === expectedToken,
-    all_headers: headers,
-    env_value_raw: process.env.TELEGRAM_WEBHOOK_SECRET,
-    timestamp: new Date().toISOString()
-  });
+      'Cache-Control': 'no-store'
+    }
+  })
 }
