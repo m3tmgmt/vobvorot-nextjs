@@ -1318,6 +1318,15 @@ async function handleCleanupLogs(ctx: any, params: any) {
 // Webhook handler
 export async function POST(req: NextRequest) {
   try {
+    // Проверка secret token
+    const secretToken = req.headers.get('X-Telegram-Bot-Api-Secret-Token')
+    const expectedToken = process.env.TELEGRAM_WEBHOOK_SECRET || 'vobvorot_webhook_secret_2025'
+    
+    if (secretToken !== expectedToken) {
+      console.error('Invalid secret token:', secretToken)
+      return new Response('Unauthorized', { status: 401 })
+    }
+    
     const bot = await createBot()
     const handleUpdate = webhookCallback(bot, 'std/http')
     return handleUpdate(req)
