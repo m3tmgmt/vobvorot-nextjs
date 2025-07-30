@@ -10,9 +10,6 @@
     "src/app/api/telegram/webhook/route.ts": {
       "maxDuration": 30
     },
-    "src/app/api/telegram/ai-assistant/route.ts": {
-      "maxDuration": 30
-    },
     "src/app/api/payments/westernbid/webhook/route.ts": {
       "maxDuration": 30
     }

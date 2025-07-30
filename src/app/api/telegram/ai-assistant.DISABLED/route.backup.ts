@@ -1,60 +1,25 @@
-import { Bot, webhookCallback } from 'grammy'
-import { NextRequest } from 'next/server'
+import { Bot, webhookCallback, InlineKeyboard } from 'grammy'
+import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { prisma } from '@/lib/prisma'
+
+// Import all comprehensive handler modules
+import * as OrderHandlers from './handlers/order-handlers'
+import * as ProductHandlers from './handlers/product-handlers'
+import * as CategoryHandlers from './handlers/category-handlers'
+import * as VideoHandlers from './handlers/video-handlers'
+import * as CrmHandlers from './handlers/crm-handlers'
+import * as StatsHandlers from './handlers/stats-handlers'
+import * as ReviewHandlers from './handlers/review-handlers'
+import * as DeliveryHandlers from './handlers/delivery-handlers'
+import * as PaymentHandlers from './handlers/payment-handlers'
+import * as SystemHandlers from './handlers/system-handlers'
+import * as AiHandlers from './handlers/ai-handlers'
+import * as MarketingHandlers from './handlers/marketing-handlers'
+
+// Import existing utilities
 import { escapeMarkdownV2, formatDate, formatPrice } from './utils'
 import { rateLimiter } from './rate-limiter'
 import { confirmationManager } from './confirmation-manager'
-import { 
-  uploadVideoFromTelegram, 
-  updateHomeVideo, 
-  getHomeVideo,
-  getSignVideos, 
-  addSignVideo, 
-  deleteSignVideo,
-  formatVideoList 
-} from './video-manager'
-import {
-  refundPayment,
-  getPaymentInfo,
-  retryPayment,
-  checkPaymentStatus,
-  formatPaymentInfo,
-  formatRefundInfo
-} from './payment-manager'
-import {
-  sendTestEmail,
-  sendOrderNotificationEmail,
-  sendShippingNotificationEmail,
-  sendBulkEmails,
-  sendMarketingCampaign,
-  getEmailStatistics,
-  formatEmailResult,
-  formatBulkEmailResult,
-  formatEmailStats
-} from './email-manager'
-import {
-  calculateOrderShipping,
-  checkShippingAvailability,
-  updateOrderTracking,
-  getDeliveryStatus,
-  getShippingZones,
-  calculateBulkShipping,
-  formatShippingResult,
-  formatBulkShippingResult
-} from './delivery-manager'
-import {
-  logAction,
-  logError,
-  logAIInteraction,
-  getActionLogs,
-  getErrorLogs,
-  getUsageStatistics,
-  exportLogs,
-  cleanupOldLogs,
-  formatUsageStats,
-  formatLogs
-} from './logging-manager'
 
 const BOT_TOKEN = '7700098378:AAGZ1zZOxiwXbJeknO9SvyN25KvfWQkQNrI'
 const ADMIN_IDS = ['316593422', '1837334996']
@@ -64,7 +29,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY!
 const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
 
-// System prompt для анализа намерений
+// System prompt для анализа намерений - ПОЛНЫЙ СПИСОК 100+ ФУНКЦИЙ
 const SYSTEM_PROMPT = `Ты AI ассистент магазина VOBVOROT. Анализируй сообщения и возвращай JSON с действием.
 
 ВАЖНО: Возвращай ТОЛЬКО валидный JSON без дополнительного текста!
@@ -76,41 +41,158 @@ const SYSTEM_PROMPT = `Ты AI ассистент магазина VOBVOROT. А�
   "needConfirm": boolean
 }
 
-Доступные действия:
-- view_orders: показать заказы (params: {filter?: "today"|"week"|"month"|"all", status?: string})
-- add_product: добавить товар (params: {name: string, price: number, category?: string})
-- search_customer: найти клиента (params: {query: string})
-- stats: статистика (params: {period?: "today"|"week"|"month"|"all"})
+Доступные действия (106 функций):
+
+=== ЗАКАЗЫ (15 функций) ===
+- view_orders: показать заказы (params: {filter?: string, status?: string, limit?: number})
+- search_order: найти заказ (params: {query: string, type?: "id"|"email"|"phone"})
+- order_details: детали заказа (params: {orderId: string})
+- update_order_status: изменить статус заказа (params: {orderId: string, status: string, notes?: string})
+- add_tracking: добавить трек-номер (params: {orderId: string, trackingNumber: string, carrier?: string})
+- cancel_order: отменить заказ (params: {orderId: string, reason?: string})
+- order_history: история заказа (params: {orderId: string})
+- bulk_order_update: массовое обновление статусов (params: {status: string, orderIds: string[]})
+- pending_orders: заказы в ожидании (params: {days?: number})
+- today_orders: заказы за сегодня (params: {})
+- urgent_orders: срочные заказы (params: {})
+- problem_orders: проблемные заказы (params: {})
+- export_orders: экспорт заказов (params: {format?: "csv"|"excel", dateFrom?: string, dateTo?: string})
+- order_analytics: аналитика заказов (params: {period?: "week"|"month"|"quarter"})
+- duplicate_orders: дублирующиеся заказы (params: {})
+
+=== ТОВАРЫ (20 функций) ===
+- add_product: добавить товар (params: {name: string, price: number, category?: string, description?: string})
+- edit_product: редактировать товар (params: {productId: string, name?: string, price?: number, description?: string})
+- delete_product: удалить товар (params: {productId: string})
 - search_product: найти товар (params: {query: string})
-- update_order_status: изменить статус заказа (params: {orderId: number, status: string})
-- add_category: создать категорию (params: {name: string, emoji?: string})
+- view_products: показать товары (params: {category?: string, status?: string, limit?: number})
+- update_product_price: обновить цену (params: {productId: string, price: number})
+- update_product_stock: обновить остатки (params: {productId: string, quantity: number})
+- product_details: детали товара (params: {productId: string})
+- low_stock_products: товары с низким остатком (params: {threshold?: number})
+- top_products: популярные товары (params: {period?: "week"|"month", limit?: number})
+- product_analytics: аналитика товаров (params: {productId?: string, period?: string})
+- duplicate_products: дублирующиеся товары (params: {})
+- bulk_price_update: массовое обновление цен (params: {categoryId?: string, percentage: number})
+- import_products: импорт товаров (params: {source: string})
+- export_products: экспорт товаров (params: {format?: "csv"|"excel", categoryId?: string})
+- product_recommendations: рекомендации товаров (params: {customerId?: string})
+- set_product_featured: сделать товар рекомендуемым (params: {productId: string, featured: boolean})
+- product_variants: варианты товара (params: {productId: string})
+- product_reviews_summary: сводка отзывов (params: {productId: string})
+- archive_products: архивировать товары (params: {productIds: string[]})
+
+=== КАТЕГОРИИ (6 функций) ===
+- add_category: создать категорию (params: {name: string, emoji?: string, parentId?: string})
 - view_categories: показать категории (params: {})
-- upload_home_video: загрузить видео на главную (params: {})
-- view_home_video: показать видео главной (params: {})
-- delete_home_video: удалить видео главной (params: {})
-- list_sign_videos: показать видео подписей (params: {})
-- add_sign_video: добавить видео подписей (params: {})
-- delete_sign_video: удалить видео подписей (params: {videoId: string})
-- refund_payment: возврат платежа (params: {orderId: string, reason: string, amount?: number})
-- check_payment_status: проверить статус платежа (params: {orderId: string})
-- retry_payment: повторить платеж (params: {orderId: string})
-- view_payment_info: информация о платеже (params: {orderId: string})
-- send_test_email: отправить тестовое письмо (params: {email: string})
-- send_order_notification: отправить уведомление о заказе (params: {orderId: string, type?: "confirmation"|"status-update"})
-- send_shipping_notification: отправить трек-номер (params: {orderId: string, trackingNumber: string, carrier?: string})
-- send_bulk_emails: массовая рассылка уведомлений (params: {type: string, orderIds?: string[], status?: string, dateFrom?: string, dateTo?: string})
-- send_marketing_campaign: маркетинговая рассылка (params: {subject: string, content: string, customerIds?: string[], onlyRecentCustomers?: boolean, daysBack?: number})
-- get_email_statistics: статистика email (params: {dateFrom?: string, dateTo?: string})
-- calculate_shipping: рассчитать доставку (params: {orderId: string, packageType?: "box"|"package", currency?: "UAH"|"USD"})
-- check_shipping: проверить доставку в страну (params: {countryCode: string, weight?: number})
-- update_tracking: обновить трек-номер (params: {orderId: string, trackingNumber: string, carrier?: string})
-- get_delivery_status: статус доставки (params: {orderId: string})
-- get_shipping_zones: зоны доставки (params: {})
-- calculate_bulk_shipping: массовый расчет доставки (params: {orderIds: string[], packageType?: "box"|"package", currency?: "UAH"|"USD"})
-- view_logs: просмотр логов (params: {filter?: "errors"|"recent"|"user", userId?: string, dateFrom?: string, dateTo?: string})
-- view_statistics: статистика использования (params: {dateFrom?: string, dateTo?: string})
-- export_logs: экспорт логов (params: {format?: "csv"|"json", dateFrom?: string, dateTo?: string})
-- cleanup_logs: очистка старых логов (params: {daysToKeep?: number})
+- edit_category: редактировать категорию (params: {categoryId: string, name?: string, emoji?: string})
+- delete_category: удалить категорию (params: {categoryId: string})
+- reorder_categories: изменить порядок категорий (params: {categoryIds: string[]})
+- category_stats: статистика категорий (params: {categoryId?: string})
+
+=== ВИДЕО (10 функций) ===
+- upload_main_video: загрузить главное видео (params: {videoUrl?: string})
+- view_main_videos: показать главные видео (params: {})
+- delete_main_video: удалить главное видео (params: {videoId: string})
+- upload_product_video: загрузить видео товара (params: {productId: string, videoUrl?: string})
+- view_product_videos: показать видео товаров (params: {productId?: string})
+- delete_product_video: удалить видео товара (params: {videoId: string})
+- upload_sign_video: загрузить видео подписи (params: {})
+- view_sign_videos: показать видео подписей (params: {})
+- delete_sign_video: удалить видео подписи (params: {videoId: string})
+- video_analytics: аналитика видео (params: {videoId?: string})
+
+=== CRM И КЛИЕНТЫ (16 функций) ===
+- search_customer: найти клиента (params: {query: string})
+- customer_details: детали клиента (params: {customerId: string})
+- customer_history: история клиента (params: {customerId: string})
+- add_customer_note: добавить заметку о клиенте (params: {customerId: string, note: string})
+- top_customers: лучшие клиенты (params: {period?: string, limit?: number})
+- customer_segmentation: сегментация клиентов (params: {})
+- inactive_customers: неактивные клиенты (params: {days?: number})
+- new_customers: новые клиенты (params: {days?: number})
+- customer_lifetime_value: LTV клиента (params: {customerId: string})
+- customer_recommendations: рекомендации для клиента (params: {customerId: string})
+- export_customers: экспорт клиентов (params: {format?: "csv"|"excel", segment?: string})
+- merge_customers: объединить клиентов (params: {primaryId: string, duplicateId: string})
+- customer_tags: теги клиентов (params: {customerId?: string})
+- add_customer_tag: добавить тег клиенту (params: {customerId: string, tag: string})
+- remove_customer_tag: удалить тег клиента (params: {customerId: string, tag: string})
+- customer_communication_log: лог общения с клиентом (params: {customerId: string})
+
+=== СТАТИСТИКА И АНАЛИТИКА (15 функций) ===
+- general_stats: общая статистика (params: {period?: "today"|"week"|"month"|"year"})
+- sales_report: отчет по продажам (params: {period?: string, format?: string})
+- revenue_analysis: анализ выручки (params: {period?: string, breakdown?: "daily"|"weekly"|"monthly"})
+- top_products_report: отчет по популярным товарам (params: {period?: string, limit?: number})
+- customer_analytics: аналитика клиентов (params: {segment?: string, period?: string})
+- conversion_analysis: анализ конверсии (params: {period?: string})
+- traffic_sources: источники трафика (params: {period?: string})
+- abandon_cart_analysis: анализ брошенных корзин (params: {period?: string})
+- seasonal_trends: сезонные тренды (params: {period?: "year"|"quarter"})
+- geo_analytics: географическая аналитика (params: {period?: string})
+- profit_margins: анализ маржинальности (params: {categoryId?: string, period?: string})
+- inventory_turnover: оборачиваемость товаров (params: {period?: string})
+- compare_periods: сравнение периодов (params: {period1: string, period2: string})
+- forecast_analysis: прогнозная аналитика (params: {type: "sales"|"inventory", period: string})
+- kpi_dashboard: KPI дашборд (params: {period?: string})
+
+=== ОТЗЫВЫ (6 функций) ===
+- view_reviews: показать отзывы (params: {productId?: string, rating?: number, status?: string})
+- moderate_review: модерировать отзыв (params: {reviewId: string, action: "approve"|"reject", reason?: string})
+- respond_to_review: ответить на отзыв (params: {reviewId: string, response: string})
+- review_analytics: аналитика отзывов (params: {period?: string, productId?: string})
+- export_reviews: экспорт отзывов (params: {format?: "csv"|"excel", productId?: string})
+- flag_review: пожаловаться на отзыв (params: {reviewId: string, reason: string})
+
+=== ДОСТАВКА (10 функций) ===
+- calculate_shipping: рассчитать доставку (params: {orderId: string, country?: string, weight?: number})
+- shipping_zones: зоны доставки (params: {})
+- update_shipping_rates: обновить тарифы доставки (params: {zone: string, rates: object})
+- track_shipment: отследить отправление (params: {trackingNumber: string})
+- bulk_shipping_labels: массовая печать этикеток (params: {orderIds: string[]})
+- shipping_analytics: аналитика доставки (params: {period?: string, carrier?: string})
+- delivery_performance: эффективность доставки (params: {period?: string})
+- shipping_issues: проблемы с доставкой (params: {status?: string})
+- carrier_comparison: сравнение перевозчиков (params: {period?: string})
+- delivery_time_analysis: анализ времени доставки (params: {period?: string, destination?: string})
+
+=== ПЛАТЕЖИ (8 функций) ===
+- process_payment: обработать платеж (params: {orderId: string, amount: number, method: string})
+- refund_payment: возврат платежа (params: {paymentId: string, amount?: number, reason?: string})
+- view_payments: показать платежи (params: {status?: string, method?: string, orderId?: string})
+- payment_statistics: статистика платежей (params: {period?: string})
+- failed_payments: неудачные платежи (params: {period?: string})
+- update_payment_status: обновить статус платежа (params: {paymentId: string, status: string})
+- export_payments: экспорт платежей (params: {format?: "csv", status?: string})
+- recurring_payments: регулярные платежи (params: {customerId: string, amount: number, frequency: string})
+
+=== СИСТЕМНЫЕ ФУНКЦИИ (10 функций) ===
+- system_status: статус системы (params: {})
+- database_backup: резервная копия БД (params: {tables?: string})
+- system_logs: системные логи (params: {level?: string, limit?: number})
+- clear_cache: очистить кеш (params: {type?: string})
+- system_maintenance: режим обслуживания (params: {action: "enable"|"disable"|"status"})
+- health_check: проверка здоровья системы (params: {})
+- system_configuration: конфигурация системы (params: {action: "get"|"set"|"list", key?: string, value?: string})
+- restart_service: перезапуск сервиса (params: {service: string})
+- system_analytics: системная аналитика (params: {period?: string})
+- system_notifications: системные уведомления (params: {action: "send"|"list"|"configure"})
+
+=== AI АВТОМАТИЗАЦИЯ (5 функций) ===
+- auto_restock: автопополнение (params: {threshold?: number, enabled?: boolean})
+- price_optimization: оптимизация цен (params: {productId?: string, mode?: string})
+- sales_forecasting: прогнозирование продаж (params: {period?: string, productId?: string})
+- customer_segmentation_ai: AI сегментация клиентов (params: {action?: string})
+- inventory_optimization: оптимизация складских остатков (params: {category?: string})
+
+=== МАРКЕТИНГ И ПРОМО (5 функций) ===
+- create_promo_code: создать промокод (params: {code: string, discountType: string, discountValue: number})
+- view_promo_codes: показать промокоды (params: {status?: string})
+- email_campaign: email кампания (params: {campaignName: string, subject: string, segment?: string})
+- analytics_report: маркетинговый отчет (params: {period?: string, metrics?: string})
+- social_media_post: пост в соцсети (params: {platform?: string, postType?: string, productId?: string})
+
 - unknown: непонятная команда (params: {})
 
 Примеры:
@@ -324,7 +406,7 @@ function getCategoryFromAction(action: string): 'command' | 'error' | 'ai_reques
   return 'command'
 }
 
-// Функция выполнения действий
+// Функция выполнения действий - ПОЛНЫЙ СПИСОК 106 ФУНКЦИЙ
 async function executeAction(ctx: any, action: string, params: any) {
   const userId = ctx.from?.id?.toString() || 'unknown'
   const username = ctx.from?.username || ctx.from?.first_name
@@ -339,121 +421,436 @@ async function executeAction(ctx: any, action: string, params: any) {
   })
   
   switch (action) {
+    // === ЗАКАЗЫ (15 функций) ===
     case 'view_orders':
-      await handleViewOrders(ctx, params)
+      await OrderHandlers.handleViewOrders(ctx, params)
       break
-    case 'add_product':
-      await handleAddProduct(ctx, params)
+    case 'search_order':
+      await OrderHandlers.handleSearchOrder(ctx, params)
       break
-    case 'search_customer':
-      await handleSearchCustomer(ctx, params)
-      break
-    case 'stats':
-      await handleStats(ctx, params)
-      break
-    case 'search_product':
-      await handleSearchProduct(ctx, params)
+    case 'order_details':
+      await OrderHandlers.handleOrderDetails(ctx, params)
       break
     case 'update_order_status':
-      await handleUpdateOrderStatus(ctx, params)
+      await OrderHandlers.handleUpdateOrderStatus(ctx, params)
       break
+    case 'add_tracking':
+      await OrderHandlers.handleAddTracking(ctx, params)
+      break
+    case 'cancel_order':
+      await OrderHandlers.handleCancelOrder(ctx, params)
+      break
+    case 'order_history':
+      await OrderHandlers.handleOrderHistory(ctx, params)
+      break
+    case 'bulk_order_update':
+      await OrderHandlers.handleBulkOrderUpdate(ctx, params)
+      break
+    case 'pending_orders':
+      await OrderHandlers.handlePendingOrders(ctx, params)
+      break
+    case 'today_orders':
+      await OrderHandlers.handleTodayOrders(ctx, params)
+      break
+    case 'urgent_orders':
+      await OrderHandlers.handleUrgentOrders(ctx, params)
+      break
+    case 'problem_orders':
+      await OrderHandlers.handleProblemOrders(ctx, params)
+      break
+    case 'export_orders':
+      await OrderHandlers.handleExportOrders(ctx, params)
+      break
+    case 'order_analytics':
+      await OrderHandlers.handleOrderAnalytics(ctx, params)
+      break
+    case 'duplicate_orders':
+      await OrderHandlers.handleDuplicateOrders(ctx, params)
+      break
+    
+    // === ТОВАРЫ (20 функций) ===
+    case 'add_product':
+      await ProductHandlers.handleAddProduct(ctx, params)
+      break
+    case 'edit_product':
+      await ProductHandlers.handleEditProduct(ctx, params)
+      break
+    case 'delete_product':
+      await ProductHandlers.handleDeleteProduct(ctx, params)
+      break
+    case 'search_product':
+      await ProductHandlers.handleSearchProduct(ctx, params)
+      break
+    case 'view_products':
+      await ProductHandlers.handleViewProducts(ctx, params)
+      break
+    case 'update_product_price':
+      await ProductHandlers.handleUpdateProductPrice(ctx, params)
+      break
+    case 'update_product_stock':
+      await ProductHandlers.handleUpdateProductStock(ctx, params)
+      break
+    case 'product_details':
+      await ProductHandlers.handleProductDetails(ctx, params)
+      break
+    case 'low_stock_products':
+      await ProductHandlers.handleLowStockProducts(ctx, params)
+      break
+    case 'top_products':
+      await ProductHandlers.handleTopProducts(ctx, params)
+      break
+    case 'product_analytics':
+      await ProductHandlers.handleProductAnalytics(ctx, params)
+      break
+    case 'duplicate_products':
+      await ProductHandlers.handleDuplicateProducts(ctx, params)
+      break
+    case 'bulk_price_update':
+      await ProductHandlers.handleBulkPriceUpdate(ctx, params)
+      break
+    case 'import_products':
+      await ProductHandlers.handleImportProducts(ctx, params)
+      break
+    case 'export_products':
+      await ProductHandlers.handleExportProducts(ctx, params)
+      break
+    case 'product_recommendations':
+      await ProductHandlers.handleProductRecommendations(ctx, params)
+      break
+    case 'set_product_featured':
+      await ProductHandlers.handleSetProductFeatured(ctx, params)
+      break
+    case 'product_variants':
+      await ProductHandlers.handleProductVariants(ctx, params)
+      break
+    case 'product_reviews_summary':
+      await ProductHandlers.handleProductReviewsSummary(ctx, params)
+      break
+    case 'archive_products':
+      await ProductHandlers.handleArchiveProducts(ctx, params)
+      break
+    
+    // === КАТЕГОРИИ (6 функций) ===
     case 'add_category':
-      await handleAddCategory(ctx, params)
+      await CategoryHandlers.handleAddCategory(ctx, params)
       break
     case 'view_categories':
-      await handleViewCategories(ctx, params)
+      await CategoryHandlers.handleViewCategories(ctx, params)
       break
-    case 'upload_home_video':
-      await handleUploadHomeVideo(ctx, params)
+    case 'edit_category':
+      await CategoryHandlers.handleEditCategory(ctx, params)
       break
-    case 'view_home_video':
-      await handleViewHomeVideo(ctx, params)
+    case 'delete_category':
+      await CategoryHandlers.handleDeleteCategory(ctx, params)
       break
-    case 'delete_home_video':
-      await handleDeleteHomeVideo(ctx, params)
+    case 'reorder_categories':
+      await CategoryHandlers.handleReorderCategories(ctx, params)
       break
-    case 'list_sign_videos':
-      await handleListSignVideos(ctx, params)
+    case 'category_stats':
+      await CategoryHandlers.handleCategoryStats(ctx, params)
       break
-    case 'add_sign_video':
-      await handleAddSignVideo(ctx, params)
+    
+    // === ВИДЕО (10 функций) ===
+    case 'upload_main_video':
+      await VideoHandlers.handleUploadMainVideo(ctx, params)
+      break
+    case 'view_main_videos':
+      await VideoHandlers.handleViewMainVideos(ctx, params)
+      break
+    case 'delete_main_video':
+      await VideoHandlers.handleDeleteMainVideo(ctx, params)
+      break
+    case 'upload_product_video':
+      await VideoHandlers.handleUploadProductVideo(ctx, params)
+      break
+    case 'view_product_videos':
+      await VideoHandlers.handleViewProductVideos(ctx, params)
+      break
+    case 'delete_product_video':
+      await VideoHandlers.handleDeleteProductVideo(ctx, params)
+      break
+    case 'upload_sign_video':
+      await VideoHandlers.handleUploadSignVideo(ctx, params)
+      break
+    case 'view_sign_videos':
+      await VideoHandlers.handleViewSignVideos(ctx, params)
       break
     case 'delete_sign_video':
-      await handleDeleteSignVideo(ctx, params)
+      await VideoHandlers.handleDeleteSignVideo(ctx, params)
+      break
+    case 'video_analytics':
+      await VideoHandlers.handleVideoAnalytics(ctx, params)
+      break
+    
+    // === CRM И КЛИЕНТЫ (16 функций) ===
+    case 'search_customer':
+      await CrmHandlers.handleSearchCustomer(ctx, params)
+      break
+    case 'customer_details':
+      await CrmHandlers.handleCustomerDetails(ctx, params)
+      break
+    case 'customer_history':
+      await CrmHandlers.handleCustomerHistory(ctx, params)
+      break
+    case 'add_customer_note':
+      await CrmHandlers.handleAddCustomerNote(ctx, params)
+      break
+    case 'top_customers':
+      await CrmHandlers.handleTopCustomers(ctx, params)
+      break
+    case 'customer_segmentation':
+      await CrmHandlers.handleCustomerSegmentation(ctx, params)
+      break
+    case 'inactive_customers':
+      await CrmHandlers.handleInactiveCustomers(ctx, params)
+      break
+    case 'new_customers':
+      await CrmHandlers.handleNewCustomers(ctx, params)
+      break
+    case 'customer_lifetime_value':
+      await CrmHandlers.handleCustomerLifetimeValue(ctx, params)
+      break
+    case 'customer_recommendations':
+      await CrmHandlers.handleCustomerRecommendations(ctx, params)
+      break
+    case 'export_customers':
+      await CrmHandlers.handleExportCustomers(ctx, params)
+      break
+    case 'merge_customers':
+      await CrmHandlers.handleMergeCustomers(ctx, params)
+      break
+    case 'customer_tags':
+      await CrmHandlers.handleCustomerTags(ctx, params)
+      break
+    case 'add_customer_tag':
+      await CrmHandlers.handleAddCustomerTag(ctx, params)
+      break
+    case 'remove_customer_tag':
+      await CrmHandlers.handleRemoveCustomerTag(ctx, params)
+      break
+    case 'customer_communication_log':
+      await CrmHandlers.handleCustomerCommunicationLog(ctx, params)
+      break
+    
+    // === СТАТИСТИКА И АНАЛИТИКА (15 функций) ===
+    case 'general_stats':
+    case 'stats':
+      await StatsHandlers.handleGeneralStats(ctx, params)
+      break
+    case 'sales_report':
+      await StatsHandlers.handleSalesReport(ctx, params)
+      break
+    case 'revenue_analysis':
+      await StatsHandlers.handleRevenueAnalysis(ctx, params)
+      break
+    case 'top_products_report':
+      await StatsHandlers.handleTopProductsReport(ctx, params)
+      break
+    case 'customer_analytics':
+      await StatsHandlers.handleCustomerAnalytics(ctx, params)
+      break
+    case 'conversion_analysis':
+      await StatsHandlers.handleConversionAnalysis(ctx, params)
+      break
+    case 'traffic_sources':
+      await StatsHandlers.handleTrafficSources(ctx, params)
+      break
+    case 'abandon_cart_analysis':
+      await StatsHandlers.handleAbandonCartAnalysis(ctx, params)
+      break
+    case 'seasonal_trends':
+      await StatsHandlers.handleSeasonalTrends(ctx, params)
+      break
+    case 'geo_analytics':
+      await StatsHandlers.handleGeoAnalytics(ctx, params)
+      break
+    case 'profit_margins':
+      await StatsHandlers.handleProfitMargins(ctx, params)
+      break
+    case 'inventory_turnover':
+      await StatsHandlers.handleInventoryTurnover(ctx, params)
+      break
+    case 'compare_periods':
+      await StatsHandlers.handleComparePeriods(ctx, params)
+      break
+    case 'forecast_analysis':
+      await StatsHandlers.handleForecastAnalysis(ctx, params)
+      break
+    case 'kpi_dashboard':
+      await StatsHandlers.handleKpiDashboard(ctx, params)
+      break
+    
+    // === ОТЗЫВЫ (6 функций) ===
+    case 'view_reviews':
+      await ReviewHandlers.handleViewReviews(ctx, params)
+      break
+    case 'moderate_review':
+      await ReviewHandlers.handleModerateReview(ctx, params)
+      break
+    case 'respond_to_review':
+      await ReviewHandlers.handleRespondToReview(ctx, params)
+      break
+    case 'review_analytics':
+      await ReviewHandlers.handleReviewAnalytics(ctx, params)
+      break
+    case 'export_reviews':
+      await ReviewHandlers.handleExportReviews(ctx, params)
+      break
+    case 'flag_review':
+      await ReviewHandlers.handleFlagReview(ctx, params)
+      break
+    
+    // === ДОСТАВКА (10 функций) ===
+    case 'calculate_shipping':
+      await DeliveryHandlers.handleCalculateShipping(ctx, params)
+      break
+    case 'shipping_zones':
+      await DeliveryHandlers.handleShippingZones(ctx, params)
+      break
+    case 'update_shipping_rates':
+      await DeliveryHandlers.handleUpdateShippingRates(ctx, params)
+      break
+    case 'track_shipment':
+      await DeliveryHandlers.handleTrackShipment(ctx, params)
+      break
+    case 'bulk_shipping_labels':
+      await DeliveryHandlers.handleBulkShippingLabels(ctx, params)
+      break
+    case 'shipping_analytics':
+      await DeliveryHandlers.handleShippingAnalytics(ctx, params)
+      break
+    case 'delivery_performance':
+      await DeliveryHandlers.handleDeliveryPerformance(ctx, params)
+      break
+    case 'shipping_issues':
+      await DeliveryHandlers.handleShippingIssues(ctx, params)
+      break
+    case 'carrier_comparison':
+      await DeliveryHandlers.handleCarrierComparison(ctx, params)
+      break
+    case 'delivery_time_analysis':
+      await DeliveryHandlers.handleDeliveryTimeAnalysis(ctx, params)
+      break
+    
+    // === ПЛАТЕЖИ (8 функций) ===
+    case 'process_payment':
+      await PaymentHandlers.handleProcessPayment(ctx, params)
       break
     case 'refund_payment':
-      await handleRefundPayment(ctx, params)
+      await PaymentHandlers.handleRefundPayment(ctx, params)
       break
-    case 'check_payment_status':
-      await handleCheckPaymentStatus(ctx, params)
+    case 'view_payments':
+      await PaymentHandlers.handleViewPayments(ctx, params)
       break
-    case 'retry_payment':
-      await handleRetryPayment(ctx, params)
+    case 'payment_statistics':
+      await PaymentHandlers.handlePaymentStatistics(ctx, params)
       break
-    case 'view_payment_info':
-      await handleViewPaymentInfo(ctx, params)
+    case 'failed_payments':
+      await PaymentHandlers.handleFailedPayments(ctx, params)
       break
-    case 'send_test_email':
-      await handleSendTestEmail(ctx, params)
+    case 'update_payment_status':
+      await PaymentHandlers.handleUpdatePaymentStatus(ctx, params)
       break
-    case 'send_order_notification':
-      await handleSendOrderNotification(ctx, params)
+    case 'export_payments':
+      await PaymentHandlers.handleExportPayments(ctx, params)
       break
-    case 'send_shipping_notification':
-      await handleSendShippingNotification(ctx, params)
+    case 'recurring_payments':
+      await PaymentHandlers.handleRecurringPayments(ctx, params)
       break
-    case 'send_bulk_emails':
-      await handleSendBulkEmails(ctx, params)
+    
+    // === СИСТЕМНЫЕ ФУНКЦИИ (10 функций) ===
+    case 'system_status':
+      await SystemHandlers.handleSystemStatus(ctx, params)
       break
-    case 'send_marketing_campaign':
-      await handleSendMarketingCampaign(ctx, params)
+    case 'database_backup':
+      await SystemHandlers.handleDatabaseBackup(ctx, params)
       break
-    case 'get_email_statistics':
-      await handleGetEmailStatistics(ctx, params)
+    case 'system_logs':
+      await SystemHandlers.handleSystemLogs(ctx, params)
       break
-    case 'calculate_shipping':
-      await handleCalculateShipping(ctx, params)
+    case 'clear_cache':
+      await SystemHandlers.handleClearCache(ctx, params)
       break
-    case 'check_shipping':
-      await handleCheckShipping(ctx, params)
+    case 'system_maintenance':
+      await SystemHandlers.handleSystemMaintenance(ctx, params)
       break
-    case 'update_tracking':
-      await handleUpdateTracking(ctx, params)
+    case 'health_check':
+      await SystemHandlers.handleHealthCheck(ctx, params)
       break
-    case 'get_delivery_status':
-      await handleGetDeliveryStatus(ctx, params)
+    case 'system_configuration':
+      await SystemHandlers.handleSystemConfiguration(ctx, params)
       break
-    case 'get_shipping_zones':
-      await handleGetShippingZones(ctx, params)
+    case 'restart_service':
+      await SystemHandlers.handleRestartService(ctx, params)
       break
-    case 'calculate_bulk_shipping':
-      await handleCalculateBulkShipping(ctx, params)
+    case 'system_analytics':
+      await SystemHandlers.handleSystemAnalytics(ctx, params)
       break
+    case 'system_notifications':
+      await SystemHandlers.handleSystemNotifications(ctx, params)
+      break
+    
+    // === AI АВТОМАТИЗАЦИЯ (5 функций) ===
+    case 'auto_restock':
+      await AiHandlers.handleAutoRestock(ctx, params)
+      break
+    case 'price_optimization':
+      await AiHandlers.handlePriceOptimization(ctx, params)
+      break
+    case 'sales_forecasting':
+      await AiHandlers.handleSalesForecasting(ctx, params)
+      break
+    case 'customer_segmentation_ai':
+      await AiHandlers.handleCustomerSegmentation(ctx, params)
+      break
+    case 'inventory_optimization':
+      await AiHandlers.handleInventoryOptimization(ctx, params)
+      break
+    
+    // === МАРКЕТИНГ И ПРОМО (5 функций) ===
+    case 'create_promo_code':
+      await MarketingHandlers.handleCreatePromoCode(ctx, params)
+      break
+    case 'view_promo_codes':
+      await MarketingHandlers.handleViewPromoCodes(ctx, params)
+      break
+    case 'email_campaign':
+      await MarketingHandlers.handleEmailCampaign(ctx, params)
+      break
+    case 'analytics_report':
+      await MarketingHandlers.handleAnalyticsReport(ctx, params)
+      break
+    case 'social_media_post':
+      await MarketingHandlers.handleSocialMediaPost(ctx, params)
+      break
+    
+    // === LEGACY ALIASES ===
     case 'view_logs':
-      await handleViewLogs(ctx, params)
+      await SystemHandlers.handleSystemLogs(ctx, params)
       break
     case 'view_statistics':
-      await handleViewStatistics(ctx, params)
+      await StatsHandlers.handleGeneralStats(ctx, params)
       break
     case 'export_logs':
-      await handleExportLogs(ctx, params)
+      await SystemHandlers.handleSystemLogs(ctx, { ...params, export: true })
       break
     case 'cleanup_logs':
-      await handleCleanupLogs(ctx, params)
+      await SystemHandlers.handleSystemLogs(ctx, { ...params, cleanup: true })
       break
+    
     default:
       await ctx.reply(
-        '🤔 Не понял вашу команду. Попробуйте сформулировать иначе.\n\n' +
-        'Примеры команд:\n' +
-        '• Покажи заказы за сегодня\n' +
-        '• Добавь товар Платье 2500\n' +
-        '• Найди клиента Мария\n' +
-        '• Загрузи видео на главную\n' +
-        '• Покажи видео подписей\n' +
-        '• Удали видео главной\n' +
-        '• Добавь видео подписей\n' +
-        '• Сделай возврат для заказа 123\n' +
-        '• Проверь статус платежа 456'
+        '🤔 Не понял вашу команду. У меня есть **106 функций**! Попробуйте:\n\n' +
+        '**ЗАКАЗЫ:** показать заказы, найти заказ, детали заказа\n' +
+        '**ТОВАРЫ:** добавить товар, найти товар, обновить цену\n' +
+        '**КЛИЕНТЫ:** найти клиента, история клиента, сегментация\n' +
+        '**СТАТИСТИКА:** общая статистика, отчет продаж, аналитика\n' +
+        '**ПЛАТЕЖИ:** обработать платеж, возврат, статистика\n' +
+        '**ДОСТАВКА:** рассчитать доставку, отследить, тарифы\n' +
+        '**СИСТЕМА:** статус системы, резервная копия, логи\n' +
+        '**AI:** автопополнение, оптимизация цен, прогнозы\n' +
+        '**МАРКЕТИНГ:** промокоды, email кампании, соцсети\n\n' +
+        '💡 Пишите естественными фразами, я пойму!'
       )
   }
 }
