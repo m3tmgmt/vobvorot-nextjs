@@ -22,13 +22,17 @@ export async function POST(req: NextRequest) {
       // Добавить сюда ID других разрешенных ботов при необходимости
     ]
     
-    const botId = body.message?.from?.id || body.callback_query?.from?.id
-    const botUsername = body.message?.from?.username || body.callback_query?.from?.username
+    const fromUser = body.message?.from || body.callback_query?.from
+    const isBot = fromUser?.is_bot || false
+    const userId = fromUser?.id
+    const username = fromUser?.username
     
-    if (botId && !ALLOWED_BOT_IDS.includes(botId)) {
+    // Блокируем только если это БОТ и он НЕ в списке разрешенных
+    if (isBot && userId && !ALLOWED_BOT_IDS.includes(userId)) {
       console.log(`🚫 ЗАБЛОКИРОВАН неизвестный бот:`)
-      console.log(`   ID: ${botId}`)
-      console.log(`   Username: @${botUsername || 'unknown'}`)
+      console.log(`   ID: ${userId}`)
+      console.log(`   Username: @${username || 'unknown'}`)
+      console.log(`   is_bot: ${isBot}`)
       console.log(`   🎯 Это может быть @DrHillBot_bot или другой конфликтующий бот`)
       
       // Возвращаем успешный ответ, чтобы неизвестный бот не повторял запрос
@@ -36,6 +40,11 @@ export async function POST(req: NextRequest) {
         ok: true, 
         message: 'Request processed by security filter' 
       })
+    }
+    
+    // Логируем обычных пользователей
+    if (!isBot) {
+      console.log(`👤 Сообщение от пользователя: @${username || 'unknown'} (ID: ${userId})`)
     }
     
     // Проверка секретного токена
