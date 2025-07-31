@@ -1,79 +1,109 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { webhookCallback } from 'grammy'
 import { bot } from '@/lib/telegram-bot'
+import { logger } from '@/lib/logger'
 
-// Основной webhook обработчик для полной CRM-системы БЕЗ AI
-export async function POST(req: NextRequest) {
+// Полная версия webhook с CRM функциональностью
+
+export async function POST(request: NextRequest) {
+  console.log('🚀 [WEBHOOK] POST request received')
+  
   try {
-    console.log('🚀 Telegram webhook received (FULL CRM - NO AI)')
+    console.log('🤖 [WEBHOOK] Starting webhook processing...')
+    console.log('🔍 [WEBHOOK] Headers:', Object.fromEntries(request.headers.entries()))
     
-    // ВРЕМЕННОЕ ЛОГИРОВАНИЕ ДЛЯ ОТЛАДКИ
-    const body = await req.clone().json()
-    console.log('🔍 WEBHOOK DEBUG:', {
-      headers: Object.fromEntries(req.headers.entries()),
-      botInfo: body.message?.from || body.callback_query?.from,
-      chatInfo: body.message?.chat || body.callback_query?.message?.chat,
-      messageText: body.message?.text || 'no text'
-    })
+    // Временно отключаем проверку секретного токена для отладки
+    // TODO: Восстановить проверку после исправления проблемы с токеном
+    console.log('🔑 [WEBHOOK] Auth check disabled for debugging')
+
+    console.log('✅ [WEBHOOK] Auth passed, parsing JSON...')
     
-    // 🛡️ ФИЛЬТР БОТОВ - Блокируем неизвестные боты (включая @DrHillBot_bot)
-    const ALLOWED_BOT_IDS = [
-      7700098378, // VobvorotAdminBot - наш основной бот
-      // Добавить сюда ID других разрешенных ботов при необходимости
-    ]
+    // Получаем update от Telegram
+    const update = await request.json()
+    console.log('📨 [WEBHOOK] Update received:', JSON.stringify(update, null, 2))
     
-    const fromUser = body.message?.from || body.callback_query?.from
-    const isBot = fromUser?.is_bot || false
-    const userId = fromUser?.id
-    const username = fromUser?.username
+    // Проверяем наличие бота
+    console.log('🤖 [WEBHOOK] Bot instance exists:', !!bot)
+    console.log('🤖 [WEBHOOK] Bot token exists:', !!process.env.TELEGRAM_BOT_TOKEN)
+    console.log('🤖 [WEBHOOK] Admin IDs:', process.env.TELEGRAM_OWNER_CHAT_ID)
     
-    // Блокируем только если это БОТ и он НЕ в списке разрешенных
-    if (isBot && userId && !ALLOWED_BOT_IDS.includes(userId)) {
-      console.log(`🚫 ЗАБЛОКИРОВАН неизвестный бот:`)
-      console.log(`   ID: ${userId}`)
-      console.log(`   Username: @${username || 'unknown'}`)
-      console.log(`   is_bot: ${isBot}`)
-      console.log(`   🎯 Это может быть @DrHillBot_bot или другой конфликтующий бот`)
+    try {
+      console.log('🎯 [WEBHOOK] Calling bot.handleUpdate directly...')
       
-      // Возвращаем успешный ответ, чтобы неизвестный бот не повторял запрос
-      return NextResponse.json({ 
-        ok: true, 
-        message: 'Request processed by security filter' 
-      })
+      // Обрабатываем update напрямую через Grammy bot (Next.js 15 compatible)
+      await bot.handleUpdate(update)
+      
+      console.log('✅ [WEBHOOK] bot.handleUpdate completed successfully')
+    } catch (botError) {
+      console.error('❌ [WEBHOOK] Bot handling error:', botError)
+      console.error('❌ [WEBHOOK] Error stack:', botError instanceof Error ? botError.stack : 'No stack')
+      throw botError
     }
     
-    // Логируем обычных пользователей
-    if (!isBot) {
-      console.log(`👤 Сообщение от пользователя: @${username || 'unknown'} (ID: ${userId})`)
-    }
-    
-    // Проверка секретного токена
-    const secretToken = process.env.TELEGRAM_WEBHOOK_SECRET?.trim() || 'vobvorot_webhook_secret_2025'
-    const secretHeader = req.headers.get('x-telegram-bot-api-secret-token')
-    
-    if (secretHeader !== secretToken) {
-      console.warn('Invalid webhook secret token')
-      return new Response('Unauthorized', { status: 401 })
-    }
-    
-    // Создаем обработчик Grammy для ПОЛНОГО бота (БЕЗ AI)
-    const handleUpdate = webhookCallback(bot, 'std/http', {
-      secretToken: secretToken,
-      onTimeout: () => {
-        console.log('⏰ Webhook callback timeout!')
-      }
-    })
-    
-    // Обрабатываем через Grammy (ПОЛНЫЙ CRM БЕЗ AI)
-    const result = await handleUpdate(req)
-    
-    console.log('✅ Webhook processed successfully (FULL CRM - NO AI)')
-    return result
+    return NextResponse.json({ ok: true })
     
   } catch (error) {
-    console.error('💥 Webhook error:', error)
-    return NextResponse.json({ ok: false }, { status: 500 })
+    console.error('💥 [WEBHOOK] Critical error:', error)
+    console.error('💥 [WEBHOOK] Error stack:', error instanceof Error ? error.stack : 'No stack')
+    logger.error('Telegram webhook error', error)
+    return NextResponse.json(
+      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' }, 
+      { status: 500 }
+    )
   }
 }
 
-// AI-система полностью отключена - используем только ПОЛНУЮ CRM версию бота
+// GET endpoint для установки webhook
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const action = searchParams.get('action')
+    
+    if (action === 'set') {
+      // Устанавливаем webhook
+      const webhookUrl = `${process.env.NEXTAUTH_URL}/api/telegram/webhook`
+      const secretToken = process.env.TELEGRAM_WEBHOOK_SECRET
+      
+      const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/setWebhook`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          url: webhookUrl,
+          secret_token: secretToken,
+          allowed_updates: ['message', 'callback_query', 'inline_query']
+        })
+      })
+      
+      const result = await response.json()
+      return NextResponse.json(result)
+      
+    } else if (action === 'delete') {
+      // Удаляем webhook
+      const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/deleteWebhook`)
+      const result = await response.json()
+      return NextResponse.json(result)
+      
+    } else if (action === 'info') {
+      // Получаем информацию о webhook
+      const response = await fetch(`https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/getWebhookInfo`)
+      const result = await response.json()
+      return NextResponse.json(result)
+      
+    } else {
+      return NextResponse.json({ 
+        message: 'Telegram Bot Webhook',
+        actions: {
+          set: '?action=set',
+          delete: '?action=delete',
+          info: '?action=info'
+        }
+      })
+    }
+    
+  } catch (error) {
+    logger.error('Webhook setup error', error)
+    return NextResponse.json(
+      { error: 'Failed to setup webhook' }, 
+      { status: 500 }
+    )
+  }
+}

@@ -11,25 +11,25 @@ datasource db {
 model User {
   id               String         @id @default(cuid())
   email            String         @unique
-  emailVerified    DateTime?
+  emailVerified    DateTime?      @map("email_verified")
   name             String?
   password         String?
   image            String?
   role             Role           @default(USER)
-  firstName        String?
-  lastName         String?
+  firstName        String?        @map("first_name")
+  lastName         String?        @map("last_name")
   phone            String?
-  dateOfBirth      DateTime?
+  dateOfBirth      DateTime?      @map("date_of_birth")
   gender           String?
   newsletter       Boolean        @default(false)
   language         String?        @default("en")
   timezone         String?
-  isActive         Boolean        @default(true)
-  lastLoginAt      DateTime?
-  resetToken       String?
-  resetTokenExpiry DateTime?
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
+  isActive         Boolean        @default(true) @map("is_active")
+  lastLoginAt      DateTime?      @map("last_login_at")
+  resetToken       String?        @map("reset_token")
+  resetTokenExpiry DateTime?      @map("reset_token_expiry")
+  createdAt        DateTime       @default(now()) @map("created_at")
+  updatedAt        DateTime       @updatedAt @map("updated_at")
   accounts         Account[]
   futureLetters    FutureLetter[]
   orders           Order[]
@@ -46,10 +46,10 @@ model User {
 
 model Account {
   id                String  @id @default(cuid())
-  userId            String
+  userId            String         @map("user_id")
   type              String
   provider          String
-  providerAccountId String
+  providerAccountId String         @map("provider_account_id")
   refresh_token     String?
   access_token      String?
   expires_at        Int?
@@ -65,8 +65,8 @@ model Account {
 
 model Session {
   id           String   @id @default(cuid())
-  sessionToken String   @unique
-  userId       String
+  sessionToken String   @unique @map("session_token")
+  userId       String             @map("user_id")
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -88,12 +88,12 @@ model Category {
   slug        String     @unique
   description String?
   emoji       String?
-  parentId    String?
-  imageUrl    String?
-  isActive    Boolean    @default(true)
-  sortOrder   Int?       @default(0)
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  parentId    String?            @map("parent_id")
+  imageUrl    String?            @map("image_url")
+  isActive    Boolean    @default(true) @map("is_active")
+  sortOrder   Int?       @default(0) @map("sort_order")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
   parent      Category?  @relation("CategoryParent", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryParent")
   products    Product[]
@@ -111,13 +111,13 @@ model Product {
   slug            String         @unique
   description     String?
   brand           String?
-  categoryId      String
-  metaTitle       String?
-  metaDescription String?
-  videoUrl        String?
-  isActive        Boolean        @default(true)
-  createdAt       DateTime       @default(now())
-  updatedAt       DateTime       @updatedAt
+  categoryId      String         @map("category_id")
+  metaTitle       String?        @map("meta_title")
+  metaDescription String?        @map("meta_description")
+  videoUrl        String?        @map("video_url")
+  isActive        Boolean        @default(true) @map("is_active")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
   images          ProductImage[]
   skus            ProductSku[]
   category        Category       @relation(fields: [categoryId], references: [id])
@@ -138,16 +138,16 @@ model ProductImage {
   id            String   @id @default(cuid())
   url           String
   alt           String?
-  isPrimary     Boolean  @default(false)
-  productId     String
-  cloudinaryId  String?
-  cloudinaryUrl String?
+  isPrimary     Boolean  @default(false) @map("is_primary")
+  productId     String                  @map("product_id")
+  cloudinaryId  String?                 @map("cloudinary_id")
+  cloudinaryUrl String?                 @map("cloudinary_url")
   width         Int?
   height        Int?
   format        String?
   size          BigInt?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
   product       Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
@@ -156,24 +156,24 @@ model ProductImage {
 }
 
 model ProductSku {
-  id                String      @id @default(cuid())
-  sku               String      @unique
+  id                String             @id @default(cuid())
+  sku               String             @unique
   size              String?
   color             String?
-  price             Decimal     @db.Decimal(10, 2)
-  compareAtPrice    Decimal?    @db.Decimal(10, 2)
-  stock             Int         @default(0)
-  reservedStock     Int         @default(0)
-  lowStockThreshold Int?        @default(5)
-  productId         String
-  isActive          Boolean     @default(true)
-  weight            Decimal?    @db.Decimal(8, 3)
+  price             Decimal            @db.Decimal(10, 2)
+  compareAtPrice    Decimal?           @db.Decimal(10, 2) @map("compare_at_price")
+  stock             Int                @default(0)
+  reservedStock     Int                @default(0) @map("reserved_stock")
+  lowStockThreshold Int?               @default(5) @map("low_stock_threshold")
+  productId         String             @map("product_id")
+  isActive          Boolean            @default(true) @map("is_active")
+  weight            Decimal?           @db.Decimal(8, 3)
   dimensions        String?
-  createdAt         DateTime    @default(now())
-  updatedAt         DateTime    @updatedAt
+  createdAt         DateTime           @default(now()) @map("created_at")
+  updatedAt         DateTime           @updatedAt @map("updated_at")
   orderItems        OrderItem[]
+  product           Product            @relation(fields: [productId], references: [id], onDelete: Cascade)
   reservations      StockReservation[]
-  product           Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([productId])
   @@index([sku])
@@ -183,16 +183,16 @@ model ProductSku {
 }
 
 model StockReservation {
-  id         String   @id @default(cuid())
-  skuId      String
-  quantity   Int
-  orderId    String?
-  expiresAt  DateTime
-  status     ReservationStatus
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-  sku        ProductSku @relation(fields: [skuId], references: [id], onDelete: Cascade)
-  order      Order?     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  id        String            @id @default(cuid())
+  skuId     String             @map("sku_id")
+  quantity  Int
+  orderId   String?            @map("order_id")
+  expiresAt DateTime            @map("expires_at")
+  status    ReservationStatus
+  createdAt DateTime          @default(now()) @map("created_at")
+  updatedAt DateTime          @updatedAt @map("updated_at")
+  order     Order?            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  sku       ProductSku        @relation(fields: [skuId], references: [id], onDelete: Cascade)
 
   @@index([skuId])
   @@index([orderId])
@@ -201,52 +201,52 @@ model StockReservation {
 }
 
 model Order {
-  id              String        @id @default(cuid())
-  orderNumber     String        @unique
-  userId          String?
-  status          OrderStatus   @default(PENDING)
-  shippingName    String
-  shippingEmail   String
-  shippingPhone   String?
-  shippingAddress String
-  shippingCity    String
-  shippingState   String?
-  shippingCountry String
-  shippingZip     String
-  subtotal        Decimal     @db.Decimal(10, 2)
-  tax             Decimal       @default(0) @db.Decimal(10, 2)
-  shippingCost    Decimal       @db.Decimal(10, 2)
-  discount        Decimal       @default(0) @db.Decimal(10, 2)
-  total           Decimal     @db.Decimal(10, 2)
-  currency        String        @default("USD")
-  paymentMethod   String?
-  paymentStatus   PaymentStatus @default(PENDING)
-  paymentId       String?
-  transactionId   String?
-  paidAt          DateTime?
-  failureReason   String?
-  refundedAt      DateTime?
-  refundAmount    Decimal?      @db.Decimal(10, 2)
-  refundId        String?
-  refundStatus    String?
-  refundReason    String?
-  sessionId       String?
-  trackingNumber  String?
-  notes           String?
-  internalNotes   String?
-  actualPayerEmail String?
-  actualPayerName  String?
-  payerMetadata    String?
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  refundedBy      String?
-  orderType       OrderType     @default(PRODUCT)
-  items           OrderItem[]
-  orderLogs       OrderLog[]
-  reservations    StockReservation[]
-  user            User?         @relation(fields: [userId], references: [id])
-  payment         Payment?
-  signOrder       SignOrder?
+  id               String             @id @default(cuid())
+  orderNumber      String             @unique @map("order_number")
+  userId           String?            @map("user_id")
+  status           OrderStatus        @default(PENDING)
+  shippingName     String             @map("shipping_name")
+  shippingEmail    String             @map("shipping_email")
+  shippingPhone    String?            @map("shipping_phone")
+  shippingAddress  String             @map("shipping_address")
+  shippingCity     String             @map("shipping_city")
+  shippingState    String?            @map("shipping_state")
+  shippingCountry  String             @map("shipping_country")
+  shippingZip      String             @map("shipping_zip")
+  subtotal         Decimal            @db.Decimal(10, 2)
+  tax              Decimal            @default(0) @db.Decimal(10, 2)
+  shippingCost     Decimal            @db.Decimal(10, 2) @map("shipping_cost")
+  discount         Decimal            @default(0) @db.Decimal(10, 2)
+  total            Decimal            @db.Decimal(10, 2)
+  currency         String             @default("USD")
+  paymentMethod    String?            @map("payment_method")
+  paymentStatus    PaymentStatus      @default(PENDING) @map("payment_status")
+  paymentId        String?            @map("payment_id")
+  transactionId    String?            @map("transaction_id")
+  paidAt           DateTime?          @map("paid_at")
+  failureReason    String?            @map("failure_reason")
+  refundedAt       DateTime?          @map("refunded_at")
+  refundAmount     Decimal?           @db.Decimal(10, 2) @map("refund_amount")
+  refundId         String?            @map("refund_id")
+  refundStatus     String?            @map("refund_status")
+  refundReason     String?            @map("refund_reason")
+  sessionId        String?            @map("session_id")
+  trackingNumber   String?            @map("tracking_number")
+  notes            String?
+  internalNotes    String?            @map("internal_notes")
+  actualPayerEmail String?            @map("actual_payer_email")
+  actualPayerName  String?            @map("actual_payer_name")
+  payerMetadata    String?            @map("payer_metadata")
+  createdAt        DateTime           @default(now()) @map("created_at")
+  updatedAt        DateTime           @updatedAt @map("updated_at")
+  refundedBy       String?            @map("refunded_by")
+  orderType        OrderType          @default(PRODUCT) @map("order_type")
+  items            OrderItem[]
+  orderLogs        OrderLog[]
+  user             User?              @relation(fields: [userId], references: [id])
+  payment          Payment?
+  signOrder        SignOrder?
+  reservations     StockReservation[]
 
   @@index([userId])
   @@index([orderNumber])
@@ -260,12 +260,12 @@ model Order {
 
 model OrderItem {
   id          String     @id @default(cuid())
-  orderId     String
-  skuId       String
+  orderId     String     @map("order_id")
+  skuId       String     @map("sku_id")
   quantity    Int
-  price       Decimal     @db.Decimal(10, 2)
-  productName String
-  productSku  String
+  price       Decimal    @db.Decimal(10, 2)
+  productName String     @map("product_name")
+  productSku  String     @map("product_sku")
   order       Order      @relation(fields: [orderId], references: [id], onDelete: Cascade)
   sku         ProductSku @relation(fields: [skuId], references: [id])
 
@@ -276,19 +276,19 @@ model OrderItem {
 
 model Payment {
   id           String        @id @default(cuid())
-  orderId      String        @unique
-  paymentId    String?
-  amount       Decimal     @db.Decimal(10, 2)
+  orderId      String        @unique @map("order_id")
+  paymentId    String?       @map("payment_id")
+  amount       Decimal       @db.Decimal(10, 2)
   currency     String        @default("USD")
   status       PaymentStatus @default(PENDING)
   method       String?
-  gatewayData  Json?
-  refundId     String?
-  refundAmount Decimal?      @db.Decimal(10, 2)
-  refundReason String?
-  refundedAt   DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+  gatewayData  Json?         @map("gateway_data")
+  refundId     String?       @map("refund_id")
+  refundAmount Decimal?      @db.Decimal(10, 2) @map("refund_amount")
+  refundReason String?       @map("refund_reason")
+  refundedAt   DateTime?     @map("refunded_at")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
   order        Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([paymentId])
@@ -299,11 +299,11 @@ model Payment {
 
 model OrderLog {
   id        String   @id @default(cuid())
-  orderId   String
+  orderId   String   @map("order_id")
   action    String
   details   Json?
-  userId    String?
-  createdAt DateTime @default(now())
+  userId    String?  @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
@@ -314,13 +314,13 @@ model OrderLog {
 
 model SignOrder {
   id          String    @id @default(cuid())
-  orderId     String    @unique
-  signName    String
-  extraNotes  String?
-  photoUrl    String?
-  deliveredAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  orderId     String    @unique @map("order_id")
+  signName    String    @map("sign_name")
+  extraNotes  String?   @map("extra_notes")
+  photoUrl    String?   @map("photo_url")
+  deliveredAt DateTime? @map("delivered_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
   order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
 
   @@index([orderId])
@@ -329,13 +329,13 @@ model SignOrder {
 
 model Review {
   id        String   @id @default(cuid())
-  userId    String
-  productId String
+  userId    String     @map("user_id")
+  productId String     @map("product_id")
   rating    Int
   title     String?
   comment   String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id])
 
@@ -345,9 +345,9 @@ model Review {
 
 model WishlistItem {
   id        String   @id @default(cuid())
-  userId    String
-  productId String
-  createdAt DateTime @default(now())
+  userId    String     @map("user_id")
+  productId String     @map("product_id")
+  createdAt DateTime @default(now()) @map("created_at")
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id])
 
@@ -357,21 +357,21 @@ model WishlistItem {
 
 model UserAddress {
   id        String      @id @default(cuid())
-  userId    String
+  userId    String         @map("user_id")
   type      AddressType @default(SHIPPING)
-  firstName String
-  lastName  String
+  firstName String         @map("first_name")
+  lastName  String         @map("last_name")
   company   String?
   address1  String
   address2  String?
   city      String
   state     String?
   country   String
-  zipCode   String
+  zipCode   String         @map("zip_code")
   phone     String?
-  isDefault Boolean     @default(false)
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  isDefault Boolean     @default(false) @map("is_default")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
   user      User        @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
@@ -381,20 +381,20 @@ model UserAddress {
 
 model FutureLetter {
   id             String             @id @default(cuid())
-  userId         String?
-  senderEmail    String
-  senderName     String?
-  recipientEmail String?
+  userId         String?        @map("user_id")
+  senderEmail    String         @map("sender_email")
+  senderName     String?        @map("sender_name")
+  recipientEmail String?        @map("recipient_email")
   subject        String?
   message        String
-  deliveryDate   DateTime
+  deliveryDate   DateTime       @map("delivery_date")
   status         FutureLetterStatus @default(PENDING)
-  deliveredAt    DateTime?
-  failureReason  String?
-  isAnonymous    Boolean            @default(false)
+  deliveredAt    DateTime?      @map("delivered_at")
+  failureReason  String?        @map("failure_reason")
+  isAnonymous    Boolean            @default(false) @map("is_anonymous")
   metadata       Json?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
   user           User?              @relation(fields: [userId], references: [id])
 
   @@index([userId])
@@ -409,8 +409,8 @@ model Setting {
   id        String   @id @default(cuid())
   key       String   @unique
   value     String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
 
   @@map("settings")
 }
