@@ -60,3 +60,18 @@ next-env.d.ts
 test-*.js
 test-*.mjs
 test-*.ts
+
+# Sensitive scripts and API keys
+*-api-keys.json
+*-api-keys.js
+setup-*.sh
+debug-*.js
+verify-*.js
+*token*.js
+*secret*.js
+*key*.js
+
+# Backup files
+*.tar.gz
+*.dump
+*.sql
